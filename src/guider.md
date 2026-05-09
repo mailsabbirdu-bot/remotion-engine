@@ -15,7 +15,8 @@ This file describes the fields in `master_remotion.json`.
 - `duration`: (Number) Duration of the scene in frames.
 - `background`: (Object)
   - `type`: "video", "image", or "color".
-  - `src`: URL or path to the asset, or hex color code.
+  - `src`: URL, path to the asset, or hex color code.
+    - **Colab Tip**: If using files from Google Drive, use the path starting with `/content/drive/MyDrive/...`
   - `audio`: (Optional) URL or path to the background audio.
 - `transition`: (Optional Object)
   - `type`: Transition type (e.g., "fade").
@@ -25,13 +26,13 @@ This file describes the fields in `master_remotion.json`.
 ## Layer Object
 - `id`: (String) Unique identifier for the layer.
 - `type`: "text", "image", or "video".
-- `content`: Text content or URL to asset.
+- `content`: Text content or URL/path to asset.
 - `start`: (Number) Start frame relative to the scene start.
 - `duration`: (Number) Duration in frames.
 - `style`: (Object) CSS-like properties.
   - `fontSize`: (Number)
   - `color`: (String) Hex or RGB.
-  - `x`: (Number) Center X position in pixels.
+  - `x`: (Number) Center X position in pixels (e.g., 540 for center of 1080).
   - `y`: (Number) Center Y position in pixels.
 - `animationIn`: (Optional Object)
   - `type`: "fade-up", "fade-in".
@@ -50,7 +51,7 @@ This file describes the fields in `master_remotion.json`.
   - `enabled`: (Boolean)
   - `type`: "rounded-rect", "rect", "none".
   - `padding`: (Number)
-  - `fill`: (String) Background color of the box.
+  - `fill`: (String) Background color of the box (e.g., "rgba(0,0,0,0.5)").
 
 ## Presets
 ### Animations
