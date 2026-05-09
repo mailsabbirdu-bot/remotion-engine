@@ -1,0 +1,85 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "banglaFont": "Sohid Osman Hadi",
+  "englishFont": "Audiowide",
+  "scenes": [
+    {
+      "id": "scene_1",
+      "duration": 150,
+      "background": {
+        "type": "color",
+        "src": "#0000ff",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "layers": [
+        {
+          "id": "l1",
+          "type": "text",
+          "content": "হ্যালো World, welcome to Remotion!",
+          "start": 10,
+          "duration": 120,
+          "style": {
+            "fontSize": 80,
+            "color": "#ffffff",
+            "x": 540,
+            "y": 960
+          },
+          "animationIn": {
+            "type": "fade-up",
+            "duration": 20,
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "animationOut": {
+            "type": "fade-down",
+            "duration": 20,
+            "easing": "ease-in"
+          },
+          "keyframes": [
+            { "frame": 30, "scale": 1 },
+            { "frame": 60, "scale": 1.2, "easing": "ease-in-out" },
+            { "frame": 90, "scale": 1 }
+          ],
+          "textbox": {
+            "enabled": true,
+            "type": "rounded-rect",
+            "padding": 30,
+            "fill": "rgba(0,0,0,0.6)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "scene_2",
+      "duration": 120,
+      "background": {
+        "type": "color",
+        "src": "#222222"
+      },
+      "layers": [
+        {
+          "id": "l2",
+          "type": "text",
+          "content": "This is the second scene.",
+          "start": 10,
+          "duration": 100,
+          "style": {
+            "fontSize": 60,
+            "color": "#ffcc00",
+            "x": 540,
+            "y": 800
+          },
+          "animationIn": {
+            "type": "fade-in",
+            "duration": 15
+          }
+        }
+      ]
+    }
+  ]
+}
