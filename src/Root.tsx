@@ -5,28 +5,36 @@ import data from './master_remotion.json';
 
 // Handle font registration for Colab/Local environment
 const waitForFont = delayRender('Loading Fonts');
-if (typeof window !== 'undefined' && 'FontFace' in window) {
+
+const loadFonts = async () => {
+  if (typeof window === 'undefined' || !('FontFace' in window)) {
+    return;
+  }
+
   const fonts = [
     { name: 'Audiowide', url: staticFile('fonts/Audiowide-Regular.ttf') },
     { name: 'Sohid Osman Hadi', url: staticFile('fonts/Sohid Osman Hadi.ttf') }
   ];
 
-  Promise.all(
-    fonts.map(f => {
-      const ff = new FontFace(f.name, `url(${f.url})`);
-      return ff.load().then(loaded => {
-        document.fonts.add(loaded);
-      });
-    })
-  ).then(() => {
+  try {
+    await Promise.all(
+      fonts.map(async (f) => {
+        try {
+          const ff = new FontFace(f.name, `url(${f.url})`);
+          const loaded = await ff.load();
+          document.fonts.add(loaded);
+          console.log(`Font loaded: ${f.name}`);
+        } catch (e) {
+          console.warn(`Could not load font ${f.name} from ${f.url}. Falling back to system fonts.`);
+        }
+      })
+    );
+  } finally {
     continueRender(waitForFont);
-  }).catch(err => {
-    console.error("Font loading failed", err);
-    continueRender(waitForFont);
-  });
-} else {
-  continueRender(waitForFont);
-}
+  }
+};
+
+loadFonts();
 
 export const RemotionRoot: React.FC = () => {
   // Calculate total duration based on scenes and transitions
@@ -44,7 +52,6 @@ export const RemotionRoot: React.FC = () => {
         fps={data.fps}
         width={data.width}
         height={data.height}
-        // Use any to bypass strict type checking for the component prop in Root
         {...({
           component: MainComposition,
         } as any)}
