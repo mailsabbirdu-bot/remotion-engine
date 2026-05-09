@@ -1,7 +1,32 @@
 import React from 'react';
-import { Composition } from 'remotion';
+import { Composition, continueRender, delayRender, staticFile } from 'remotion';
 import { MainComposition } from './Composition';
 import data from './master_remotion.json';
+
+// Handle font registration for Colab/Local environment
+const waitForFont = delayRender('Loading Fonts');
+if (typeof window !== 'undefined' && 'FontFace' in window) {
+  const fonts = [
+    { name: 'Audiowide', url: staticFile('fonts/Audiowide-Regular.ttf') },
+    { name: 'Sohid Osman Hadi', url: staticFile('fonts/Sohid Osman Hadi.ttf') }
+  ];
+
+  Promise.all(
+    fonts.map(f => {
+      const ff = new FontFace(f.name, `url(${f.url})`);
+      return ff.load().then(loaded => {
+        document.fonts.add(loaded);
+      });
+    })
+  ).then(() => {
+    continueRender(waitForFont);
+  }).catch(err => {
+    console.error("Font loading failed", err);
+    continueRender(waitForFont);
+  });
+} else {
+  continueRender(waitForFont);
+}
 
 export const RemotionRoot: React.FC = () => {
   // Calculate total duration based on scenes and transitions
@@ -19,8 +44,6 @@ export const RemotionRoot: React.FC = () => {
         fps={data.fps}
         width={data.width}
         height={data.height}
-        schema={undefined}
-        calculateMetadata={undefined}
         // Use any to bypass strict type checking for the component prop in Root
         {...({
           component: MainComposition,
