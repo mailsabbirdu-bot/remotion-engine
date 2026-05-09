@@ -7,10 +7,10 @@
   "scenes": [
     {
       "id": "scene_1",
-      "duration": 150,
+      "duration": 281,
       "background": {
-        "type": "color",
-        "src": "#0000ff",
+        "type": "video",
+        "src": "/content/drive/MyDrive/Counterism_Studio_V4/renders/scene_1.mp4",
         "audio": ""
       },
       "transition": {
@@ -21,14 +21,14 @@
         {
           "id": "l1",
           "type": "text",
-          "content": "হ্যালো World, welcome to Remotion!",
-          "start": 10,
-          "duration": 120,
+          "content": "Tiger beneath the deep blue ocean",
+          "start": 15,
+          "duration": 220,
           "style": {
-            "fontSize": 80,
+            "fontSize": 72,
             "color": "#ffffff",
             "x": 540,
-            "y": 960
+            "y": 1580
           },
           "animationIn": {
             "type": "fade-up",
@@ -41,42 +41,158 @@
             "easing": "ease-in"
           },
           "keyframes": [
-            { "frame": 30, "scale": 1 },
-            { "frame": 60, "scale": 1.2, "easing": "ease-in-out" },
-            { "frame": 90, "scale": 1 }
+            {
+              "frame": 30,
+              "scale": 1,
+              "opacity": 1,
+              "easing": "linear"
+            },
+            {
+              "frame": 90,
+              "scale": 1.08,
+              "opacity": 1,
+              "easing": "ease-in-out"
+            },
+            {
+              "frame": 180,
+              "scale": 1,
+              "opacity": 1,
+              "easing": "linear"
+            }
           ],
           "textbox": {
             "enabled": true,
             "type": "rounded-rect",
-            "padding": 30,
-            "fill": "rgba(0,0,0,0.6)"
+            "padding": 28,
+            "fill": "rgba(0,0,0,0.55)"
           }
         }
       ]
     },
     {
       "id": "scene_2",
-      "duration": 120,
+      "duration": 301,
       "background": {
-        "type": "color",
-        "src": "#222222"
+        "type": "video",
+        "src": "/content/drive/MyDrive/Counterism_Studio_V4/renders/scene_2.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
       },
       "layers": [
         {
           "id": "l2",
           "type": "text",
-          "content": "This is the second scene.",
-          "start": 10,
-          "duration": 100,
+          "content": "Dark waves rise through the storm",
+          "start": 15,
+          "duration": 240,
           "style": {
-            "fontSize": 60,
+            "fontSize": 70,
             "color": "#ffcc00",
             "x": 540,
-            "y": 800
+            "y": 1550
           },
           "animationIn": {
             "type": "fade-in",
-            "duration": 15
+            "duration": 18,
+            "easing": "ease-out"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "duration": 18,
+            "easing": "ease-in"
+          },
+          "keyframes": [
+            {
+              "frame": 20,
+              "scale": 1,
+              "opacity": 1,
+              "easing": "linear"
+            },
+            {
+              "frame": 100,
+              "scale": 1.12,
+              "opacity": 1,
+              "easing": "ease-in-out"
+            },
+            {
+              "frame": 200,
+              "scale": 1,
+              "opacity": 1,
+              "easing": "linear"
+            }
+          ],
+          "textbox": {
+            "enabled": true,
+            "type": "rounded-rect",
+            "padding": 30,
+            "fill": "rgba(0,0,0,0.60)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "scene_3",
+      "duration": 299,
+      "background": {
+        "type": "image",
+        "src": "/content/drive/MyDrive/Counterism_Studio_V4/renders/scene_3.jpg",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "layers": [
+        {
+          "id": "l3",
+          "type": "text",
+          "content": "Sunlight pierces the silent ocean",
+          "start": 15,
+          "duration": 235,
+          "style": {
+            "fontSize": 68,
+            "color": "#ffffff",
+            "x": 540,
+            "y": 1560
+          },
+          "animationIn": {
+            "type": "fade-up",
+            "duration": 20,
+            "easing": "ease-out"
+          },
+          "animationOut": {
+            "type": "fade-down",
+            "duration": 20,
+            "easing": "ease-in"
+          },
+          "keyframes": [
+            {
+              "frame": 25,
+              "scale": 1,
+              "opacity": 1,
+              "easing": "linear"
+            },
+            {
+              "frame": 110,
+              "scale": 1.06,
+              "opacity": 1,
+              "easing": "ease-in-out"
+            },
+            {
+              "frame": 210,
+              "scale": 1,
+              "opacity": 1,
+              "easing": "linear"
+            }
+          ],
+          "textbox": {
+            "enabled": true,
+            "type": "rounded-rect",
+            "padding": 26,
+            "fill": "rgba(0,0,0,0.45)"
           }
         }
       ]
