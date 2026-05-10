@@ -2,8 +2,8 @@
   "width": 1080,
   "height": 1920,
   "fps": 30,
-  "banglaFont": "FN Mahin Dui Dashok Italic",
-  "englishFont": "Audiowide-Regular",
+  "banglaFont": "HindSiliguri-Bold",
+  "englishFont": "Klensig Mockura",
   "scenes": [
     {
       "id": "scene_1",
