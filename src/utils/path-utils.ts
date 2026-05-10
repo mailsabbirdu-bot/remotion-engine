@@ -2,17 +2,20 @@ import { staticFile } from 'remotion';
 
 /**
  * Resolves an asset path to a URL that Remotion can handle.
- * We rely on the Colab script to have mirrored the Drive structure
- * into the public folder.
+ * Bypasses folder structures by extracting the filename and looking
+ * in the root of the public folder (where Colab mirrors assets).
  */
 export const resolveAsset = (path: string): string => {
   if (!path) return '';
   if (path.startsWith('http')) return path;
 
-  // The user's JSON uses "/drive/Counterism_Studio_V4/renders/scene_1.mp4"
-  // The script copies to "public/drive/Counterism_Studio_V4/renders/scene_1.mp4"
-  // staticFile expects paths relative to public/, without the leading slash.
-  const normalizedPath = path.startsWith('/') ? path.substring(1) : path;
+  // Extract just the filename (e.g. "scene_1.mp4")
+  const filename = path.split('/').pop();
 
-  return staticFile(normalizedPath);
+  // If we have a filename, we assume the Colab script put it in public/
+  if (filename) {
+      return staticFile(filename);
+  }
+
+  return path;
 };
