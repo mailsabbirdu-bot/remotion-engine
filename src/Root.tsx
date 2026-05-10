@@ -13,23 +13,40 @@ const loadFonts = async () => {
     return;
   }
 
-  // Define fonts as per master_remotion.json requirements
+  const getFontUrl = (name: string) => {
+    if (!name) return '';
+    // If it already has an extension, use it as is
+    if (/\.(ttf|otf|woff2?)$/i.test(name)) {
+      return resolveAsset(name);
+    }
+    // Default to .ttf if no extension provided
+    return resolveAsset(`${name}.ttf`);
+  };
+
+  // Dynamically determine fonts from master_remotion.json
   const fonts = [
-    { name: 'Audiowide', url: resolveAsset('Audiowide-Regular.ttf') },
-    { name: 'Sohid Osman Hadi', url: resolveAsset('Sohid Osman Hadi.ttf') }
+    {
+      name: data.englishFont,
+      url: getFontUrl(data.englishFont)
+    },
+    {
+      name: data.banglaFont,
+      url: getFontUrl(data.banglaFont)
+    }
   ];
 
   try {
     await Promise.all(
       fonts.map(async (f) => {
+        if (!f.url) return;
         try {
-          console.log(`[FONT_DEBUG] Loading font: ${f.name} from ${f.url}`);
+          console.log(`[FONT_DEBUG] Attempting to load: "${f.name}" from "${f.url}"`);
           const ff = new FontFace(f.name, `url("${f.url}")`);
           const loaded = await ff.load();
           document.fonts.add(loaded);
-          console.log(`[FONT_DEBUG] Successfully loaded font: ${f.name}`);
+          console.log(`[FONT_DEBUG] Successfully loaded: "${f.name}"`);
         } catch (e) {
-          console.error(`[FONT_DEBUG_ERROR] Could not load font ${f.name} from ${f.url}:`, e);
+          console.error(`[FONT_DEBUG_ERROR] Could not load font "${f.name}" from "${f.url}":`, e);
         }
       })
     );
