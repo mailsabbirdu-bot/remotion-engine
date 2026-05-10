@@ -25,38 +25,41 @@ const loadFonts = async () => {
   };
 
   // Dynamically determine fonts from master_remotion.json
+  // We use the names from JSON as the font-family identifiers
   const fontsToLoad = [
     {
+      type: 'English',
       name: data.englishFont,
       url: getFontUrl(data.englishFont)
     },
     {
+      type: 'Bangla',
       name: data.banglaFont,
       url: getFontUrl(data.banglaFont)
     }
   ].filter(f => f.name && f.url);
 
-  console.log("[FONT_SYSTEM] Initializing font load for:", fontsToLoad);
+  console.log(`[FONT_SYSTEM] Blueprint requested English: "${data.englishFont}", Bangla: "${data.banglaFont}"`);
 
   try {
     await Promise.all(
       fontsToLoad.map(async (f) => {
         try {
-          console.log(`[FONT_SYSTEM] Loading: "${f.name}" from "${f.url}"`);
-          // We wrap the name in quotes to handle font names with spaces correctly
+          console.log(`[FONT_SYSTEM] [${f.type}] Attempting to load font-face "${f.name}" from "${f.url}"`);
           const fontFace = new FontFace(f.name, `url("${f.url}")`);
           const loadedFace = await fontFace.load();
           document.fonts.add(loadedFace);
-          console.log(`[FONT_SYSTEM] SUCCESS: "${f.name}" is ready.`);
+          console.log(`[FONT_SYSTEM] [${f.type}] SUCCESS: Font-face "${f.name}" registered and ready.`);
         } catch (e) {
-          console.error(`[FONT_SYSTEM] ERROR loading "${f.name}":`, e);
+          console.error(`[FONT_SYSTEM] [${f.type}] FAILED to load "${f.name}" from "${f.url}":`, e);
+          console.warn(`[FONT_SYSTEM] [${f.type}] The engine will try to use system fallbacks for "${f.name}".`);
         }
       })
     );
   } catch (err) {
-    console.error("[FONT_SYSTEM] CRITICAL ERROR during font loading:", err);
+    console.error("[FONT_SYSTEM] CRITICAL ERROR during font loading process:", err);
   } finally {
-    // Crucial: Always allow rendering to proceed
+    // Crucial: Always allow rendering to proceed even if fonts fail
     continueRender(waitForFont);
   }
 };

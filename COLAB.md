@@ -18,6 +18,7 @@ if not os.path.exists('/content/drive'):
     drive.mount('/content/drive')
 
 # --- CONFIGURATION ---
+# The folder where your project files (master_remotion.json, fonts, etc) are stored:
 PROJECT_PATH_DRIVE = "/content/drive/MyDrive/remotion-engine" # @param {type:"string"}
 PROJECT_PATH_LOCAL = "/content/remotion-engine"
 REPO_URL = "https://github.com/mailsabbirdu-bot/remotion-engine.git" # @param {type:"string"}
@@ -26,27 +27,31 @@ REPO_URL = "https://github.com/mailsabbirdu-bot/remotion-engine.git" # @param {t
 ASSET_SOURCE_DRIVE = "/content/drive/MyDrive/Counterism_Studio_V4/renders" # @param {type:"string"}
 
 def setup_and_run():
-    # 2. Sync project to local SSD
-    print("📦 Syncing project to local SSD...")
+    # 2. Setup Local Project
+    print("📦 Setting up local environment...")
     if os.path.exists(PROJECT_PATH_LOCAL):
         shutil.rmtree(PROJECT_PATH_LOCAL)
 
-    # REPAIR LOGIC: Check if project is valid in Drive
-    drive_is_valid = os.path.exists(PROJECT_PATH_DRIVE) and os.path.exists(os.path.join(PROJECT_PATH_DRIVE, "package.json"))
+    # Always clone fresh from GitHub to get the latest engine code
+    print(f"🛰️ Cloning engine from GitHub...")
+    !git clone {REPO_URL} {PROJECT_PATH_LOCAL}
 
-    if drive_is_valid:
-        print(f"✅ Found project in Drive. Mirroring to local SSD...")
-        shutil.copytree(PROJECT_PATH_DRIVE, PROJECT_PATH_LOCAL, ignore=shutil.ignore_patterns('node_modules', '.git', 'out', 'build'))
-    else:
-        print(f"🛰️ Project folder not found or invalid in Drive. Cloning fresh from GitHub...")
-        !git clone {REPO_URL} {PROJECT_PATH_LOCAL}
+    # 3. OVERWRITE WITH DRIVE CONFIG (Crucial Fix)
+    # We look for master_remotion.json or master_render.json in your Drive project folder
+    config_names = ["master_remotion.json", "master_render.json"]
+    found_config = False
+    for name in config_names:
+        drive_config = os.path.join(PROJECT_PATH_DRIVE, name)
+        if os.path.exists(drive_config):
+            print(f"✅ Found config: {name} in Drive. Applying...")
+            shutil.copy2(drive_config, os.path.join(PROJECT_PATH_LOCAL, "src/master_remotion.json"))
+            found_config = True
+            break
 
-    # 3. FORCE CLEAN CACHES
-    print("🧹 Cleaning caches...")
-    !rm -rf {PROJECT_PATH_LOCAL}/.remotion
-    !rm -rf {PROJECT_PATH_LOCAL}/node_modules/.cache
+    if not found_config:
+        print("⚠️ No config found in Drive! Using default from repository.")
 
-    # 4. FLAT ASSET MIRRORING (Fixes 404s and Font "Boxes" issue)
+    # 4. FLAT ASSET MIRRORING
     print("🚚 Mirroring assets to public root...")
     public_path = os.path.join(PROJECT_PATH_LOCAL, "public")
     os.makedirs(public_path, exist_ok=True)
@@ -58,15 +63,13 @@ def setup_and_run():
             s = os.path.join(ASSET_SOURCE_DRIVE, item)
             if os.path.isfile(s):
                 shutil.copy2(s, os.path.join(public_path, item))
-    else:
-        print(f"⚠️ Warning: Asset source {ASSET_SOURCE_DRIVE} not found!")
 
-    # MIRROR FONTS - Search multiple locations and copy to public root
-    # We also check the project's own public/fonts folder in Drive
+    # MIRROR FONTS - Specifically look in Drive project/fonts and root fonts
     font_locations = [
         os.path.join(PROJECT_PATH_DRIVE, "public/fonts"),
         os.path.join(PROJECT_PATH_DRIVE, "fonts"),
-        ASSET_SOURCE_DRIVE # Sometimes people put fonts with their renders
+        os.path.join(PROJECT_PATH_DRIVE, "public"), # Root of public
+        ASSET_SOURCE_DRIVE
     ]
 
     found_fonts = []
@@ -75,35 +78,27 @@ def setup_and_run():
             for f in os.listdir(loc):
                 if f.lower().endswith(('.ttf', '.otf', '.woff', '.woff2')):
                     shutil.copy2(os.path.join(loc, f), os.path.join(public_path, f))
-                    found_fonts.append(f)
+                    if f not in found_fonts: found_fonts.append(f)
 
-    print(f"✅ Fonts mirrored: {found_fonts}")
-    print("Ready Files in public/:", [f for f in os.listdir(public_path) if os.path.isfile(os.path.join(public_path, f))])
+    print(f"✅ Fonts ready: {found_fonts}")
 
     # 5. Switch to project directory
     %cd {PROJECT_PATH_LOCAL}
 
-    # 6. Install Node.js
-    if shutil.which("node") is None:
-        print("🟢 Installing Node.js...")
-        !curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - > /dev/null
-        !sudo apt-get install -y nodejs > /dev/null
-
-    # 7. Install Dependencies
-    print("🟢 Installing NPM packages...")
+    # 6. Install NPM packages
+    print("🟢 Installing dependencies (this may take a minute)...")
     if os.path.exists("package-lock.json"):
         os.remove("package-lock.json")
     !npm install --no-audit --no-fund --quiet
 
-    # 8. Setup Browser
-    print("🟢 Ensuring browser is ready...")
+    # 7. Setup Browser
     !npm run ensure
 
-    # 9. Render the video with CACHE DISABLED
-    print("🎬 Rendering video (bundle-cache=false)...")
+    # 8. Render
+    print("🎬 Rendering video...")
     !npm run render
 
-    # 10. Sync Result back to Drive
+    # 9. Sync Result back to Drive
     if os.path.exists("out/video.mp4"):
         OUTPUT_DRIVE_DIR = os.path.join(PROJECT_PATH_DRIVE, "out")
         os.makedirs(OUTPUT_DRIVE_DIR, exist_ok=True)
@@ -115,9 +110,7 @@ def setup_and_run():
 setup_and_run()
 ```
 
-## 📝 Critical: Fix Font "Boxes" (Missing Bangla)
-If you see boxes instead of Bangla text:
-1. Ensure your `.ttf` font file is in your Google Drive project folder (e.g., `remotion-engine/public/fonts/`).
-2. Make sure the `banglaFont` name in `master_remotion.json` matches the **filename** (without .ttf).
-   - Example: If file is `Sohid Osman Hadi.ttf`, use `"banglaFont": "Sohid Osman Hadi"` in JSON.
-3. The engine uses a "Flat" structure in Colab, so it looks for fonts directly in the `public/` root. The script above handles this automatically.
+## 📝 Troubleshooting Fonts
+- **Important:** Ensure your `.ttf` filename exactly matches the `banglaFont` or `englishFont` value in your JSON.
+- If your font file is `MyBanglaFont.ttf`, your JSON should say: `"banglaFont": "MyBanglaFont"`.
+- If you have a file named `master_render.json` in your Drive, it will automatically be used.
