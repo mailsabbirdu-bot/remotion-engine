@@ -3,7 +3,7 @@
   "height": 1920,
   "fps": 30,
   "banglaFont": "HindSiliguri-Bold",
-  "englishFont": "Klensig Mockura",
+  "englishFont": "Montserrat-Bold",
   "scenes": [
     {
       "id": "scene_1",
