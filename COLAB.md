@@ -1,6 +1,6 @@
-# 🚀 One-Click Remotion Engine for Colab
+# 🚀 Automated Remotion Engine for Colab
 
-This guide provides a "One-Click" experience for rendering videos on Google Colab.
+This guide provides a robust "One-Click" experience. To avoid path errors, this script **physically copies** your assets into the project's public folder, ensuring Remotion can always find them.
 
 ## 🎬 Automated Render Cell
 
@@ -23,31 +23,39 @@ PROJECT_PATH_DRIVE = "/content/drive/MyDrive/remotion-engine" # @param {type:"st
 PROJECT_PATH_LOCAL = "/content/remotion-engine"
 REPO_URL = "https://github.com/mailsabbirdu-bot/remotion-engine.git" # @param {type:"string"}
 
+# @markdown ### 📽️ Asset Source Folder (Google Drive)
+# @markdown Path to the folder containing your videos/images:
+ASSET_SOURCE_DRIVE = "/content/drive/MyDrive/Counterism_Studio_V4/renders" # @param {type:"string"}
+
 def setup_and_run():
     # 2. Ensure Project exists in Drive
     if not os.path.exists(PROJECT_PATH_DRIVE):
-        print(f"🛰️ Project folder not found in Drive. Creating it at {PROJECT_PATH_DRIVE}...")
+        print(f"🛰️ Project folder not found in Drive. Creating it...")
         !git clone {REPO_URL} {PROJECT_PATH_DRIVE}
     else:
         if not os.path.exists(os.path.join(PROJECT_PATH_DRIVE, "package.json")):
-            print(f"⚠️ Project incomplete in Drive. Repairing from repository...")
+            print(f"⚠️ Project incomplete in Drive. Repairing...")
             !git clone {REPO_URL} /content/temp_repo
             !cp -rn /content/temp_repo/. {PROJECT_PATH_DRIVE}/
             shutil.rmtree("/content/temp_repo")
 
-    # 3. Setup local SSD
+    # 3. Sync project to local SSD
     print("📦 Syncing project to local SSD...")
     if os.path.exists(PROJECT_PATH_LOCAL):
         shutil.rmtree(PROJECT_PATH_LOCAL)
-
     shutil.copytree(PROJECT_PATH_DRIVE, PROJECT_PATH_LOCAL, ignore=shutil.ignore_patterns('node_modules', '.git'))
 
-    # --- IMPORTANT FIX FOR GOOGLE DRIVE PATHS ---
-    # We link /content/drive/MyDrive to public/drive so Remotion can serve them
-    # Use paths like "/content/drive/MyDrive/myvideo.mp4" in your JSON
-    os.makedirs(os.path.join(PROJECT_PATH_LOCAL, "public"), exist_ok=True)
-    !ln -s "/content/drive/MyDrive" {PROJECT_PATH_LOCAL}/public/drive
-    print("🔗 Linked Google Drive MyDrive to Remotion public/drive.")
+    # 4. Copy Assets into Public Folder (Physical copy is more reliable than symlink)
+    print("🚚 Copying assets to public folder...")
+    public_assets_path = os.path.join(PROJECT_PATH_LOCAL, "public/renders")
+    if os.path.exists(public_assets_path):
+        shutil.rmtree(public_assets_path)
+
+    if os.path.exists(ASSET_SOURCE_DRIVE):
+        shutil.copytree(ASSET_SOURCE_DRIVE, public_assets_path)
+        print(f"✅ Assets copied to: {public_assets_path}")
+    else:
+        print(f"⚠️ Warning: Asset source folder not found at {ASSET_SOURCE_DRIVE}")
 
     # 5. Switch to project directory
     %cd {PROJECT_PATH_LOCAL}
@@ -84,8 +92,16 @@ def setup_and_run():
 setup_and_run()
 ```
 
-## 📝 Path Configuration in JSON
-For assets in your Google Drive, use their absolute path in your `master_remotion.json`.
-The engine will automatically resolve them.
+## 📝 JSON Path Setup
+When you copy your assets using the script above, they are placed in the `public/renders/` folder.
+Update your `master_remotion.json` to use these relative paths:
 
-Example: `/content/drive/MyDrive/Counterism_Studio_V4/renders/scene_1.mp4`
+Example:
+```json
+{
+  "type": "video",
+  "src": "/renders/scene_1.mp4"
+}
+```
+
+**⚠️ Important:** If a file ends in `.mp4`, make sure to set the type to `"video"`. If it's a `.jpg` or `.png`, set it to `"image"`.
