@@ -23,57 +23,22 @@ export const WordByWordText: React.FC<WordByWordTextProps> = ({
 }) => {
   const frame = useCurrentFrame();
 
-  if (animationMode === 'none') {
-    const graphemes = splitIntoGraphemes(text);
+  const renderGraphemes = (graphemes: string[], globalOpacity: number = 1, individualDelays: boolean = false) => {
     return (
-      <div style={{ ...style, display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
-        {graphemes.map((char, charIndex) => {
-          const fontType = getFontForChar(char);
-          const fontFamily = fontType === 'BanglaFont' ? banglaFontFamily : englishFontFamily;
-          return (
-            <span key={charIndex} style={{ fontFamily, whiteSpace: char === ' ' ? 'pre' : 'normal' }}>
-              {char}
-            </span>
-          );
-        })}
-      </div>
-    );
-  }
-
-  if (animationMode === 'sentence') {
-    const opacity = interpolate(frame, [0, duration], [0, 1], {
-      extrapolateLeft: 'clamp',
-      extrapolateRight: 'clamp',
-    });
-    const graphemes = splitIntoGraphemes(text);
-    return (
-      <div style={{ ...style, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', opacity }}>
-        {graphemes.map((char, charIndex) => {
-          const fontType = getFontForChar(char);
-          const fontFamily = fontType === 'BanglaFont' ? banglaFontFamily : englishFontFamily;
-          return (
-            <span key={charIndex} style={{ fontFamily, whiteSpace: char === ' ' ? 'pre' : 'normal' }}>
-              {char}
-            </span>
-          );
-        })}
-      </div>
-    );
-  }
-
-  if (animationMode === 'character') {
-    const graphemes = splitIntoGraphemes(text);
-    return (
-      <div style={{ ...style, display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+      <>
         {graphemes.map((char, index) => {
           const fontType = getFontForChar(char);
-          const fontFamily = fontType === 'BanglaFont' ? banglaFontFamily : englishFontFamily;
+          // Quote font family names to handle spaces correctly in CSS
+          const fontFamily = fontType === 'BanglaFont' ? `"${banglaFontFamily}"` : `"${englishFontFamily}"`;
 
-          const delay = (index / graphemes.length) * duration;
-          const opacity = interpolate(frame, [delay, delay + 5], [0, 1], {
-            extrapolateLeft: 'clamp',
-            extrapolateRight: 'clamp',
-          });
+          let opacity = globalOpacity;
+          if (individualDelays) {
+            const delay = (index / graphemes.length) * duration;
+            opacity = interpolate(frame, [delay, delay + 5], [0, 1], {
+              extrapolateLeft: 'clamp',
+              extrapolateRight: 'clamp',
+            });
+          }
 
           return (
             <span
@@ -89,6 +54,37 @@ export const WordByWordText: React.FC<WordByWordTextProps> = ({
             </span>
           );
         })}
+      </>
+    );
+  };
+
+  if (animationMode === 'none') {
+    const graphemes = splitIntoGraphemes(text);
+    return (
+      <div style={{ ...style, display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+        {renderGraphemes(graphemes)}
+      </div>
+    );
+  }
+
+  if (animationMode === 'sentence') {
+    const opacity = interpolate(frame, [0, duration], [0, 1], {
+      extrapolateLeft: 'clamp',
+      extrapolateRight: 'clamp',
+    });
+    const graphemes = splitIntoGraphemes(text);
+    return (
+      <div style={{ ...style, display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+        {renderGraphemes(graphemes, opacity)}
+      </div>
+    );
+  }
+
+  if (animationMode === 'character') {
+    const graphemes = splitIntoGraphemes(text);
+    return (
+      <div style={{ ...style, display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+        {renderGraphemes(graphemes, 1, true)}
       </div>
     );
   }
@@ -106,16 +102,8 @@ export const WordByWordText: React.FC<WordByWordTextProps> = ({
         });
 
         return (
-          <span key={wordIndex} style={{ opacity, display: 'inline-block', whiteSpace: 'pre' }}>
-            {graphemes.map((char, charIndex) => {
-              const fontType = getFontForChar(char);
-              const fontFamily = fontType === 'BanglaFont' ? banglaFontFamily : englishFontFamily;
-              return (
-                <span key={charIndex} style={{ fontFamily }}>
-                  {char}
-                </span>
-              );
-            })}
+          <span key={wordIndex} style={{ display: 'inline-block', whiteSpace: 'pre' }}>
+            {renderGraphemes(graphemes, opacity)}
           </span>
         );
       })}

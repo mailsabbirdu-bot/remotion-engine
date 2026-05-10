@@ -23,18 +23,23 @@ export const normalizeTokens = (text: string): string[] =>
 
 /**
  * Detects the font to use for a given character.
- * Supports English (A-Z, a-z, 0-9) and defaults to Bangla font for others.
+ * Supports English (A-Z, a-z, 0-9, and common punctuation)
+ * and defaults to Bangla font for others.
  */
 export const getFontForChar = (char: string): "EnglishFont" | "BanglaFont" => {
-  const isEnglish = /[A-Za-z0-9]/.test(char);
-  return isEnglish ? "EnglishFont" : "BanglaFont";
+  // English letters and numbers
+  if (/[A-Za-z0-9]/.test(char)) return "EnglishFont";
+
+  // Common punctuation and symbols used in both languages usually look fine in English fonts
+  if (/[\s\.,!\?\(\)\[\]\{\}:;'"_&%\$#@\*=\+\-\/\\<>|\|]/.test(char)) return "EnglishFont";
+
+  // Default to Bangla for everything else
+  return "BanglaFont";
 };
 
 /**
- * Splits text into words while preserving spaces, or splits into characters if needed.
- * For word-by-word animation, we usually split by space but keep the space as a token.
+ * Splits text into words while preserving spaces.
  */
 export const splitIntoWords = (text: string): string[] => {
-    // This simple split might not be enough for complex graphemes but usually words are space separated
     return text.split(/(\s+)/).filter(Boolean);
 };
