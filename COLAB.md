@@ -24,49 +24,35 @@ PROJECT_PATH_LOCAL = "/content/remotion-engine"
 REPO_URL = "https://github.com/mailsabbirdu-bot/remotion-engine.git" # @param {type:"string"}
 
 # @markdown ### 📽️ Asset Source Folder (Google Drive)
-# @markdown Path to the folder containing your videos/images (e.g. renders folder):
 ASSET_SOURCE_DRIVE = "/content/drive/MyDrive/Counterism_Studio_V4/renders" # @param {type:"string"}
 
 def setup_and_run():
-    # 2. Ensure Project exists in Drive
+    # 2. Setup project structure
     if not os.path.exists(PROJECT_PATH_DRIVE):
-        print(f"🛰️ Project folder not found in Drive. Creating it...")
+        print(f"🛰️ Project not found. Cloning...")
         !git clone {REPO_URL} {PROJECT_PATH_DRIVE}
-    else:
-        if not os.path.exists(os.path.join(PROJECT_PATH_DRIVE, "package.json")):
-            print(f"⚠️ Project incomplete in Drive. Repairing...")
-            !git clone {REPO_URL} /content/temp_repo
-            !cp -rn /content/temp_repo/. {PROJECT_PATH_DRIVE}/
-            shutil.rmtree("/content/temp_repo")
 
-    # 3. Sync project to local SSD
-    print("📦 Syncing project to local SSD...")
+    # 3. Copy to Local SSD
+    print("📦 Syncing to local SSD...")
     if os.path.exists(PROJECT_PATH_LOCAL):
         shutil.rmtree(PROJECT_PATH_LOCAL)
     shutil.copytree(PROJECT_PATH_DRIVE, PROJECT_PATH_LOCAL, ignore=shutil.ignore_patterns('node_modules', '.git'))
 
-    # 4. Copy Assets into Public Folder
-    # To keep your JSON paths simple, we put them under public/drive/
-    print("🚚 Copying assets to public folder...")
-    public_drive_path = os.path.join(PROJECT_PATH_LOCAL, "public/drive")
-    if os.path.exists(public_drive_path):
-        shutil.rmtree(public_drive_path)
-
-    # We want to mirror the path structure from your JSON
-    # If JSON has "/drive/Counterism_Studio_V4/renders/scene_1.mp4"
-    # We create: public/drive/Counterism_Studio_V4/renders/scene_1.mp4
-    target_path = os.path.join(PROJECT_PATH_LOCAL, "public/drive/Counterism_Studio_V4/renders")
-    os.makedirs(target_path, exist_ok=True)
+    # 4. PHYSICAL ASSET COPY (Most reliable)
+    # This copies files from your Drive directly into the public/assets folder
+    print("🚚 Physically copying assets to public/assets...")
+    assets_dir = os.path.join(PROJECT_PATH_LOCAL, "public/assets")
+    os.makedirs(assets_dir, exist_ok=True)
 
     if os.path.exists(ASSET_SOURCE_DRIVE):
-        for item in os.listdir(ASSET_SOURCE_DRIVE):
-            s = os.path.join(ASSET_SOURCE_DRIVE, item)
-            d = os.path.join(target_path, item)
-            if os.path.isfile(s):
-                shutil.copy2(s, d)
-        print(f"✅ Assets copied to: {target_path}")
+        for file in os.listdir(ASSET_SOURCE_DRIVE):
+            if file.endswith(('.mp4', '.jpg', '.png', '.wav', '.mp3')):
+                shutil.copy2(os.path.join(ASSET_SOURCE_DRIVE, file), os.path.join(assets_dir, file))
+        print(f"✅ Assets ready in: {assets_dir}")
+        print("Files:", os.listdir(assets_dir))
     else:
-        print(f"⚠️ Warning: Asset source folder not found at {ASSET_SOURCE_DRIVE}")
+        print(f"❌ Error: Asset source {ASSET_SOURCE_DRIVE} not found!")
+        return
 
     # 5. Switch to project directory
     %cd {PROJECT_PATH_LOCAL}
@@ -91,24 +77,17 @@ def setup_and_run():
     print("🎬 Rendering video...")
     !npm run render
 
-    # 10. Copy the result back to Google Drive
+    # 10. Copy result back
     if os.path.exists("out/video.mp4"):
         OUTPUT_DRIVE_DIR = os.path.join(PROJECT_PATH_DRIVE, "out")
         os.makedirs(OUTPUT_DRIVE_DIR, exist_ok=True)
         shutil.copy("out/video.mp4", os.path.join(OUTPUT_DRIVE_DIR, "video.mp4"))
         print(f"\n✅ SUCCESS! Video saved at: {OUTPUT_DRIVE_DIR}/video.mp4")
     else:
-        print("\n❌ ERROR: Render failed. Check the logs above.")
+        print("\n❌ ERROR: Render failed. Check the logs.")
 
 setup_and_run()
 ```
 
-## 📝 JSON Path Setup
-To match your current JSON, the script puts your files in a folder structure that Remotion can understand.
-
-Use this exact format for your video paths in `master_remotion.json`:
-`"src": "/drive/Counterism_Studio_V4/renders/scene_1.mp4"`
-
-**⚠️ Important Checklist:**
-- Backgrounds ending in `.mp4` MUST have `"type": "video"`.
-- Ensure your font files are in your Drive's `public/fonts/` folder.
+## 📝 Note on JSON
+Keep your `master_remotion.json` as it is. The engine will automatically find files like `scene_1.mp4` in the `public/assets` folder.
