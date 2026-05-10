@@ -3,7 +3,7 @@
   "height": 1920,
   "fps": 30,
   "banglaFont": "Sohid Osman Hadi",
-  "englishFont": "Audiowide",
+  "englishFont": "Audiowide-Regular",
   "scenes": [
     {
       "id": "scene_1",
