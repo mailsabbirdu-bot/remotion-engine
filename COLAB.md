@@ -24,44 +24,42 @@ PROJECT_PATH_LOCAL = "/content/remotion-engine"
 REPO_URL = "https://github.com/mailsabbirdu-bot/remotion-engine.git" # @param {type:"string"}
 
 # @markdown ### 📽️ Asset Source Folder (Google Drive)
-# @markdown Enter the folder in your Drive where your scene videos are stored:
+# @markdown Path where your scene videos are stored:
 ASSET_SOURCE_DRIVE = "/content/drive/MyDrive/Counterism_Studio_V4/renders" # @param {type:"string"}
 
 def setup_and_run():
-    # 2. Ensure Project exists in Drive
-    if not os.path.exists(PROJECT_PATH_DRIVE):
-        print(f"🛰️ Project folder not found in Drive. Creating it...")
-        !git clone {REPO_URL} {PROJECT_PATH_DRIVE}
-    else:
-        if not os.path.exists(os.path.join(PROJECT_PATH_DRIVE, "package.json")):
-            print(f"⚠️ Project incomplete in Drive. Repairing...")
-            !git clone {REPO_URL} /content/temp_repo
-            !cp -rn /content/temp_repo/. {PROJECT_PATH_DRIVE}/
-            shutil.rmtree("/content/temp_repo")
-
-    # 3. Sync project to local SSD
-    print("📦 Syncing project to local SSD...")
+    # 2. Sync project to local SSD
     if os.path.exists(PROJECT_PATH_LOCAL):
         shutil.rmtree(PROJECT_PATH_LOCAL)
-    shutil.copytree(PROJECT_PATH_DRIVE, PROJECT_PATH_LOCAL, ignore=shutil.ignore_patterns('node_modules', '.git'))
 
-    # 4. FLAT ASSET COPY (Most reliable way to avoid 404s)
-    # We copy all assets directly into the public/ root folder
-    print("🚚 Flattening and copying assets to public/ ...")
+    if os.path.exists(PROJECT_PATH_DRIVE):
+        print("📦 Syncing project to local SSD...")
+        shutil.copytree(PROJECT_PATH_DRIVE, PROJECT_PATH_LOCAL, ignore=shutil.ignore_patterns('node_modules', '.git', 'out'))
+    else:
+        print(f"🛰️ Project folder not found in Drive. Cloning from {REPO_URL}...")
+        !git clone {REPO_URL} {PROJECT_PATH_LOCAL}
+
+    # 3. FLAT ASSET COPY (Guarantee 404-free rendering)
+    # We copy all media directly into the public/ root folder
+    print("🚚 Copying assets to local SSD public folder...")
     public_path = os.path.join(PROJECT_PATH_LOCAL, "public")
+    os.makedirs(public_path, exist_ok=True)
 
     if os.path.exists(ASSET_SOURCE_DRIVE):
         for item in os.listdir(ASSET_SOURCE_DRIVE):
             s = os.path.join(ASSET_SOURCE_DRIVE, item)
             d = os.path.join(public_path, item)
-            if os.path.isfile(s) and item.lower().endswith(('.mp4', '.jpg', '.png', '.wav', '.mp3')):
+            if os.path.isfile(s) and item.lower().endswith(('.mp4', '.jpg', '.png', '.wav', '.mp3', '.ttf')):
                 shutil.copy2(s, d)
-        print(f"✅ Assets mirrored directly to: {public_path}")
+        print(f"✅ Assets ready in: {public_path}")
     else:
-        print(f"⚠️ Warning: Asset source folder not found at {ASSET_SOURCE_DRIVE}")
+        print(f"⚠️ Warning: Asset source folder {ASSET_SOURCE_DRIVE} not found!")
 
-    # 5. Switch to project directory
+    # 4. Switch to project directory
     %cd {PROJECT_PATH_LOCAL}
+
+    # 5. Clean Remotion and Webpack caches
+    !rm -rf .remotion node_modules/.cache
 
     # 6. Install Node.js
     if shutil.which("node") is None:
@@ -79,11 +77,11 @@ def setup_and_run():
     print("🟢 Ensuring browser is ready...")
     !npm run ensure
 
-    # 9. Render the video
+    # 9. Render the video with CACHE DISABLED for safety
     print("🎬 Rendering video...")
-    !npm run render
+    !npx remotion render src/index.ts Main out/video.mp4 --concurrency=1 --bundle-cache=false
 
-    # 10. Copy the result back to Google Drive
+    # 10. Copy result back
     if os.path.exists("out/video.mp4"):
         OUTPUT_DRIVE_DIR = os.path.join(PROJECT_PATH_DRIVE, "out")
         os.makedirs(OUTPUT_DRIVE_DIR, exist_ok=True)
@@ -96,11 +94,9 @@ setup_and_run()
 ```
 
 ## 📝 Troubleshooting JSON Paths
-The engine is now smart enough to find your files **regardless of the folder path** in your JSON.
+The engine extracts the filename from any path.
+Example: `"src": "/drive/renders/scene_1.mp4"` will correctly find `scene_1.mp4` in the SSD.
 
-Example:
-`"src": "/any/path/scene_1.mp4"` -> The engine will automatically find `scene_1.mp4` in your assets.
-
-**⚠️ Reminder:**
-- Set `"type": "video"` for all `.mp4` files.
-- Put your fonts in `public/fonts/` in your Drive.
+**⚠️ Checklist:**
+- Backgrounds ending in `.mp4` MUST have `"type": "video"`.
+- Ensure font files are in `public/fonts/` in your Drive.
