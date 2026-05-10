@@ -16,7 +16,6 @@ Copy and paste the following into a **single** Colab code cell and run it.
 from google.colab import drive
 import os
 import shutil
-import subprocess
 
 # 1. Mount Google Drive
 if not os.path.exists('/content/drive'):
@@ -24,34 +23,41 @@ if not os.path.exists('/content/drive'):
 
 # --- CONFIGURATION ---
 # @markdown ### 📂 Project Path in Google Drive
+# @markdown Example: /content/drive/MyDrive/remotion-engine
 PROJECT_PATH_DRIVE = "/content/drive/MyDrive/remotion-engine" # @param {type:"string"}
 PROJECT_PATH_LOCAL = "/content/remotion-engine"
 
-def run_render():
+def setup_and_render():
     print("📦 Step 1: Setting up local environment...")
 
+    # Pre-flight check
     if not os.path.exists(PROJECT_PATH_DRIVE):
-        print(f"❌ ERROR: Project not found at {PROJECT_PATH_DRIVE}")
+        print(f"❌ ERROR: Project not found at {PROJECT_PATH_DRIVE}. Please check the path.")
         return
 
-    # Clean start
+    pkg_path = os.path.join(PROJECT_PATH_DRIVE, "package.json")
+    if not os.path.exists(pkg_path):
+        print(f"❌ ERROR: package.json not found in {PROJECT_PATH_DRIVE}")
+        print("Folder contents:")
+        print(os.listdir(PROJECT_PATH_DRIVE))
+        return
+
+    # Clean local path
     if os.path.exists(PROJECT_PATH_LOCAL):
         shutil.rmtree(PROJECT_PATH_LOCAL)
 
-    os.makedirs(PROJECT_PATH_LOCAL, exist_ok=True)
+    # Copy files
+    print(f"🚚 Copying files to local SSD...")
+    shutil.copytree(PROJECT_PATH_DRIVE, PROJECT_PATH_LOCAL, ignore=shutil.ignore_patterns('node_modules', '.git'))
 
-    # Copy from Drive to Local
-    print(f"🚚 Copying files from Drive to local SSD...")
-    !cp -r {PROJECT_PATH_DRIVE}/. {PROJECT_PATH_LOCAL}/
+    # Change directory using magic command for proper behavior in Colab
+    %cd {PROJECT_PATH_LOCAL}
 
-    # Remove any existing node_modules or lockfiles from Drive to prevent conflicts
-    for f in ["node_modules", "package-lock.json"]:
-        p = os.path.join(PROJECT_PATH_LOCAL, f)
-        if os.path.exists(p):
-            if os.path.isdir(p): shutil.rmtree(p)
-            else: os.remove(p)
-
-    os.chdir(PROJECT_PATH_LOCAL)
+    print(f"📍 Current working directory: {os.getcwd()}")
+    if not os.path.exists("package.json"):
+        print("❌ ERROR: package.json is missing in local folder after copy!")
+        print(os.listdir("."))
+        return
 
     # 3. Install Node.js
     print("🟢 Step 2: Installing Node.js...")
@@ -79,5 +85,5 @@ def run_render():
     else:
         print("\n❌ ERROR: Render failed. video.mp4 not found.")
 
-run_render()
+setup_and_render()
 ```
