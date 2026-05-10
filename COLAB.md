@@ -1,22 +1,17 @@
-# 🚀 Running on Google Colab
+# 🚀 One-Click Remotion Engine for Colab
 
-To run this Remotion project on Google Colab, follow these steps.
+This guide provides a "One-Click" experience. Running the code cell below will automatically:
+1. Mount your Google Drive.
+2. Setup the project structure if it's missing.
+3. Install all necessary software (Node.js, Chrome).
+4. Render your video and save it back to your Drive.
 
-## ⚠️ Important Setup Requirement
-For this to work, you must have the **entire project** (all files and folders) in your Google Drive.
-The files should look like this in your Drive folder:
-- `src/` (folder)
-- `public/` (folder)
-- `package.json` (file)
-- `tsconfig.json` (file)
-- ... (other files)
+## 🎬 Automated Render Cell
 
-## Colab Code Cell
-
-Copy and paste the following into a **single** Colab code cell and run it.
+Copy and paste the following into a Colab code cell and run it:
 
 ```python
-# @title 🎬 Remotion Video Engine Render
+# @title 🚀 Start Automated Render
 from google.colab import drive
 import os
 import shutil
@@ -28,67 +23,83 @@ if not os.path.exists('/content/drive'):
 
 # --- CONFIGURATION ---
 # @markdown ### 📂 Project Path in Google Drive
-# @markdown Enter the path where you saved this project (e.g., /content/drive/MyDrive/remotion-engine):
+# @markdown This is where your project files and the final video will live.
 PROJECT_PATH_DRIVE = "/content/drive/MyDrive/remotion-engine" # @param {type:"string"}
 PROJECT_PATH_LOCAL = "/content/remotion-engine"
+# @markdown ### 🔗 Git Repository (Optional)
+# @markdown If the project is missing from your Drive, it will be cloned from here.
+REPO_URL = "https://github.com/mailsabbirdu-bot/remotion-engine.git" # @param {type:"string"}
 
-def run_render():
-    print("📦 Step 1: Setting up local environment...")
-
-    # 1. Check if Drive folder exists
+def setup_and_run():
+    # 2. Ensure Project exists in Drive
     if not os.path.exists(PROJECT_PATH_DRIVE):
-        print(f"❌ ERROR: Folder not found at {PROJECT_PATH_DRIVE}")
-        print("Please check your Google Drive and ensure the path is correct.")
-        return
+        print(f"🛰️ Project folder not found in Drive. Creating it at {PROJECT_PATH_DRIVE}...")
+        !git clone {REPO_URL} {PROJECT_PATH_DRIVE}
+    else:
+        # Check if project is complete
+        if not os.path.exists(os.path.join(PROJECT_PATH_DRIVE, "package.json")):
+            print(f"⚠️ Project folder found but seems incomplete (missing package.json).")
+            print(f"🔄 Attempting to repair/sync from repository...")
+            # Use a temporary clone to fill missing files
+            !git clone {REPO_URL} /content/temp_repo
+            !cp -rn /content/temp_repo/. {PROJECT_PATH_DRIVE}/
+            shutil.rmtree("/content/temp_repo")
 
-    # 2. Check for package.json (The most important file)
-    pkg_path = os.path.join(PROJECT_PATH_DRIVE, "package.json")
-    if not os.path.exists(pkg_path):
-        print(f"❌ ERROR: 'package.json' is missing in {PROJECT_PATH_DRIVE}")
-        print("Here are the files currently in your Drive folder:")
-        print(os.listdir(PROJECT_PATH_DRIVE))
-        print("\n💡 SOLUTION: Make sure you uploaded ALL files from the project, not just a few folders.")
-        return
+    # 3. Create necessary subfolders if missing
+    os.makedirs(os.path.join(PROJECT_PATH_DRIVE, "public/fonts"), exist_ok=True)
+    os.makedirs(os.path.join(PROJECT_PATH_DRIVE, "src/components"), exist_ok=True)
+    os.makedirs(os.path.join(PROJECT_PATH_DRIVE, "out"), exist_ok=True)
 
-    # 3. Setup local SSD folder
+    # 4. Sync to local SSD (Faster rendering & avoids Drive sync issues)
+    print("📦 Syncing project to local SSD...")
     if os.path.exists(PROJECT_PATH_LOCAL):
         shutil.rmtree(PROJECT_PATH_LOCAL)
 
-    # 4. Copy everything to SSD
-    print(f"🚚 Copying project to local SSD (Faster rendering)...")
+    # Copy from Drive to Local, preserving your manual edits to master_remotion.json
     shutil.copytree(PROJECT_PATH_DRIVE, PROJECT_PATH_LOCAL, ignore=shutil.ignore_patterns('node_modules', '.git'))
 
-    # 5. Switch directory using Magic Command
+    # 5. Switch to project directory
     %cd {PROJECT_PATH_LOCAL}
 
     # 6. Install Node.js
-    print("🟢 Step 2: Installing Node.js...")
-    !curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - > /dev/null
-    !sudo apt-get install -y nodejs > /dev/null
+    if shutil.which("node") is None:
+        print("🟢 Installing Node.js...")
+        !curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - > /dev/null
+        !sudo apt-get install -y nodejs > /dev/null
+    else:
+        print("✅ Node.js is already installed.")
 
     # 7. Install Dependencies
-    print("🟢 Step 3: Installing NPM packages...")
-    !npm install --no-audit --no-fund
+    print("🟢 Installing NPM packages (this may take a minute)...")
+    # We delete package-lock.json to ensure a clean install on the local environment
+    if os.path.exists("package-lock.json"):
+        os.remove("package-lock.json")
+    !npm install --no-audit --no-fund --quiet
 
     # 8. Setup Browser
-    print("🟢 Step 4: Ensuring browser is ready...")
+    print("🟢 Ensuring browser is ready...")
     !npm run ensure
 
-    # 9. Render
-    print("🎬 Step 5: Rendering video...")
+    # 9. Render the video
+    print("🎬 Rendering video...")
     !npm run render
 
-    # 10. Copy back to Drive
+    # 10. Copy the result back to Google Drive
     if os.path.exists("out/video.mp4"):
         OUTPUT_DRIVE_DIR = os.path.join(PROJECT_PATH_DRIVE, "out")
         os.makedirs(OUTPUT_DRIVE_DIR, exist_ok=True)
         shutil.copy("out/video.mp4", os.path.join(OUTPUT_DRIVE_DIR, "video.mp4"))
-        print(f"\n✅ SUCCESS! Video saved to: {OUTPUT_DRIVE_DIR}/video.mp4")
+        print(f"\n✅ SUCCESS! Your video is ready at: {OUTPUT_DRIVE_DIR}/video.mp4")
     else:
-        print("\n❌ ERROR: Render failed. Check logs above.")
+        print("\n❌ ERROR: Render failed. Please check the logs above.")
 
-run_render()
+setup_and_run()
 ```
 
-## Why copy to SSD?
-Google Drive is slow and doesn't support complex file operations needed by `npm`. We copy the project to `/content/remotion-engine` (Colab's local high-speed SSD) to ensure stability and speed.
+## 📝 Usage Tips
+1. **Fonts**: Place your custom fonts in the `public/fonts/` folder in your Google Drive.
+2. **Configuration**: Edit `src/master_remotion.json` directly in your Google Drive to change the video content.
+3. **One-Click**: Once your fonts and JSON are ready, just run the cell above!
+
+## 🛠️ How it works
+The script is smart enough to detect if you have the project in your Drive. If you don't, it will automatically download it from GitHub for you. It then moves the files to Colab's high-speed local storage to ensure the render is fast and doesn't crash.
