@@ -31,10 +31,14 @@ def setup_and_run():
     if os.path.exists(PROJECT_PATH_LOCAL):
         shutil.rmtree(PROJECT_PATH_LOCAL)
 
-    if os.path.exists(PROJECT_PATH_DRIVE):
-        shutil.copytree(PROJECT_PATH_DRIVE, PROJECT_PATH_LOCAL, ignore=shutil.ignore_patterns('node_modules', '.git', 'out'))
+    # Check if project exists and is valid in Drive
+    drive_is_valid = os.path.exists(PROJECT_PATH_DRIVE) and os.path.exists(os.path.join(PROJECT_PATH_DRIVE, "package.json"))
+
+    if drive_is_valid:
+        print(f"✅ Found project in Drive. Mirroring to local SSD...")
+        shutil.copytree(PROJECT_PATH_DRIVE, PROJECT_PATH_LOCAL, ignore=shutil.ignore_patterns('node_modules', '.git', 'out', 'build'))
     else:
-        print(f"🛰️ Project folder not found in Drive. Cloning from GitHub...")
+        print(f"🛰️ Project folder not found or invalid in Drive. Cloning from GitHub...")
         !git clone {REPO_URL} {PROJECT_PATH_LOCAL}
 
     # 3. FORCE CLEAN CACHES
@@ -47,24 +51,25 @@ def setup_and_run():
     public_path = os.path.join(PROJECT_PATH_LOCAL, "public")
     os.makedirs(public_path, exist_ok=True)
 
+    # Copy background assets
     if os.path.exists(ASSET_SOURCE_DRIVE):
         assets = os.listdir(ASSET_SOURCE_DRIVE)
         for item in assets:
             s = os.path.join(ASSET_SOURCE_DRIVE, item)
             if os.path.isfile(s):
                 shutil.copy2(s, os.path.join(public_path, item))
-
-        # Also copy fonts from Drive to the public root
-        drive_fonts = os.path.join(PROJECT_PATH_DRIVE, "public/fonts")
-        if os.path.exists(drive_fonts):
-            for f in os.listdir(drive_fonts):
-                shutil.copy2(os.path.join(drive_fonts, f), os.path.join(public_path, f))
-
-        print(f"✅ Assets mirrored directly to: {public_path}")
-        print("Ready Files:", [f for f in os.listdir(public_path) if os.path.isfile(os.path.join(public_path, f))])
+        print(f"✅ Background assets mirrored to: {public_path}")
     else:
-        print(f"❌ Error: Asset source {ASSET_SOURCE_DRIVE} not found!")
-        return
+        print(f"⚠️ Warning: Asset source {ASSET_SOURCE_DRIVE} not found! Backgrounds might fail.")
+
+    # Mirror fonts from Drive if they exist, otherwise they should be in public/ already if cloned
+    drive_fonts = os.path.join(PROJECT_PATH_DRIVE, "public/fonts")
+    if os.path.exists(drive_fonts):
+        for f in os.listdir(drive_fonts):
+            shutil.copy2(os.path.join(drive_fonts, f), os.path.join(public_path, f))
+        print("✅ Fonts mirrored from Drive.")
+
+    print("Ready Files:", [f for f in os.listdir(public_path) if os.path.isfile(os.path.join(public_path, f))])
 
     # 5. Switch to project directory
     %cd {PROJECT_PATH_LOCAL}
