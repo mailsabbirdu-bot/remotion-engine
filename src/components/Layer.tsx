@@ -1,8 +1,9 @@
 import React from 'react';
-import { useCurrentFrame, interpolate, AbsoluteFill } from 'remotion';
+import { useCurrentFrame, interpolate } from 'remotion';
 import { getEasing, interpolateKeyframes } from '../utils/animation-utils';
 import { WordByWordText } from './WordByWordText';
 import { TextBox } from './TextBox';
+import { resolveAsset } from '../utils/path-utils';
 
 export interface LayerData {
   id: string;
@@ -115,7 +116,10 @@ export const Layer: React.FC<LayerProps> = ({ layer, banglaFontFamily, englishFo
         </TextBox>
       )}
       {layer.type === 'image' && (
-        <img src={layer.content} style={{ width: layer.style.width || 'auto', height: layer.style.height || 'auto' }} alt="" />
+        <img src={resolveAsset(layer.content)} style={{ width: layer.style.width || 'auto', height: layer.style.height || 'auto' }} alt="" />
+      )}
+      {layer.type === 'video' && (
+        <video src={resolveAsset(layer.content)} style={{ width: layer.style.width || 'auto', height: layer.style.height || 'auto' }} />
       )}
     </div>
   );

@@ -1,6 +1,6 @@
 # 🚀 One-Click Remotion Engine for Colab
 
-This guide provides a "One-Click" experience. Running the code cell below will automatically setup your environment and render your video.
+This guide provides a "One-Click" experience for rendering videos on Google Colab.
 
 ## 🎬 Automated Render Cell
 
@@ -35,11 +35,7 @@ def setup_and_run():
             !cp -rn /content/temp_repo/. {PROJECT_PATH_DRIVE}/
             shutil.rmtree("/content/temp_repo")
 
-    # 3. Create necessary subfolders
-    os.makedirs(os.path.join(PROJECT_PATH_DRIVE, "public/fonts"), exist_ok=True)
-    os.makedirs(os.path.join(PROJECT_PATH_DRIVE, "out"), exist_ok=True)
-
-    # 4. Sync to local SSD
+    # 3. Setup local SSD
     print("📦 Syncing project to local SSD...")
     if os.path.exists(PROJECT_PATH_LOCAL):
         shutil.rmtree(PROJECT_PATH_LOCAL)
@@ -47,17 +43,11 @@ def setup_and_run():
     shutil.copytree(PROJECT_PATH_DRIVE, PROJECT_PATH_LOCAL, ignore=shutil.ignore_patterns('node_modules', '.git'))
 
     # --- IMPORTANT FIX FOR GOOGLE DRIVE PATHS ---
-    # Create a symlink so Remotion can serve files from /content/drive
-    # If your JSON has "/content/drive/MyDrive/...", it will now work!
-    public_content_path = os.path.join(PROJECT_PATH_LOCAL, "public/content")
-    if os.path.exists(public_content_path):
-        if os.path.islink(public_content_path): os.unlink(public_content_path)
-        else: shutil.rmtree(public_content_path)
-
+    # We link /content/drive/MyDrive to public/drive so Remotion can serve them
+    # Use paths like "/content/drive/MyDrive/myvideo.mp4" in your JSON
     os.makedirs(os.path.join(PROJECT_PATH_LOCAL, "public"), exist_ok=True)
-    # This creates /content/remotion-engine/public/content which points to /content
-    !ln -s /content {PROJECT_PATH_LOCAL}/public/content
-    print("🔗 Linked Google Drive to Remotion public folder.")
+    !ln -s "/content/drive/MyDrive" {PROJECT_PATH_LOCAL}/public/drive
+    print("🔗 Linked Google Drive MyDrive to Remotion public/drive.")
 
     # 5. Switch to project directory
     %cd {PROJECT_PATH_LOCAL}
@@ -95,6 +85,7 @@ setup_and_run()
 ```
 
 ## 📝 Path Configuration in JSON
-If your assets are in Google Drive, use their full Colab path in your `master_remotion.json`.
+For assets in your Google Drive, use their absolute path in your `master_remotion.json`.
+The engine will automatically resolve them.
+
 Example: `/content/drive/MyDrive/Counterism_Studio_V4/renders/scene_1.mp4`
-The script automatically handles making these files accessible to the Remotion engine.
