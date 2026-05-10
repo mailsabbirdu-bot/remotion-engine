@@ -62,12 +62,25 @@ def setup_and_run():
     else:
         print(f"⚠️ Warning: Asset source {ASSET_SOURCE_DRIVE} not found! Backgrounds might fail.")
 
-    # Mirror fonts from Drive if they exist, otherwise they should be in public/ already if cloned
-    drive_fonts = os.path.join(PROJECT_PATH_DRIVE, "public/fonts")
-    if os.path.exists(drive_fonts):
-        for f in os.listdir(drive_fonts):
-            shutil.copy2(os.path.join(drive_fonts, f), os.path.join(public_path, f))
-        print("✅ Fonts mirrored from Drive.")
+    # MIRROR FONTS - Search in multiple common locations
+    font_sources = [
+        os.path.join(PROJECT_PATH_DRIVE, "public/fonts"),
+        os.path.join(PROJECT_PATH_DRIVE, "fonts"),
+        os.path.join(PROJECT_PATH_LOCAL, "public/fonts") # Fallback if already in project
+    ]
+
+    found_fonts = 0
+    for src in font_sources:
+        if os.path.exists(src):
+            for f in os.listdir(src):
+                if f.lower().endswith(('.ttf', '.otf', '.woff', '.woff2')):
+                    shutil.copy2(os.path.join(src, f), os.path.join(public_path, f))
+                    found_fonts += 1
+
+    if found_fonts > 0:
+        print(f"✅ {found_fonts} fonts mirrored to public root.")
+    else:
+        print("⚠️ Warning: No fonts found in Drive/project folders!")
 
     print("Ready Files:", [f for f in os.listdir(public_path) if os.path.isfile(os.path.join(public_path, f))])
 
