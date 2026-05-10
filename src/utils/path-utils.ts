@@ -2,19 +2,21 @@ import { staticFile } from 'remotion';
 
 /**
  * Resolves an asset path to a URL that Remotion can handle.
- * Bypasses folder structures by extracting the filename and looking
- * in the root of the public folder (where Colab mirrors assets).
+ * Since assets are mirrored directly into the public/ folder root,
+ * we extract the filename and resolve it using staticFile.
  */
 export const resolveAsset = (path: string): string => {
   if (!path) return '';
   if (path.startsWith('http')) return path;
 
-  // Extract just the filename (e.g. "scene_1.mp4")
-  const filename = path.split('/').pop();
+  // Extract only the filename (e.g. "scene_1.mp4" from any path)
+  const parts = path.split('/');
+  const filename = parts[parts.length - 1];
 
-  // If we have a filename, we assume the Colab script put it in public/
   if (filename) {
-      return staticFile(filename);
+    const resolved = staticFile(filename);
+    console.log(`Resolving: ${path} -> ${resolved}`);
+    return resolved;
   }
 
   return path;
