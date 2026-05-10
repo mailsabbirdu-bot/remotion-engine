@@ -94,6 +94,8 @@ export const Layer: React.FC<LayerProps> = ({ layer, banglaFontFamily, englishFo
     opacity,
   };
 
+  const resolvedContent = resolveAsset(layer.content);
+
   return (
     <div style={containerStyle}>
       {layer.type === 'text' && (
@@ -116,10 +118,10 @@ export const Layer: React.FC<LayerProps> = ({ layer, banglaFontFamily, englishFo
         </TextBox>
       )}
       {layer.type === 'image' && (
-        <img src={resolveAsset(layer.content)} style={{ width: layer.style.width || 'auto', height: layer.style.height || 'auto' }} alt="" />
+        <img src={resolvedContent} style={{ width: layer.style.width || 'auto', height: layer.style.height || 'auto' }} alt="" />
       )}
       {layer.type === 'video' && (
-        <OffthreadVideo src={resolveAsset(layer.content)} style={{ width: layer.style.width || 'auto', height: layer.style.height || 'auto' }} />
+        <OffthreadVideo src={resolvedContent} style={{ width: layer.style.width || 'auto', height: layer.style.height || 'auto' }} />
       )}
     </div>
   );

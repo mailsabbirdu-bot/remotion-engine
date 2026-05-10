@@ -1,6 +1,6 @@
 # 🚀 Automated Remotion Engine for Colab
 
-This guide provides the most stable "One-Click" experience for rendering videos.
+This guide provides the most stable "One-Click" experience.
 
 ## 🎬 Automated Render Cell
 
@@ -18,30 +18,32 @@ if not os.path.exists('/content/drive'):
     drive.mount('/content/drive')
 
 # --- CONFIGURATION ---
-# @markdown ### 📂 Project Path in Google Drive
 PROJECT_PATH_DRIVE = "/content/drive/MyDrive/remotion-engine" # @param {type:"string"}
 PROJECT_PATH_LOCAL = "/content/remotion-engine"
 REPO_URL = "https://github.com/mailsabbirdu-bot/remotion-engine.git" # @param {type:"string"}
 
-# @markdown ### 📽️ Asset Source Folder (Google Drive)
-# @markdown Path where your scene videos are stored:
+# Folder in your Drive where your scene videos (scene_1.mp4, etc.) are stored:
 ASSET_SOURCE_DRIVE = "/content/drive/MyDrive/Counterism_Studio_V4/renders" # @param {type:"string"}
 
 def setup_and_run():
     # 2. Sync project to local SSD
+    print("📦 Syncing project to local SSD...")
     if os.path.exists(PROJECT_PATH_LOCAL):
         shutil.rmtree(PROJECT_PATH_LOCAL)
 
     if os.path.exists(PROJECT_PATH_DRIVE):
-        print("📦 Syncing project to local SSD...")
         shutil.copytree(PROJECT_PATH_DRIVE, PROJECT_PATH_LOCAL, ignore=shutil.ignore_patterns('node_modules', '.git', 'out'))
     else:
         print(f"🛰️ Project folder not found in Drive. Cloning from {REPO_URL}...")
         !git clone {REPO_URL} {PROJECT_PATH_LOCAL}
 
-    # 3. FLAT ASSET COPY (Guarantee 404-free rendering)
-    # We copy all media directly into the public/ root folder
-    print("🚚 Copying assets to local SSD public folder...")
+    # 3. CLEAN CACHES (Prevent "Not Found" errors from old bundles)
+    print("🧹 Cleaning caches...")
+    !rm -rf {PROJECT_PATH_LOCAL}/.remotion
+    !rm -rf {PROJECT_PATH_LOCAL}/node_modules/.cache
+
+    # 4. FLAT ASSET COPY (Guarantees Remotion can find the files)
+    print("🚚 Flattening and copying assets to project root...")
     public_path = os.path.join(PROJECT_PATH_LOCAL, "public")
     os.makedirs(public_path, exist_ok=True)
 
@@ -52,14 +54,13 @@ def setup_and_run():
             if os.path.isfile(s) and item.lower().endswith(('.mp4', '.jpg', '.png', '.wav', '.mp3', '.ttf')):
                 shutil.copy2(s, d)
         print(f"✅ Assets ready in: {public_path}")
+        print("Mirrored Files:", [f for f in os.listdir(public_path) if os.path.isfile(os.path.join(public_path, f))])
     else:
-        print(f"⚠️ Warning: Asset source folder {ASSET_SOURCE_DRIVE} not found!")
+        print(f"❌ Error: Asset source folder {ASSET_SOURCE_DRIVE} not found!")
+        return
 
-    # 4. Switch to project directory
+    # 5. Switch to project directory
     %cd {PROJECT_PATH_LOCAL}
-
-    # 5. Clean Remotion and Webpack caches
-    !rm -rf .remotion node_modules/.cache
 
     # 6. Install Node.js
     if shutil.which("node") is None:
@@ -77,8 +78,8 @@ def setup_and_run():
     print("🟢 Ensuring browser is ready...")
     !npm run ensure
 
-    # 9. Render the video with CACHE DISABLED for safety
-    print("🎬 Rendering video...")
+    # 9. Render the video with CACHE DISABLED
+    print("🎬 Rendering video (this may take a few minutes)...")
     !npx remotion render src/index.ts Main out/video.mp4 --concurrency=1 --bundle-cache=false
 
     # 10. Copy result back
@@ -88,15 +89,15 @@ def setup_and_run():
         shutil.copy("out/video.mp4", os.path.join(OUTPUT_DRIVE_DIR, "video.mp4"))
         print(f"\n✅ SUCCESS! Video saved at: {OUTPUT_DRIVE_DIR}/video.mp4")
     else:
-        print("\n❌ ERROR: Render failed. Check the logs above.")
+        print("\n❌ ERROR: Render failed. Please check the logs above for any red error messages.")
 
 setup_and_run()
 ```
 
-## 📝 Troubleshooting JSON Paths
-The engine extracts the filename from any path.
-Example: `"src": "/drive/renders/scene_1.mp4"` will correctly find `scene_1.mp4` in the SSD.
+## 📝 Troubleshooting JSON
+The engine extracts the filename from your path.
+Example: `"src": "/any/path/scene_1.mp4"` -> Engine will look for `scene_1.mp4` in the project.
 
-**⚠️ Checklist:**
+**⚠️ IMPORTANT Checklist:**
 - Backgrounds ending in `.mp4` MUST have `"type": "video"`.
-- Ensure font files are in `public/fonts/` in your Drive.
+- Ensure your font files (`Audiowide-Regular.ttf`, `Sohid Osman Hadi.ttf`) are in your Drive folder.
