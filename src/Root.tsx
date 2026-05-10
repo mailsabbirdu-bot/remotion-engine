@@ -8,6 +8,7 @@ import { resolveAsset } from './utils/path-utils';
 const waitForFont = delayRender('Loading Fonts');
 
 const loadFonts = async () => {
+  // SSR check
   if (typeof window === 'undefined' || !('FontFace' in window)) {
     continueRender(waitForFont);
     return;
@@ -24,7 +25,7 @@ const loadFonts = async () => {
   };
 
   // Dynamically determine fonts from master_remotion.json
-  const fonts = [
+  const fontsToLoad = [
     {
       name: data.englishFont,
       url: getFontUrl(data.englishFont)
@@ -33,31 +34,34 @@ const loadFonts = async () => {
       name: data.banglaFont,
       url: getFontUrl(data.banglaFont)
     }
-  ];
+  ].filter(f => f.name && f.url);
+
+  console.log("[FONT_SYSTEM] Initializing font load for:", fontsToLoad);
 
   try {
     await Promise.all(
-      fonts.map(async (f) => {
-        if (!f.url) return;
+      fontsToLoad.map(async (f) => {
         try {
-          console.log(`[FONT_DEBUG] Attempting to load: "${f.name}" from "${f.url}"`);
-          const ff = new FontFace(f.name, `url("${f.url}")`);
-          const loaded = await ff.load();
-          document.fonts.add(loaded);
-          console.log(`[FONT_DEBUG] Successfully loaded: "${f.name}"`);
+          console.log(`[FONT_SYSTEM] Loading: "${f.name}" from "${f.url}"`);
+          // We wrap the name in quotes to handle font names with spaces correctly
+          const fontFace = new FontFace(f.name, `url("${f.url}")`);
+          const loadedFace = await fontFace.load();
+          document.fonts.add(loadedFace);
+          console.log(`[FONT_SYSTEM] SUCCESS: "${f.name}" is ready.`);
         } catch (e) {
-          console.error(`[FONT_DEBUG_ERROR] Could not load font "${f.name}" from "${f.url}":`, e);
+          console.error(`[FONT_SYSTEM] ERROR loading "${f.name}":`, e);
         }
       })
     );
   } catch (err) {
-    console.error("[FONT_LOAD_CRITICAL_ERROR]", err);
+    console.error("[FONT_SYSTEM] CRITICAL ERROR during font loading:", err);
   } finally {
-    // Always continue render even if some fonts failed (will fallback to system fonts)
+    // Crucial: Always allow rendering to proceed
     continueRender(waitForFont);
   }
 };
 
+// Fire and forget, the delayRender handles the sync
 loadFonts();
 
 export const RemotionRoot: React.FC = () => {
