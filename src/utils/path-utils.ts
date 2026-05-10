@@ -14,22 +14,23 @@ export const resolveAsset = (path: string): string => {
   }
 
   // Extract only the filename (e.g. "scene_1.mp4" from "/drive/path/scene_1.mp4")
-  const parts = path.split(/[/\\]/).filter(p => p.length > 0);
-  const filename = parts[parts.length - 1];
+  // We handle both forward and backslashes, and then take the last part.
+  const parts = path.split(/[/\\]/);
+  const filename = parts.pop() || '';
 
   if (filename) {
     try {
       // staticFile() is the recommended way to reference files in the public/ folder.
-      // It returns a path that works in both Studio and during Render.
+      // In Remotion 4.0+, it will return the correct path to the asset in the public folder.
       const resolved = staticFile(filename);
 
-      // Log for debugging (will show up in Remotion logs)
-      console.log(`[ASSET_RESOLVE] "${path}" -> "${resolved}"`);
+      // Explicitly log for debugging in the browser console
+      console.log(`[RESOLVE] Input: "${path}" -> Filename: "${filename}" -> Output: "${resolved}"`);
 
       return resolved;
     } catch (e) {
-      console.error(`[ASSET_RESOLVE_ERROR] Failed to resolve ${filename}:`, e);
-      return filename;
+      console.error(`[RESOLVE_ERROR] Failed for ${filename}:`, e);
+      return `/${filename}`; // Fallback to root-relative
     }
   }
 
