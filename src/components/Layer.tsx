@@ -1,7 +1,7 @@
 import React from 'react';
 import { useCurrentFrame, interpolate, OffthreadVideo } from 'remotion';
 import { getEasing, interpolateKeyframes } from '../utils/animation-utils';
-import { WordByWordText } from './WordByWordText';
+import { WordByWordText, TextAnimationMode } from './WordByWordText';
 import { TextBox } from './TextBox';
 import { resolveAsset } from '../utils/path-utils';
 
@@ -29,6 +29,10 @@ export interface LayerData {
     padding?: number;
     fill?: string;
   };
+  textAnimation?: {
+    mode?: TextAnimationMode;
+    duration?: number;
+  };
 }
 
 interface LayerProps {
@@ -39,7 +43,7 @@ interface LayerProps {
 
 export const Layer: React.FC<LayerProps> = ({ layer, banglaFontFamily, englishFontFamily }) => {
   const frame = useCurrentFrame();
-  const { start, duration, animationIn, animationOut, keyframes } = layer;
+  const { start, duration, animationIn, animationOut, keyframes, textAnimation } = layer;
 
   if (frame < start || frame >= start + duration) return null;
 
@@ -111,7 +115,8 @@ export const Layer: React.FC<LayerProps> = ({ layer, banglaFontFamily, englishFo
             }}
             banglaFontFamily={banglaFontFamily}
             englishFontFamily={englishFontFamily}
-            duration={layer.duration}
+            duration={textAnimation?.duration ?? (layer.duration / 2)}
+            animationMode={textAnimation?.mode || 'word'}
           />
         </TextBox>
       )}
