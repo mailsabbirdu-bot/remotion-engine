@@ -1,5 +1,5 @@
 import React from 'react';
-import { useCurrentFrame, interpolate } from 'remotion';
+import { useCurrentFrame, interpolate, OffthreadVideo } from 'remotion';
 import { getEasing, interpolateKeyframes } from '../utils/animation-utils';
 import { WordByWordText } from './WordByWordText';
 import { TextBox } from './TextBox';
@@ -119,7 +119,7 @@ export const Layer: React.FC<LayerProps> = ({ layer, banglaFontFamily, englishFo
         <img src={resolveAsset(layer.content)} style={{ width: layer.style.width || 'auto', height: layer.style.height || 'auto' }} alt="" />
       )}
       {layer.type === 'video' && (
-        <video src={resolveAsset(layer.content)} style={{ width: layer.style.width || 'auto', height: layer.style.height || 'auto' }} />
+        <OffthreadVideo src={resolveAsset(layer.content)} style={{ width: layer.style.width || 'auto', height: layer.style.height || 'auto' }} />
       )}
     </div>
   );
