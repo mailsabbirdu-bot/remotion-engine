@@ -8,7 +8,6 @@ import { resolveAsset } from './utils/path-utils';
 const waitForFont = delayRender('Loading Fonts');
 
 const loadFonts = async () => {
-  // SSR check
   if (typeof window === 'undefined' || !('FontFace' in window)) {
     continueRender(waitForFont);
     return;
@@ -16,59 +15,47 @@ const loadFonts = async () => {
 
   const getFontUrl = (name: string) => {
     if (!name) return '';
-    // If it already has an extension, use it as is
     if (/\.(ttf|otf|woff2?)$/i.test(name)) {
       return resolveAsset(name);
     }
-    // Default to .ttf if no extension provided
     return resolveAsset(`${name}.ttf`);
   };
 
-  // Dynamically determine fonts from master_remotion.json
-  // We use the names from JSON as the font-family identifiers
   const fontsToLoad = [
-    {
-      type: 'English',
-      name: data.englishFont,
-      url: getFontUrl(data.englishFont)
-    },
-    {
-      type: 'Bangla',
-      name: data.banglaFont,
-      url: getFontUrl(data.banglaFont)
-    }
+    { type: 'English', name: data.englishFont, url: getFontUrl(data.englishFont) },
+    { type: 'Bangla', name: data.banglaFont, url: getFontUrl(data.banglaFont) }
   ].filter(f => f.name && f.url);
 
-  console.log(`[FONT_SYSTEM] Blueprint requested English: "${data.englishFont}", Bangla: "${data.banglaFont}"`);
+  console.log(`[FONT_SYSTEM] Blueprint Config: English="${data.englishFont}", Bangla="${data.banglaFont}"`);
 
   try {
     await Promise.all(
       fontsToLoad.map(async (f) => {
         try {
-          console.log(`[FONT_SYSTEM] [${f.type}] Attempting to load font-face "${f.name}" from "${f.url}"`);
-          const fontFace = new FontFace(f.name, `url("${f.url}")`);
+          // Encode spaces for URL
+          const safeUrl = f.url.includes('%') ? f.url : encodeURI(f.url);
+          console.log(`[FONT_SYSTEM] [${f.type}] Attempting registration: Name="${f.name}", URL="${safeUrl}"`);
+
+          const fontFace = new FontFace(f.name, `url("${safeUrl}")`);
           const loadedFace = await fontFace.load();
           document.fonts.add(loadedFace);
-          console.log(`[FONT_SYSTEM] [${f.type}] SUCCESS: Font-face "${f.name}" registered and ready.`);
+
+          console.log(`[FONT_SYSTEM] [${f.type}] SUCCESS: Font-face "${f.name}" is now available in the document.`);
         } catch (e) {
-          console.error(`[FONT_SYSTEM] [${f.type}] FAILED to load "${f.name}" from "${f.url}":`, e);
-          console.warn(`[FONT_SYSTEM] [${f.type}] The engine will try to use system fallbacks for "${f.name}".`);
+          console.error(`[FONT_SYSTEM] [${f.type}] FAILED to load font "${f.name}":`, e);
         }
       })
     );
   } catch (err) {
-    console.error("[FONT_SYSTEM] CRITICAL ERROR during font loading process:", err);
+    console.error("[FONT_SYSTEM] CRITICAL ERROR during font loading:", err);
   } finally {
-    // Crucial: Always allow rendering to proceed even if fonts fail
     continueRender(waitForFont);
   }
 };
 
-// Fire and forget, the delayRender handles the sync
 loadFonts();
 
 export const RemotionRoot: React.FC = () => {
-  // Calculate total duration based on scenes and transitions
   const totalDuration = data.scenes.reduce((acc, scene, index) => {
     const transitionOverlap = index < data.scenes.length - 1 ? (scene.transition?.duration || 0) : 0;
     return acc + scene.duration - transitionOverlap;
