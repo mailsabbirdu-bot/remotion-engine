@@ -6,7 +6,7 @@
   "scripts": {
     "start": "remotion preview src/index.ts",
     "build": "remotion bundle src/index.ts out/bundle.js",
-    "render": "remotion render src/index.ts Main out/video.mp4 --concurrency=1",
+    "render": "remotion render src/index.ts Main out/video.mp4 --concurrency=1 --bundle-cache=false",
     "typecheck": "tsc",
     "ensure": "remotion browser ensure"
   },
