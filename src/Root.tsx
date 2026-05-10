@@ -9,6 +9,7 @@ const waitForFont = delayRender('Loading Fonts');
 
 const loadFonts = async () => {
   if (typeof window === 'undefined' || !('FontFace' in window)) {
+    continueRender(waitForFont);
     return;
   }
 
@@ -21,12 +22,13 @@ const loadFonts = async () => {
     await Promise.all(
       fonts.map(async (f) => {
         try {
+          console.log(`[FONT_DEBUG] Attempting to load font: ${f.name} from ${f.url}`);
           const ff = new FontFace(f.name, `url(${f.url})`);
           const loaded = await ff.load();
           document.fonts.add(loaded);
-          console.log(`[FONT_DEBUG] Font loaded: ${f.name}`);
+          console.log(`[FONT_DEBUG] Successfully loaded font: ${f.name}`);
         } catch (e) {
-          console.warn(`[FONT_DEBUG] Could not load font ${f.name} from ${f.url}. Falling back to system fonts.`);
+          console.warn(`[FONT_DEBUG] Could not load font ${f.name} from ${f.url}. Falling back to system fonts.`, e);
         }
       })
     );
@@ -48,14 +50,11 @@ export const RemotionRoot: React.FC = () => {
     <>
       <Composition
         id="Main"
-        component={MainComposition}
+        component={MainComposition as any}
         durationInFrames={Math.max(1, totalDuration)}
         fps={data.fps}
         width={data.width}
         height={data.height}
-        {...({
-          component: MainComposition,
-        } as any)}
         defaultProps={{
           data: data as any,
         }}

@@ -87,8 +87,8 @@ def setup_and_run():
 
     # 9. Render the video with CACHE DISABLED
     print("🎬 Rendering video (bundle-cache=false)...")
-    # Using --bundle-cache=false is the ONLY way to guarantee fresh asset detection
-    !npx remotion render src/index.ts Main out/video.mp4 --concurrency=1 --bundle-cache=false
+    # Using npm run render ensures we use local project dependencies
+    !npm run render
 
     # 10. Copy result back
     if os.path.exists("out/video.mp4"):

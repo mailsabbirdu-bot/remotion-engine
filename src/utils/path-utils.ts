@@ -7,17 +7,29 @@ import { staticFile } from 'remotion';
  */
 export const resolveAsset = (path: string): string => {
   if (!path) return '';
-  if (path.startsWith('http')) return path;
 
-  // Extract only the filename (e.g. "scene_1.mp4" from any path)
-  const parts = path.split('/');
-  const filename = parts[parts.length - 1];
-
-  if (filename) {
-    const resolved = staticFile(filename);
-    console.log(`[PATH_DEBUG] Mapping: ${path} -> ${resolved}`);
-    return resolved;
+  // If it's already a URL or data URI, return as is
+  if (path.startsWith('http') || path.startsWith('data:')) {
+    return path;
   }
 
+  // Extract only the filename (e.g. "scene_1.mp4" from "/drive/path/scene_1.mp4")
+  // Works for both forward and backward slashes
+  const filename = path.split(/[/\\]/).filter(Boolean).pop();
+
+  if (filename) {
+    try {
+      // staticFile() expects a path relative to the public/ folder.
+      // Since Colab mirrors everything to the root of public/,
+      // providing just the filename is correct.
+      const resolved = staticFile(filename);
+      console.log(`[ASSET_RESOLVE] "${path}" -> "${resolved}"`);
+      return resolved;
+    } catch (e) {
+      console.error(`[ASSET_RESOLVE_ERROR] Failed for ${filename}:`, e);
+    }
+  }
+
+  console.warn(`[ASSET_RESOLVE_FALLBACK] Returning original path: ${path}`);
   return path;
 };
