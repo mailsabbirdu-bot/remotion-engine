@@ -23,7 +23,8 @@ const loadFonts = async () => {
       fonts.map(async (f) => {
         try {
           console.log(`[FONT_DEBUG] Attempting to load font: ${f.name} from ${f.url}`);
-          const ff = new FontFace(f.name, `url(${f.url})`);
+          // Using quotes around the URL for safety
+          const ff = new FontFace(f.name, `url("${f.url}")`);
           const loaded = await ff.load();
           document.fonts.add(loaded);
           console.log(`[FONT_DEBUG] Successfully loaded font: ${f.name}`);

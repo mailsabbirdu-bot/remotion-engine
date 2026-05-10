@@ -20,8 +20,8 @@ export const resolveAsset = (path: string): string => {
   if (filename) {
     try {
       // staticFile() expects a path relative to the public/ folder.
-      // Since Colab mirrors everything to the root of public/,
-      // providing just the filename is correct.
+      // In Remotion, staticFile('filename.mp4') typically returns '/filename.mp4' or similar
+      // depending on the environment.
       const resolved = staticFile(filename);
       console.log(`[ASSET_RESOLVE] "${path}" -> "${resolved}"`);
       return resolved;
