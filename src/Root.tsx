@@ -13,6 +13,7 @@ const loadFonts = async () => {
     return;
   }
 
+  // Define fonts as per master_remotion.json requirements
   const fonts = [
     { name: 'Audiowide', url: resolveAsset('Audiowide-Regular.ttf') },
     { name: 'Sohid Osman Hadi', url: resolveAsset('Sohid Osman Hadi.ttf') }
@@ -22,18 +23,20 @@ const loadFonts = async () => {
     await Promise.all(
       fonts.map(async (f) => {
         try {
-          console.log(`[FONT_DEBUG] Attempting to load font: ${f.name} from ${f.url}`);
-          // Using quotes around the URL for safety
+          console.log(`[FONT_DEBUG] Loading font: ${f.name} from ${f.url}`);
           const ff = new FontFace(f.name, `url("${f.url}")`);
           const loaded = await ff.load();
           document.fonts.add(loaded);
           console.log(`[FONT_DEBUG] Successfully loaded font: ${f.name}`);
         } catch (e) {
-          console.warn(`[FONT_DEBUG] Could not load font ${f.name} from ${f.url}. Falling back to system fonts.`, e);
+          console.error(`[FONT_DEBUG_ERROR] Could not load font ${f.name} from ${f.url}:`, e);
         }
       })
     );
+  } catch (err) {
+    console.error("[FONT_LOAD_CRITICAL_ERROR]", err);
   } finally {
+    // Always continue render even if some fonts failed (will fallback to system fonts)
     continueRender(waitForFont);
   }
 };

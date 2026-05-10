@@ -1,6 +1,6 @@
 # 🚀 Automated Remotion Engine for Colab
 
-This guide provides the absolute most stable "One-Click" experience.
+This guide provides the absolute most stable "One-Click" experience for rendering your video on Google Colab.
 
 ## 🎬 Automated Render Cell
 
@@ -31,63 +31,67 @@ def setup_and_run():
     if os.path.exists(PROJECT_PATH_LOCAL):
         shutil.rmtree(PROJECT_PATH_LOCAL)
 
-    # Check if project exists and is valid in Drive
+    # REPAIR LOGIC: Check if project is valid in Drive
     drive_is_valid = os.path.exists(PROJECT_PATH_DRIVE) and os.path.exists(os.path.join(PROJECT_PATH_DRIVE, "package.json"))
 
     if drive_is_valid:
         print(f"✅ Found project in Drive. Mirroring to local SSD...")
+        # Ignore node_modules for speed; they will be installed fresh
         shutil.copytree(PROJECT_PATH_DRIVE, PROJECT_PATH_LOCAL, ignore=shutil.ignore_patterns('node_modules', '.git', 'out', 'build'))
     else:
-        print(f"🛰️ Project folder not found or invalid in Drive. Cloning from GitHub...")
+        print(f"🛰️ Project folder not found or invalid in Drive. Cloning fresh from GitHub...")
         !git clone {REPO_URL} {PROJECT_PATH_LOCAL}
+        # If it was missing from drive, create a placeholder for results
+        if not os.path.exists(PROJECT_PATH_DRIVE):
+            os.makedirs(PROJECT_PATH_DRIVE, exist_ok=True)
+            print(f"📁 Created project folder in Drive: {PROJECT_PATH_DRIVE}")
 
     # 3. FORCE CLEAN CACHES
     print("🧹 Cleaning caches...")
     !rm -rf {PROJECT_PATH_LOCAL}/.remotion
     !rm -rf {PROJECT_PATH_LOCAL}/node_modules/.cache
 
-    # 4. FLAT ASSET COPY (Guanranteed 404 Fix)
-    print("🚚 Mirroring assets to project...")
+    # 4. FLAT ASSET MIRRORING (Fixes 404s once and for all)
+    print("🚚 Mirroring assets to public root...")
     public_path = os.path.join(PROJECT_PATH_LOCAL, "public")
     os.makedirs(public_path, exist_ok=True)
 
-    # Copy background assets
+    # Copy background videos/images
     if os.path.exists(ASSET_SOURCE_DRIVE):
         assets = os.listdir(ASSET_SOURCE_DRIVE)
+        count = 0
         for item in assets:
             s = os.path.join(ASSET_SOURCE_DRIVE, item)
             if os.path.isfile(s):
                 shutil.copy2(s, os.path.join(public_path, item))
-        print(f"✅ Background assets mirrored to: {public_path}")
+                count += 1
+        print(f"✅ {count} assets mirrored from {ASSET_SOURCE_DRIVE}")
     else:
-        print(f"⚠️ Warning: Asset source {ASSET_SOURCE_DRIVE} not found! Backgrounds might fail.")
+        print(f"❌ Error: Asset source {ASSET_SOURCE_DRIVE} not found!")
+        return
 
-    # MIRROR FONTS - Search in multiple common locations
-    font_sources = [
+    # MIRROR FONTS - Search multiple locations and copy to public root
+    font_locations = [
         os.path.join(PROJECT_PATH_DRIVE, "public/fonts"),
         os.path.join(PROJECT_PATH_DRIVE, "fonts"),
-        os.path.join(PROJECT_PATH_LOCAL, "public/fonts") # Fallback if already in project
+        os.path.join(PROJECT_PATH_LOCAL, "public/fonts")
     ]
 
     found_fonts = 0
-    for src in font_sources:
-        if os.path.exists(src):
-            for f in os.listdir(src):
+    for loc in font_locations:
+        if os.path.exists(loc):
+            for f in os.listdir(loc):
                 if f.lower().endswith(('.ttf', '.otf', '.woff', '.woff2')):
-                    shutil.copy2(os.path.join(src, f), os.path.join(public_path, f))
+                    shutil.copy2(os.path.join(loc, f), os.path.join(public_path, f))
                     found_fonts += 1
 
-    if found_fonts > 0:
-        print(f"✅ {found_fonts} fonts mirrored to public root.")
-    else:
-        print("⚠️ Warning: No fonts found in Drive/project folders!")
-
-    print("Ready Files:", [f for f in os.listdir(public_path) if os.path.isfile(os.path.join(public_path, f))])
+    print(f"✅ {found_fonts} fonts ready in public/ root.")
+    print("📦 All Files in public/:", os.listdir(public_path))
 
     # 5. Switch to project directory
     %cd {PROJECT_PATH_LOCAL}
 
-    # 6. Install Node.js
+    # 6. Install Node.js if missing
     if shutil.which("node") is None:
         print("🟢 Installing Node.js...")
         !curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - > /dev/null
@@ -105,22 +109,22 @@ def setup_and_run():
 
     # 9. Render the video with CACHE DISABLED
     print("🎬 Rendering video (bundle-cache=false)...")
-    # Using npm run render ensures we use local project dependencies
+    # bundle-cache=false is CRITICAL when assets change frequently
     !npm run render
 
-    # 10. Copy result back
+    # 10. Sync Result to Drive
     if os.path.exists("out/video.mp4"):
         OUTPUT_DRIVE_DIR = os.path.join(PROJECT_PATH_DRIVE, "out")
         os.makedirs(OUTPUT_DRIVE_DIR, exist_ok=True)
         shutil.copy("out/video.mp4", os.path.join(OUTPUT_DRIVE_DIR, "video.mp4"))
         print(f"\n✅ SUCCESS! Video saved at: {OUTPUT_DRIVE_DIR}/video.mp4")
     else:
-        print("\n❌ ERROR: Render failed. See red errors above.")
+        print("\n❌ ERROR: Render failed. Check the logs above for red error messages.")
 
 setup_and_run()
 ```
 
-## 📝 Tips
-The engine is now "path-blind."
-It will find `scene_1.mp4` anywhere in your JSON.
-`"src": "/any/old/path/scene_1.mp4"` will work!
+## 📝 Tips for JSON
+- Your `master_remotion.json` is the source of truth.
+- For assets, you can use any path (e.g., `/drive/some/folder/video.mp4`).
+- The engine will automatically find `video.mp4` in the `public/` folder because it was mirrored there.

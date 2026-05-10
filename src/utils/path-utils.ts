@@ -14,22 +14,24 @@ export const resolveAsset = (path: string): string => {
   }
 
   // Extract only the filename (e.g. "scene_1.mp4" from "/drive/path/scene_1.mp4")
-  // Works for both forward and backward slashes
-  const filename = path.split(/[/\\]/).filter(Boolean).pop();
+  const parts = path.split(/[/\\]/).filter(p => p.length > 0);
+  const filename = parts[parts.length - 1];
 
   if (filename) {
     try {
-      // staticFile() expects a path relative to the public/ folder.
-      // In Remotion, staticFile('filename.mp4') typically returns '/filename.mp4' or similar
-      // depending on the environment.
+      // staticFile() is the recommended way to reference files in the public/ folder.
+      // It returns a path that works in both Studio and during Render.
       const resolved = staticFile(filename);
+
+      // Log for debugging (will show up in Remotion logs)
       console.log(`[ASSET_RESOLVE] "${path}" -> "${resolved}"`);
+
       return resolved;
     } catch (e) {
-      console.error(`[ASSET_RESOLVE_ERROR] Failed for ${filename}:`, e);
+      console.error(`[ASSET_RESOLVE_ERROR] Failed to resolve ${filename}:`, e);
+      return filename;
     }
   }
 
-  console.warn(`[ASSET_RESOLVE_FALLBACK] Returning original path: ${path}`);
   return path;
 };
