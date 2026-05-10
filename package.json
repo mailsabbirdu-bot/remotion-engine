@@ -6,8 +6,9 @@
   "scripts": {
     "start": "remotion preview src/index.ts",
     "build": "remotion bundle src/index.ts out/bundle.js",
-    "render": "remotion render src/index.ts Main out/video.mp4",
-    "typecheck": "tsc"
+    "render": "remotion render src/index.ts Main out/video.mp4 --concurrency=1",
+    "typecheck": "tsc",
+    "ensure": "remotion browser ensure"
   },
   "dependencies": {
     "@remotion/cli": "^4.0.0",
