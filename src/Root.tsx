@@ -1,7 +1,8 @@
 import React from 'react';
-import { Composition, continueRender, delayRender, staticFile } from 'remotion';
+import { Composition, continueRender, delayRender } from 'remotion';
 import { MainComposition } from './Composition';
 import data from './master_remotion.json';
+import { resolveAsset } from './utils/path-utils';
 
 // Handle font registration for Colab/Local environment
 const waitForFont = delayRender('Loading Fonts');
@@ -12,8 +13,8 @@ const loadFonts = async () => {
   }
 
   const fonts = [
-    { name: 'Audiowide', url: staticFile('fonts/Audiowide-Regular.ttf') },
-    { name: 'Sohid Osman Hadi', url: staticFile('fonts/Sohid Osman Hadi.ttf') }
+    { name: 'Audiowide', url: resolveAsset('Audiowide-Regular.ttf') },
+    { name: 'Sohid Osman Hadi', url: resolveAsset('Sohid Osman Hadi.ttf') }
   ];
 
   try {
@@ -23,9 +24,9 @@ const loadFonts = async () => {
           const ff = new FontFace(f.name, `url(${f.url})`);
           const loaded = await ff.load();
           document.fonts.add(loaded);
-          console.log(`Font loaded: ${f.name}`);
+          console.log(`[FONT_DEBUG] Font loaded: ${f.name}`);
         } catch (e) {
-          console.warn(`Could not load font ${f.name} from ${f.url}. Falling back to system fonts.`);
+          console.warn(`[FONT_DEBUG] Could not load font ${f.name} from ${f.url}. Falling back to system fonts.`);
         }
       })
     );

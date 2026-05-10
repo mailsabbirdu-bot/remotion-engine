@@ -1,6 +1,6 @@
 # 🚀 Automated Remotion Engine for Colab
 
-This guide provides the most stable "One-Click" experience.
+This guide provides the absolute most stable "One-Click" experience.
 
 ## 🎬 Automated Render Cell
 
@@ -22,7 +22,7 @@ PROJECT_PATH_DRIVE = "/content/drive/MyDrive/remotion-engine" # @param {type:"st
 PROJECT_PATH_LOCAL = "/content/remotion-engine"
 REPO_URL = "https://github.com/mailsabbirdu-bot/remotion-engine.git" # @param {type:"string"}
 
-# Folder in your Drive where your scene videos (scene_1.mp4, etc.) are stored:
+# Folder in your Drive where your scene videos are stored:
 ASSET_SOURCE_DRIVE = "/content/drive/MyDrive/Counterism_Studio_V4/renders" # @param {type:"string"}
 
 def setup_and_run():
@@ -34,29 +34,36 @@ def setup_and_run():
     if os.path.exists(PROJECT_PATH_DRIVE):
         shutil.copytree(PROJECT_PATH_DRIVE, PROJECT_PATH_LOCAL, ignore=shutil.ignore_patterns('node_modules', '.git', 'out'))
     else:
-        print(f"🛰️ Project folder not found in Drive. Cloning from {REPO_URL}...")
+        print(f"🛰️ Project folder not found in Drive. Cloning from GitHub...")
         !git clone {REPO_URL} {PROJECT_PATH_LOCAL}
 
-    # 3. CLEAN CACHES (Prevent "Not Found" errors from old bundles)
+    # 3. FORCE CLEAN CACHES
     print("🧹 Cleaning caches...")
     !rm -rf {PROJECT_PATH_LOCAL}/.remotion
     !rm -rf {PROJECT_PATH_LOCAL}/node_modules/.cache
 
-    # 4. FLAT ASSET COPY (Guarantees Remotion can find the files)
-    print("🚚 Flattening and copying assets to project root...")
+    # 4. FLAT ASSET COPY (Guanranteed 404 Fix)
+    print("🚚 Mirroring assets to project...")
     public_path = os.path.join(PROJECT_PATH_LOCAL, "public")
     os.makedirs(public_path, exist_ok=True)
 
     if os.path.exists(ASSET_SOURCE_DRIVE):
-        for item in os.listdir(ASSET_SOURCE_DRIVE):
+        assets = os.listdir(ASSET_SOURCE_DRIVE)
+        for item in assets:
             s = os.path.join(ASSET_SOURCE_DRIVE, item)
-            d = os.path.join(public_path, item)
-            if os.path.isfile(s) and item.lower().endswith(('.mp4', '.jpg', '.png', '.wav', '.mp3', '.ttf')):
-                shutil.copy2(s, d)
-        print(f"✅ Assets ready in: {public_path}")
-        print("Mirrored Files:", [f for f in os.listdir(public_path) if os.path.isfile(os.path.join(public_path, f))])
+            if os.path.isfile(s):
+                shutil.copy2(s, os.path.join(public_path, item))
+
+        # Also copy fonts from Drive to the public root
+        drive_fonts = os.path.join(PROJECT_PATH_DRIVE, "public/fonts")
+        if os.path.exists(drive_fonts):
+            for f in os.listdir(drive_fonts):
+                shutil.copy2(os.path.join(drive_fonts, f), os.path.join(public_path, f))
+
+        print(f"✅ Assets mirrored directly to: {public_path}")
+        print("Ready Files:", [f for f in os.listdir(public_path) if os.path.isfile(os.path.join(public_path, f))])
     else:
-        print(f"❌ Error: Asset source folder {ASSET_SOURCE_DRIVE} not found!")
+        print(f"❌ Error: Asset source {ASSET_SOURCE_DRIVE} not found!")
         return
 
     # 5. Switch to project directory
@@ -79,7 +86,8 @@ def setup_and_run():
     !npm run ensure
 
     # 9. Render the video with CACHE DISABLED
-    print("🎬 Rendering video (this may take a few minutes)...")
+    print("🎬 Rendering video (bundle-cache=false)...")
+    # Using --bundle-cache=false is the ONLY way to guarantee fresh asset detection
     !npx remotion render src/index.ts Main out/video.mp4 --concurrency=1 --bundle-cache=false
 
     # 10. Copy result back
@@ -89,15 +97,12 @@ def setup_and_run():
         shutil.copy("out/video.mp4", os.path.join(OUTPUT_DRIVE_DIR, "video.mp4"))
         print(f"\n✅ SUCCESS! Video saved at: {OUTPUT_DRIVE_DIR}/video.mp4")
     else:
-        print("\n❌ ERROR: Render failed. Please check the logs above for any red error messages.")
+        print("\n❌ ERROR: Render failed. See red errors above.")
 
 setup_and_run()
 ```
 
-## 📝 Troubleshooting JSON
-The engine extracts the filename from your path.
-Example: `"src": "/any/path/scene_1.mp4"` -> Engine will look for `scene_1.mp4` in the project.
-
-**⚠️ IMPORTANT Checklist:**
-- Backgrounds ending in `.mp4` MUST have `"type": "video"`.
-- Ensure your font files (`Audiowide-Regular.ttf`, `Sohid Osman Hadi.ttf`) are in your Drive folder.
+## 📝 Tips
+The engine is now "path-blind."
+It will find `scene_1.mp4` anywhere in your JSON.
+`"src": "/any/old/path/scene_1.mp4"` will work!
