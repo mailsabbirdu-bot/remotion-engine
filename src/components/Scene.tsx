@@ -1,6 +1,7 @@
 import React from 'react';
-import { AbsoluteFill, Video, Audio, OffthreadVideo } from 'remotion';
+import { AbsoluteFill, Audio, OffthreadVideo } from 'remotion';
 import { Layer, LayerData } from './Layer';
+import { resolveAsset } from '../utils/path-utils';
 
 export interface SceneData {
   id: string;
@@ -28,13 +29,13 @@ export const Scene: React.FC<SceneProps> = ({ scene, banglaFontFamily, englishFo
     <AbsoluteFill>
       {scene.background.type === 'video' && (
         <OffthreadVideo
-          src={scene.background.src}
+          src={resolveAsset(scene.background.src)}
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
         />
       )}
       {scene.background.type === 'image' && (
         <img
-          src={scene.background.src}
+          src={resolveAsset(scene.background.src)}
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           alt=""
         />
@@ -43,7 +44,7 @@ export const Scene: React.FC<SceneProps> = ({ scene, banglaFontFamily, englishFo
         <div style={{ width: '100%', height: '100%', backgroundColor: scene.background.src }} />
       )}
 
-      {scene.background.audio && <Audio src={scene.background.audio} />}
+      {scene.background.audio && <Audio src={resolveAsset(scene.background.audio)} />}
 
       {scene.layers.map((layer) => (
         <Layer
