@@ -1,6 +1,6 @@
 # 🚀 Automated Remotion Engine for Colab
 
-This guide provides a robust "One-Click" experience.
+This guide provides the most stable "One-Click" experience for rendering videos.
 
 ## 🎬 Automated Render Cell
 
@@ -45,23 +45,18 @@ def setup_and_run():
         shutil.rmtree(PROJECT_PATH_LOCAL)
     shutil.copytree(PROJECT_PATH_DRIVE, PROJECT_PATH_LOCAL, ignore=shutil.ignore_patterns('node_modules', '.git'))
 
-    # 4. PHYSICAL ASSET MIRRORING
-    # This mirrors your Drive's folder structure inside public/
-    print("🚚 Copying assets to public folder...")
-    # Target: /content/remotion-engine/public/drive/Counterism_Studio_V4/renders
-    target_path = os.path.join(PROJECT_PATH_LOCAL, "public/drive/Counterism_Studio_V4/renders")
-
-    if os.path.exists(target_path):
-        shutil.rmtree(target_path)
-    os.makedirs(target_path, exist_ok=True)
+    # 4. FLAT ASSET COPY (Most reliable way to avoid 404s)
+    # We copy all assets directly into the public/ root folder
+    print("🚚 Flattening and copying assets to public/ ...")
+    public_path = os.path.join(PROJECT_PATH_LOCAL, "public")
 
     if os.path.exists(ASSET_SOURCE_DRIVE):
         for item in os.listdir(ASSET_SOURCE_DRIVE):
             s = os.path.join(ASSET_SOURCE_DRIVE, item)
-            d = os.path.join(target_path, item)
-            if os.path.isfile(s):
+            d = os.path.join(public_path, item)
+            if os.path.isfile(s) and item.lower().endswith(('.mp4', '.jpg', '.png', '.wav', '.mp3')):
                 shutil.copy2(s, d)
-        print(f"✅ Assets mirrored to: {target_path}")
+        print(f"✅ Assets mirrored directly to: {public_path}")
     else:
         print(f"⚠️ Warning: Asset source folder not found at {ASSET_SOURCE_DRIVE}")
 
@@ -100,8 +95,12 @@ def setup_and_run():
 setup_and_run()
 ```
 
-## 📝 JSON Configuration
-In your `master_remotion.json`, keep your paths relative to the `/drive/` prefix as shown in your example:
+## 📝 Troubleshooting JSON Paths
+The engine is now smart enough to find your files **regardless of the folder path** in your JSON.
 
 Example:
-`"src": "/drive/Counterism_Studio_V4/renders/scene_1.mp4"`
+`"src": "/any/path/scene_1.mp4"` -> The engine will automatically find `scene_1.mp4` in your assets.
+
+**⚠️ Reminder:**
+- Set `"type": "video"` for all `.mp4` files.
+- Put your fonts in `public/fonts/` in your Drive.
