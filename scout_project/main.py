@@ -13,6 +13,9 @@ import random
 import subprocess
 import shutil
 import glob
+import cv2
+import imagehash
+from PIL import Image
 
 from pydub import AudioSegment
 from core.scout import get_all_candidates
@@ -24,13 +27,11 @@ DRIVE_BASE = "/content/drive/MyDrive/Counterism_Studio_V4"
 LOCAL_BASE = "./Counterism_Studio_V4"
 BASE = DRIVE_BASE if os.path.exists("/content/drive") else LOCAL_BASE
 
-# The user places production_plan.json in Google Drive > manifests
-if os.path.exists("/content/drive"):
-    DRIVE_MANIFEST_DIR = "/content/drive/MyDrive/manifests"
-else:
-    DRIVE_MANIFEST_DIR = "./manifests"
+# Manifest Template from Repository
+TEMPLATE_PLAN_PATH = "scout_project/manifests/production_plan.json"
+# Updated plan goes to the execution BASE
+PLAN_PATH = f"{BASE}/manifests/production_plan.json"
 
-PLAN_PATH = os.path.join(DRIVE_MANIFEST_DIR, "production_plan.json")
 TEMP_DIR = "/content/temp_assets" if os.path.exists("/content") else "./temp_assets"
 RENDER_DIR = f"{BASE}/renders"
 FINAL_OUTPUT = f"{BASE}/final_video.mp4"
@@ -42,7 +43,9 @@ os.makedirs(os.path.dirname(PLAN_PATH), exist_ok=True)
 os.makedirs(AUDIO_DIR, exist_ok=True)
 
 print(f"🚀 ENGINE STARTING. BASE: {BASE}")
-print(f"📄 PLAN PATH: {PLAN_PATH}")
+
+# Visual Hash Registry to prevent duplicate footage
+HASH_REGISTRY = set()
 
 def cleanup():
     print("🧹 CLEARING OLD RENDS & TEMP FILES...")
@@ -66,24 +69,43 @@ START_PADDING = 0.5
 END_PADDING = 0.5
 
 # =========================================================
+# VISUAL HASHING
+# =========================================================
+
+def get_visual_hash(path, is_video=True):
+    try:
+        if is_video:
+            cap = cv2.VideoCapture(path)
+            ret, frame = cap.read()
+            cap.release()
+            if not ret: return None
+            img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        else:
+            img = Image.open(path)
+
+        return str(imagehash.phash(img))
+    except:
+        return None
+
+# =========================================================
 # DYNAMIC SCENE GENERATION
 # =========================================================
 
 def generate_production_plan():
     print("\n🎙️ SCANNING AUDIO FILES FOR SCENE GENERATION...")
 
-    # Load Template from the user's Drive manifest path
-    if os.path.exists(PLAN_PATH):
-        with open(PLAN_PATH, "r", encoding="utf-8") as f:
+    # Load Template from repository
+    if os.path.exists(TEMPLATE_PLAN_PATH):
+        with open(TEMPLATE_PLAN_PATH, "r", encoding="utf-8") as f:
             template_data = json.load(f)
             template_scenes = template_data.get("scenes", [])
             project_name = template_data.get("project_name", "Dynamic_Project")
     else:
-        print(f"⚠️ No baseline plan found at {PLAN_PATH}. Will use defaults.")
+        print(f"⚠️ Template not found at {TEMPLATE_PLAN_PATH}. Using generic setup.")
         template_scenes = []
         project_name = "Dynamic_Project"
 
-    # Find all SC_xx.wav files
+    # Find all SC_xx.wav files in Drive/Local audio folder
     audio_files = sorted(glob.glob(os.path.join(AUDIO_DIR, "SC_[0-9][0-9].wav")))
 
     if not audio_files:
@@ -150,17 +172,17 @@ def generate_production_plan():
         scenes.append(scene)
         print(f"✅ Scene {idx+1}: {audio_name} → {round(final_duration, 2)}s")
 
-    # Update the production plan file in the Drive manifest folder
+    # Save the updated production plan for execution
     plan_data = {
         "project_name": project_name,
-        "version": "DRIVE_AUTO_V1",
+        "version": "REPO_TEMPLATE_V1",
         "scenes": scenes
     }
 
     with open(PLAN_PATH, "w", encoding="utf-8") as f:
         json.dump(plan_data, f, indent=2, ensure_ascii=False)
 
-    print(f"📄 Production plan updated at: {PLAN_PATH}")
+    print(f"📄 Production plan generated at: {PLAN_PATH}")
     return scenes
 
 # =========================================================
@@ -188,7 +210,6 @@ def render_scene_video(asset_path, asset_type, audio, out, duration, delay):
 
     # Step 1: Process visual asset based on type
     if asset_type == "video":
-        # Scale and Loop Video
         subprocess.run([
             "ffmpeg","-y",
             "-stream_loop","-1",
@@ -203,7 +224,6 @@ def render_scene_video(asset_path, asset_type, audio, out, duration, delay):
             temp_v
         ], check=True, capture_output=True)
     else:
-        # Loop Image to create Video
         subprocess.run([
             "ffmpeg","-y",
             "-loop","1",
@@ -218,7 +238,7 @@ def render_scene_video(asset_path, asset_type, audio, out, duration, delay):
             temp_v
         ], check=True, capture_output=True)
 
-    # Step 2: Mux Audio. We use -t {duration} instead of -shortest to preserve ending padding.
+    # Step 2: Mux Audio
     subprocess.run([
         "ffmpeg","-y",
         "-i",temp_v,
@@ -238,48 +258,68 @@ def render_scene_video(asset_path, asset_type, audio, out, duration, delay):
 # =========================================================
 
 async def process_scene(scene, idx):
-    print(f"\n🎬 RENDERING SCENE {idx}: {scene['scene_id']}")
+    print(f"\n🎬 [ENGINE] PROCESSING SCENE {idx}: {scene['scene_id']}")
 
     # 1. Get raw candidates
     candidates = await get_all_candidates(scene)
     if not candidates:
-        print("❌ NO ASSETS FOUND")
+        print("❌ [ENGINE] NO ASSETS FOUND")
         return None
 
-    # 2. Apply Filters
-    print(f"🔍 Filtering {len(candidates)} candidates...")
+    # 2. Apply Filters and Log Scores
+    print(f"🔍 [ENGINE] Evaluating {len(candidates)} candidates...")
     candidates = technical_filter(candidates, scene["duration"])
     candidates = semantic_filter(scene, candidates)
 
     if not candidates:
-        print("❌ NO ASSETS SURVIVED FILTERING")
+        print("❌ [ENGINE] NO ASSETS SURVIVED FILTERING")
         return None
 
-    # Best candidate after semantic ranking
-    best = candidates[0]
+    # 3. Visual Deduplication (ImageHash)
+    final_selection = None
 
-    ext = ".mp4" if best["type"]=="video" else ".jpg"
-    asset_path = f"{TEMP_DIR}/asset_{idx}{ext}"
+    for rank, cand in enumerate(candidates, 1):
+        ext = ".mp4" if cand["type"]=="video" else ".jpg"
+        trial_path = f"{TEMP_DIR}/trial_{idx}_{rank}{ext}"
 
-    print(f"📥 Downloading: {best['source']} ({best['type']}) - Score: {best.get('semantic_score', 0):.2f}")
-    ok = await download_asset(best["url"], asset_path)
-    if not ok: return None
+        print(f"📥 [ENGINE] Evaluating Candidate #{rank}: {cand['source']} ({cand['type']})")
+        print(f"   📊 Tech Score: {cand.get('technical_score', 0):.2f} | Semantic Score: {cand.get('semantic_score', 0):.2f}")
+
+        ok = await download_asset(cand["url"], trial_path)
+        if not ok: continue
+
+        v_hash = get_visual_hash(trial_path, cand["type"]=="video")
+        if v_hash in HASH_REGISTRY:
+            print(f"   ⚠️ [ENGINE] DUPLICATE DETECTED (Hash: {v_hash}). Skipping...")
+            continue
+
+        # Valid Unique Asset Found
+        HASH_REGISTRY.add(v_hash)
+        final_selection = cand
+        asset_path = f"{TEMP_DIR}/asset_{idx}{ext}"
+        os.rename(trial_path, asset_path)
+        print(f"   ✨ [ENGINE] UNIQUE ASSET SELECTED (Hash: {v_hash})")
+        break
+
+    if not final_selection:
+        print("❌ [ENGINE] NO UNIQUE ASSETS FOUND AMONG TOP CANDIDATES")
+        return None
 
     out = f"{RENDER_DIR}/scene_{idx}.mp4"
 
     try:
         render_scene_video(
             asset_path,
-            best["type"],
+            final_selection["type"],
             scene["audio_path"],
             out,
             scene["duration"],
             scene["audio_start_in_scene"]
         )
-        print(f"✅ Scene {idx} saved to: {out}")
+        print(f"✅ [ENGINE] Scene {idx} saved to: {out}")
         return out
     except Exception as e:
-        print(f"❌ RENDER FAILED for Scene {idx}: {e}")
+        print(f"❌ [ENGINE] RENDER FAILED for Scene {idx}: {e}")
         return None
 
 # =========================================================
@@ -290,9 +330,8 @@ async def run_engine():
     scenes = generate_production_plan()
     if not scenes: return
 
-    # Skip actual asset fetching and rendering if ffmpeg is missing (for local testing)
     if not shutil.which("ffmpeg"):
-        print("⚠️ ffmpeg not found. Skipping asset processing and rendering.")
+        print("⚠️ ffmpeg not found. Skipping rendering.")
         return
 
     outputs = []
