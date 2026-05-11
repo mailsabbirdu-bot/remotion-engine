@@ -122,6 +122,38 @@ async def fetch_pixabay_video(session, query, limit=12):
         return []
 
 
+async def fetch_pixabay_image(session, query, limit=12):
+    print(f"📡 [SCOUT] Searching Pixabay Images for: '{query}'")
+    key = API_KEYS["pixabay"]
+    url = f"https://pixabay.com/api/?key={key}&q={query}&per_page={limit}&image_type=photo"
+    try:
+        async with session.get(url) as response:
+            if response.status != 200:
+                print(f"⚠️ [SCOUT] Pixabay Image API error: {response.status}")
+                return []
+            data = await response.json()
+            final = []
+            for p in data.get("hits", []):
+                try:
+                    final.append({
+                        "type": "image",
+                        "source": "pixabay",
+                        "id": f"pixabay_image_{p['id']}",
+                        "url": p["largeImageURL"],
+                        "width": p["imageWidth"],
+                        "height": p["imageHeight"],
+                        "duration": 5,
+                        "title": query,
+                        "description": query
+                    })
+                except:
+                    pass
+            return final
+    except Exception as e:
+        print(f"❌ [SCOUT] Pixabay Image Fetch failed: {e}")
+        return []
+
+
 async def get_all_candidates(scene):
     prefs = scene.get("asset_preferences", {})
     preferred_type = prefs.get("preferred_type", "video")
@@ -143,6 +175,7 @@ async def get_all_candidates(scene):
                 tasks.append(fetch_pixabay_video(session, query))
             if allow_image:
                 tasks.append(fetch_pexels_image(session, query))
+                tasks.append(fetch_pixabay_image(session, query))
 
         results = await asyncio.gather(*tasks)
 
