@@ -27,8 +27,10 @@ DRIVE_BASE = "/content/drive/MyDrive/Counterism_Studio_V4"
 LOCAL_BASE = "./Counterism_Studio_V4"
 BASE = DRIVE_BASE if os.path.exists("/content/drive") else LOCAL_BASE
 
-# Manifest Template from Repository
-TEMPLATE_PLAN_PATH = "scout_project/manifests/production_plan.json"
+# Manifest Template from Repository (Absolute path relative to this script)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+TEMPLATE_PLAN_PATH = os.path.join(SCRIPT_DIR, "manifests", "production_plan.json")
+
 # Updated plan goes to the execution BASE
 PLAN_PATH = f"{BASE}/manifests/production_plan.json"
 
@@ -43,6 +45,7 @@ os.makedirs(os.path.dirname(PLAN_PATH), exist_ok=True)
 os.makedirs(AUDIO_DIR, exist_ok=True)
 
 print(f"🚀 ENGINE STARTING. BASE: {BASE}")
+print(f"📂 REPO TEMPLATE: {TEMPLATE_PLAN_PATH}")
 
 # Visual Hash Registry to prevent duplicate footage
 HASH_REGISTRY = set()
@@ -76,7 +79,16 @@ def get_visual_hash(path, is_video=True):
     try:
         if is_video:
             cap = cv2.VideoCapture(path)
+            # Try to grab a frame at 1.0s or 50% to avoid black fades
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            if fps > 0:
+                cap.set(cv2.CAP_PROP_POS_FRAMES, int(fps * 1.0))
+
             ret, frame = cap.read()
+            if not ret:
+                cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                ret, frame = cap.read()
+
             cap.release()
             if not ret: return None
             img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
@@ -96,12 +108,13 @@ def generate_production_plan():
 
     # Load Template from repository
     if os.path.exists(TEMPLATE_PLAN_PATH):
+        print(f"📖 Loading manifest template: {TEMPLATE_PLAN_PATH}")
         with open(TEMPLATE_PLAN_PATH, "r", encoding="utf-8") as f:
             template_data = json.load(f)
             template_scenes = template_data.get("scenes", [])
             project_name = template_data.get("project_name", "Dynamic_Project")
     else:
-        print(f"⚠️ Template not found at {TEMPLATE_PLAN_PATH}. Using generic setup.")
+        print(f"⚠️ Template not found at {TEMPLATE_PLAN_PATH}! Please ensure it exists in the repo.")
         template_scenes = []
         project_name = "Dynamic_Project"
 
@@ -170,7 +183,7 @@ def generate_production_plan():
             "scout_config": scout_config
         }
         scenes.append(scene)
-        print(f"✅ Scene {idx+1}: {audio_name} → {round(final_duration, 2)}s")
+        print(f"✅ Scene {idx+1}: {audio_name} → {round(final_duration, 2)}s | Keywords: {scene['scout_config']['keywords']}")
 
     # Save the updated production plan for execution
     plan_data = {
@@ -182,7 +195,7 @@ def generate_production_plan():
     with open(PLAN_PATH, "w", encoding="utf-8") as f:
         json.dump(plan_data, f, indent=2, ensure_ascii=False)
 
-    print(f"📄 Production plan generated at: {PLAN_PATH}")
+    print(f"📄 Execution plan updated at: {PLAN_PATH}")
     return scenes
 
 # =========================================================
