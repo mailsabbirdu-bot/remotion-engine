@@ -25,7 +25,7 @@ def deduplicate(candidates):
     return final
 
 
-async def fetch_pexels_video(session, query, limit=8):
+async def fetch_pexels_video(session, query, limit=12):
 
     url = f"https://api.pexels.com/videos/search?query={query}&per_page={limit}"
 
@@ -69,7 +69,7 @@ async def fetch_pexels_video(session, query, limit=8):
 
                         "duration": v.get("duration", 0),
 
-                        "title": query,
+                        "title": v.get("user", {}).get("name", query),
 
                         "description": query
                     })
@@ -83,7 +83,7 @@ async def fetch_pexels_video(session, query, limit=8):
         return []
 
 
-async def fetch_pexels_image(session, query, limit=8):
+async def fetch_pexels_image(session, query, limit=12):
 
     url = f"https://api.pexels.com/v1/search?query={query}&per_page={limit}"
 
@@ -122,7 +122,7 @@ async def fetch_pexels_image(session, query, limit=8):
 
                         "duration": 5,
 
-                        "title": query,
+                        "title": p.get("alt", query),
 
                         "description": query
                     })
@@ -136,7 +136,7 @@ async def fetch_pexels_image(session, query, limit=8):
         return []
 
 
-async def fetch_pixabay_video(session, query, limit=8):
+async def fetch_pixabay_video(session, query, limit=12):
 
     key = API_KEYS["pixabay"]
 
@@ -175,7 +175,57 @@ async def fetch_pixabay_video(session, query, limit=8):
 
                         "duration": v.get("duration", 0),
 
-                        "title": query,
+                        "title": v.get("tags", query),
+
+                        "description": query
+                    })
+
+                except:
+                    pass
+
+            return final
+
+    except:
+        return []
+
+async def fetch_pixabay_image(session, query, limit=12):
+
+    key = API_KEYS["pixabay"]
+
+    url = f"https://pixabay.com/api/?key={key}&q={query}&image_type=photo&per_page={limit}"
+
+    try:
+
+        async with session.get(url) as response:
+
+            if response.status != 200:
+                return []
+
+            data = await response.json()
+
+            final = []
+
+            for p in data.get("hits", []):
+
+                try:
+
+                    final.append({
+
+                        "type": "image",
+
+                        "source": "pixabay",
+
+                        "id": f"pixabay_image_{p['id']}",
+
+                        "url": p["largeImageURL"],
+
+                        "width": p["imageWidth"],
+
+                        "height": p["imageHeight"],
+
+                        "duration": 5,
+
+                        "title": p.get("tags", query),
 
                         "description": query
                     })
@@ -201,27 +251,20 @@ async def get_all_candidates(scene):
 
     keywords = scout.get("keywords", [])
 
-    query = keywords[0] if keywords else scene["text"]
+    # We scout for all keywords to get more candidates
+    if not keywords: keywords = [scene["text"]]
 
     async with aiohttp.ClientSession() as session:
 
         tasks = []
 
-        if allow_video:
-
-            tasks.append(
-                fetch_pexels_video(session, query)
-            )
-
-            tasks.append(
-                fetch_pixabay_video(session, query)
-            )
-
-        if allow_image:
-
-            tasks.append(
-                fetch_pexels_image(session, query)
-            )
+        for kw in keywords[:3]: # Limit keywords to avoid too many requests
+            if allow_video:
+                tasks.append(fetch_pexels_video(session, kw))
+                tasks.append(fetch_pixabay_video(session, kw))
+            if allow_image:
+                tasks.append(fetch_pexels_image(session, kw))
+                tasks.append(fetch_pixabay_image(session, kw))
 
         results = await asyncio.gather(*tasks)
 
@@ -232,6 +275,6 @@ async def get_all_candidates(scene):
 
     final = deduplicate(final)
 
-    print(f"✅ MIXED ASSETS: {len(final)}")
+    print(f"✅ MIXED ASSETS: {len(final)} candidates fetched.")
 
-    return final[:20]
+    return final

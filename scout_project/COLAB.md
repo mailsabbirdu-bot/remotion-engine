@@ -5,8 +5,8 @@ Run the Scout Engine in Google Colab to automatically scout assets and render in
 ## 📁 Prerequisites (Google Drive)
 Ensure your Google Drive has the following folder structure:
 - `Counterism_Studio_V4/audio/` -> Put your `SC_01.wav`, `SC_02.wav`, etc. here.
-- `Counterism_Studio_V4/manifests/` -> Engine will save `production_plan.json` here.
 - `Counterism_Studio_V4/renders/` -> Individual scenes will be saved here.
+- `Counterism_Studio_V4/manifests/` -> Final `production_plan.json` will be saved here.
 
 ---
 
@@ -41,17 +41,18 @@ print("📦 Installing system dependencies...")
 !apt-get install -y ffmpeg libavcodec-extra > /dev/null
 
 # 4. Install Python Dependencies
-print("🐍 Installing Python packages (Transformers, Torch, MoviePy)...")
+print("🐍 Installing Python packages (This may take 2-3 minutes)...")
 !pip install -r requirements.txt --quiet
 
 # 5. Run the Engine
+# Note: Use T4 GPU in Colab for faster filtering
 print("\n🎬 STARTING ENGINE...")
 !python main.py
 ```
 
-## 📝 How it works
-1. **Audio Detection**: The engine scans your `Drive > Counterism_Studio_V4 > audio` folder for files named `SC_01.wav`, `SC_02.wav`, etc.
-2. **Padding**: It automatically adds **0.5 seconds of silence** at the start and end of each scene.
-3. **Plan Update**: A `production_plan.json` is generated in your Drive with exact durations for each scene.
-4. **Scouting**: High-quality video or image assets are searched on Pexels/Pixabay based on text prompts.
-5. **Individual Renders**: Each scene is rendered as a separate `.mp4` file directly into your `Drive > Counterism_Studio_V4 > renders` folder.
+## 📝 Key Features
+- **Intelligent Scouting**: Uses the instructions from `production_plan.json` in the GitHub repo to find the best matching footage from **Pexels** and **Pixabay**.
+- **Negative Prompts**: Automatically filters out unwanted content (people, watermarks, etc.) based on scene-specific negative prompts.
+- **Audio-First Sync**: Detects your Drive audios (`SC_01.wav`, etc.) and adds **0.5s padding** at both ends.
+- **AI Filtering**: Uses CLIP and Semantic Transformers to rank assets by relevance to your text.
+- **Scene Isolation**: Renders each scene as an individual `.mp4` file in your Drive `renders/` folder.
