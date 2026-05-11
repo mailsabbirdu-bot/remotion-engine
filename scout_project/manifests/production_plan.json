@@ -1,20 +1,14 @@
 {
-  "project_name": "Ocean_Mystery_Story",
-  "version": "V14_AUDIO_SYNC_FIXED",
-  "global_rules": {
-    "engine": {
-      "cpu_mode": true,
-      "low_memory_mode": true,
-      "allow_images": true,
-      "allow_videos": true,
-      "enable_fallback_broll": true
-    }
-  },
+  "project_name": "Dynamic_Project",
+  "version": "COLAB_AUTO_V1",
   "scenes": [
     {
       "scene_id": "scene_1",
-      "text": "tiger underwater deep ocean blue water cinematic",
+      "text": "cinematic nature ocean atmosphere",
       "duration": 9.36,
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_01.wav",
+      "audio_duration": 8.36,
+      "audio_start_in_scene": 0.5,
       "asset_preferences": {
         "allow_video": true,
         "allow_image": true,
@@ -22,63 +16,20 @@
       },
       "scout_config": {
         "keywords": [
-          "night sky tiging moving star",
-          "night sky with stars",
-          "cinematic galaxy"
+          "cinematic ocean",
+          "4k ocean"
         ],
-        "must_have_required": [
-          "star",
-          "night"
-        ],
-        "must_have_optional": [
-          "blue water",
-          "ocean",
-          "bubbles"
-        ]
-      },
-      "negative_prompts": [
-        "person",
-        "diver",
-        "boat"
-      ],
-      "fallback_broll": [
-        {
-          "scene_id": "SC_01_FB",
-          "text": "data machine cinematic",
-          "duration": 5,
-          "asset_preferences": {
-            "allow_video": true,
-            "allow_image": true,
-            "preferred_type": "image"
-          },
-          "scout_config": {
-            "keywords": [
-              "digital data on screen",
-              "futuristic touch screen",
-              "future screen cinematic"
-            ],
-            "must_have_required": [
-              "screen"
-            ],
-            "must_have_optional": [
-              "water",
-              "underwater"
-            ]
-          },
-          "negative_prompts": [
-            "person"
-          ],
-          "fallback_broll": []
-        }
-      ],
-      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_01.wav",
-      "audio_duration": 8.36,
-      "audio_start_in_scene": 0.5
+        "must_have_required": ["ocean", "sea"],
+        "must_have_optional": []
+      }
     },
     {
       "scene_id": "scene_2",
-      "text": "storm ocean zlalwaves dark sea cinematic",
+      "text": "cinematic nature sky atmosphere",
       "duration": 10.04,
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_02.wav",
+      "audio_duration": 9.04,
+      "audio_start_in_scene": 0.5,
       "asset_preferences": {
         "allow_video": true,
         "allow_image": true,
@@ -86,115 +37,75 @@
       },
       "scout_config": {
         "keywords": [
-          "storm ocean",
-          "dark sea waves",
-          "cinematic ocean storm"
+          "cinematic sky",
+          "4k sky background"
         ],
-        "must_have_required": [
-          "ocean",
-          "waves"
-        ],
-        "must_have_optional": [
-          "storm",
-          "dark sea"
-        ]
-      },
-      "negative_prompts": [
-        "people",
-        "city"
-      ],
-      "fallback_broll": [
-        {
-          "scene_id": "SC_02_FB",
-          "text": "ocean waves cinematic",
-          "duration": 5,
-          "asset_preferences": {
-            "allow_video": true,
-            "allow_image": true,
-            "preferred_type": "video"
-          },
-          "scout_config": {
-            "keywords": [
-              "ocean waves",
-              "sea water"
-            ],
-            "must_have_required": [
-              "waves"
-            ],
-            "must_have_optional": [
-              "ocean"
-            ]
-          },
-          "negative_prompts": [
-            "people"
-          ],
-          "fallback_broll": []
-        }
-      ],
-      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_02.wav",
-      "audio_duration": 9.04,
-      "audio_start_in_scene": 0.5
+        "must_have_required": ["sky"],
+        "must_have_optional": []
+      }
     },
     {
       "scene_id": "scene_3",
-      "text": "sunlight underwater calm ocean blue water cinematic",
+      "text": "cinematic forest atmosphere",
       "duration": 9.96,
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_03.wav",
+      "audio_duration": 8.96,
+      "audio_start_in_scene": 0.5,
       "asset_preferences": {
         "allow_video": true,
         "allow_image": true,
-        "preferred_type": "image"
+        "preferred_type": "video"
       },
       "scout_config": {
         "keywords": [
-          "underwater sunlight",
-          "calm ocean underwater",
-          "blue water rays"
+          "cinematic forest",
+          "4k forest"
         ],
-        "must_have_required": [
-          "underwater",
-          "sunlight"
-        ],
-        "must_have_optional": [
-          "ocean",
-          "blue water",
-          "rays"
-        ]
+        "must_have_required": ["forest"],
+        "must_have_optional": []
+      }
+    },
+    {
+      "scene_id": "scene_4",
+      "text": "cinematic spaceship",
+      "duration": 9.28,
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_04.wav",
+      "audio_duration": 8.28,
+      "audio_start_in_scene": 0.5,
+      "asset_preferences": {
+        "allow_video": true,
+        "allow_image": true,
+        "preferred_type": "video"
       },
-      "negative_prompts": [
-        "diver",
-        "people"
-      ],
-      "fallback_broll": [
-        {
-          "scene_id": "SC_03_FB",
-          "text": "blue ocean water cinematic",
-          "duration": 5,
-          "asset_preferences": {
-            "allow_video": true,
-            "allow_image": true,
-            "preferred_type": "image"
-          },
-          "scout_config": {
-            "keywords": [
-              "blue ocean",
-              "underwater water"
-            ],
-            "must_have_required": [
-              "water"
-            ],
-            "must_have_optional": [
-              "ocean"
-            ]
-          },
-          "negative_prompts": [
-            "people"
-          ],
-          "fallback_broll": []
-        }
-      ],
-      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_03.wav",
-      "audio_duration": 8.96,
-      "audio_start_in_scene": 0.5
+      "scout_config": {
+        "keywords": [
+          "cinematic spaceship",
+          "4k spaceship"
+        ],
+        "must_have_required": ["spaceship"],
+        "must_have_optional": []
+      }
+    },
+    {
+      "scene_id": "scene_5",
+      "text": "cinematic science",
+      "duration": 8.87,
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_05.wav",
+      "audio_duration": 7.87,
+      "audio_start_in_scene": 0.5,
+      "asset_preferences": {
+        "allow_video": true,
+        "allow_image": true,
+        "preferred_type": "video"
+      },
+      "scout_config": {
+        "keywords": [
+          "cinematic science",
+          "4k background"
+        ],
+        "must_have_required": [],
+        "must_have_optional": []
+      }
     }
   ]
 }
