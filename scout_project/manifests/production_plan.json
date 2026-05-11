@@ -9,6 +9,7 @@
       "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_01.wav",
       "audio_duration": 8.36,
       "audio_start_in_scene": 0.5,
+      "negative_prompts": ["low quality", "blurry", "text", "watermark", "people"],
       "asset_preferences": {
         "allow_video": true,
         "allow_image": true,
@@ -30,6 +31,7 @@
       "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_02.wav",
       "audio_duration": 9.04,
       "audio_start_in_scene": 0.5,
+      "negative_prompts": ["low quality", "blurry", "text", "watermark", "people"],
       "asset_preferences": {
         "allow_video": true,
         "allow_image": true,
@@ -51,6 +53,7 @@
       "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_03.wav",
       "audio_duration": 8.96,
       "audio_start_in_scene": 0.5,
+      "negative_prompts": ["low quality", "blurry", "text", "watermark", "people"],
       "asset_preferences": {
         "allow_video": true,
         "allow_image": true,
@@ -72,6 +75,7 @@
       "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_04.wav",
       "audio_duration": 8.28,
       "audio_start_in_scene": 0.5,
+      "negative_prompts": ["low quality", "blurry", "text", "watermark", "people"],
       "asset_preferences": {
         "allow_video": true,
         "allow_image": true,
@@ -93,6 +97,7 @@
       "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_05.wav",
       "audio_duration": 7.87,
       "audio_start_in_scene": 0.5,
+      "negative_prompts": ["low quality", "blurry", "text", "watermark", "people"],
       "asset_preferences": {
         "allow_video": true,
         "allow_image": true,

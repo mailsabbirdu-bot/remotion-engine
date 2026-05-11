@@ -16,12 +16,15 @@ import glob
 
 from pydub import AudioSegment
 from core.scout import get_all_candidates
+from core.technical_filter import technical_filter
+from core.semantic_filter import semantic_filter
 
 # Path discovery for Colab vs Local
 DRIVE_BASE = "/content/drive/MyDrive/Counterism_Studio_V4"
 LOCAL_BASE = "./Counterism_Studio_V4"
 BASE = DRIVE_BASE if os.path.exists("/content/drive") else LOCAL_BASE
 
+TEMPLATE_PLAN_PATH = "scout_project/manifests/production_plan.json"
 PLAN_PATH = f"{BASE}/manifests/production_plan.json"
 TEMP_DIR = "/content/temp_assets" if os.path.exists("/content") else "./temp_assets"
 RENDER_DIR = f"{BASE}/renders"
@@ -63,6 +66,14 @@ END_PADDING = 0.5
 def generate_production_plan():
     print("\n🎙️ SCANNING AUDIO FILES FOR SCENE GENERATION...")
 
+    # Load Template
+    if os.path.exists(TEMPLATE_PLAN_PATH):
+        with open(TEMPLATE_PLAN_PATH, "r", encoding="utf-8") as f:
+            template_data = json.load(f)
+            template_scenes = template_data.get("scenes", [])
+    else:
+        template_scenes = []
+
     # Find all SC_xx.wav files
     audio_files = sorted(glob.glob(os.path.join(AUDIO_DIR, "SC_[0-9][0-9].wav")))
 
@@ -72,35 +83,63 @@ def generate_production_plan():
 
     scenes = []
 
-    for idx, audio_path in enumerate(audio_files, start=1):
+    for idx, audio_path in enumerate(audio_files):
         audio_name = os.path.basename(audio_path)
 
         # Calculate duration
-        audio = AudioSegment.from_wav(audio_path)
-        audio_duration = len(audio) / 1000.0
+        try:
+            audio = AudioSegment.from_wav(audio_path)
+            audio_duration = len(audio) / 1000.0
+        except Exception as e:
+            print(f"⚠️ Could not read audio {audio_name}, using default 5s: {e}")
+            audio_duration = 5.0
+
         final_duration = START_PADDING + audio_duration + END_PADDING
+
+        # Use template if available
+        if idx < len(template_scenes):
+            scene_template = template_scenes[idx]
+            text = scene_template.get("text", "cinematic atmosphere")
+            negative_prompts = scene_template.get("negative_prompts", ["low quality", "blurry"])
+            asset_preferences = scene_template.get("asset_preferences", {
+                "allow_video": True,
+                "allow_image": True,
+                "preferred_type": "video"
+            })
+            scout_config = scene_template.get("scout_config", {
+                "keywords": ["cinematic"],
+                "must_have_required": [],
+                "must_have_optional": []
+            })
+        else:
+            # Default fallback for extra audio files
+            text = "cinematic atmosphere"
+            negative_prompts = ["low quality", "blurry"]
+            asset_preferences = {
+                "allow_video": True,
+                "allow_image": True,
+                "preferred_type": "video"
+            }
+            scout_config = {
+                "keywords": ["cinematic background"],
+                "must_have_required": [],
+                "must_have_optional": []
+            }
 
         # Scene blueprint
         scene = {
-            "scene_id": f"scene_{idx}",
-            "text": "cinematic nature ocean atmosphere", # Default prompt if none provided
+            "scene_id": f"scene_{idx+1}",
+            "text": text,
             "duration": round(final_duration, 2),
             "audio_path": audio_path,
             "audio_duration": round(audio_duration, 2),
             "audio_start_in_scene": START_PADDING,
-            "asset_preferences": {
-                "allow_video": True,
-                "allow_image": True,
-                "preferred_type": "video"
-            },
-            "scout_config": {
-                "keywords": ["cinematic nature", "4k background"],
-                "must_have_required": [],
-                "must_have_optional": []
-            }
+            "negative_prompts": negative_prompts,
+            "asset_preferences": asset_preferences,
+            "scout_config": scout_config
         }
         scenes.append(scene)
-        print(f"✅ Scene {idx}: {audio_name} → {round(final_duration, 2)}s")
+        print(f"✅ Scene {idx+1}: {audio_name} → {round(final_duration, 2)}s")
 
     # Update the production plan file
     plan_data = {
@@ -135,23 +174,40 @@ async def download_asset(url, path):
 # RENDER VIDEO
 # =========================================================
 
-def render_scene_video(video, audio, out, duration, delay):
-    temp_v = "/tmp/temp_v.mp4"
+def render_scene_video(asset_path, asset_type, audio, out, duration, delay):
+    temp_v = os.path.join(TEMP_DIR, "temp_v_visual.mp4")
 
-    # Step 1: Scale and Loop Video
-    subprocess.run([
-        "ffmpeg","-y",
-        "-stream_loop","-1",
-        "-i",video,
-        "-t",str(duration),
-        "-vf","scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,setsar=1",
-        "-r","24",
-        "-pix_fmt", "yuv420p",
-        "-c:v", "libx264",
-        "-preset", "superfast",
-        "-an",
-        temp_v
-    ], check=True, capture_output=True)
+    # Step 1: Process visual asset based on type
+    if asset_type == "video":
+        # Scale and Loop Video
+        subprocess.run([
+            "ffmpeg","-y",
+            "-stream_loop","-1",
+            "-i",asset_path,
+            "-t",str(duration),
+            "-vf","scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,setsar=1",
+            "-r","24",
+            "-pix_fmt", "yuv420p",
+            "-c:v", "libx264",
+            "-preset", "superfast",
+            "-an",
+            temp_v
+        ], check=True, capture_output=True)
+    else:
+        # Loop Image to create Video
+        subprocess.run([
+            "ffmpeg","-y",
+            "-loop","1",
+            "-i",asset_path,
+            "-t",str(duration),
+            "-vf","scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,setsar=1",
+            "-r","24",
+            "-pix_fmt", "yuv420p",
+            "-c:v", "libx264",
+            "-preset", "superfast",
+            "-an",
+            temp_v
+        ], check=True, capture_output=True)
 
     # Step 2: Mux Audio
     subprocess.run([
@@ -159,8 +215,8 @@ def render_scene_video(video, audio, out, duration, delay):
         "-i",temp_v,
         "-itsoffset",str(delay),
         "-i",audio,
-        "-map","0:v",
-        "-map","1:a",
+        "-map","0:v:0",
+        "-map","1:a:0",
         "-c:v","copy",
         "-c:a","aac",
         "-b:a", "128k",
@@ -175,17 +231,28 @@ def render_scene_video(video, audio, out, duration, delay):
 async def process_scene(scene, idx):
     print(f"\n🎬 RENDERING SCENE {idx}: {scene['scene_id']}")
 
+    # 1. Get raw candidates
     candidates = await get_all_candidates(scene)
     if not candidates:
         print("❌ NO ASSETS FOUND")
         return None
 
+    # 2. Apply Filters
+    print(f"🔍 Filtering {len(candidates)} candidates...")
+    candidates = technical_filter(candidates, scene["duration"])
+    candidates = semantic_filter(scene, candidates)
+
+    if not candidates:
+        print("❌ NO ASSETS SURVIVED FILTERING")
+        return None
+
+    # Best candidate after semantic ranking
     best = candidates[0]
 
     ext = ".mp4" if best["type"]=="video" else ".jpg"
     asset_path = f"{TEMP_DIR}/asset_{idx}{ext}"
 
-    print(f"📥 Downloading: {best['source']} ({best['type']})")
+    print(f"📥 Downloading: {best['source']} ({best['type']}) - Score: {best.get('semantic_score', 0):.2f}")
     ok = await download_asset(best["url"], asset_path)
     if not ok: return None
 
@@ -194,6 +261,7 @@ async def process_scene(scene, idx):
     try:
         render_scene_video(
             asset_path,
+            best["type"],
             scene["audio_path"],
             out,
             scene["duration"],
@@ -212,6 +280,11 @@ async def process_scene(scene, idx):
 async def run_engine():
     scenes = generate_production_plan()
     if not scenes: return
+
+    # Skip actual asset fetching and rendering if ffmpeg is missing (for local testing)
+    if not shutil.which("ffmpeg"):
+        print("⚠️ ffmpeg not found. Skipping asset processing and rendering.")
+        return
 
     outputs = []
     for i, scene in enumerate(scenes, 1):
