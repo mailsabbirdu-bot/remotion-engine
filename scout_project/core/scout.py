@@ -127,21 +127,27 @@ async def get_all_candidates(scene):
     allow_video = prefs.get("allow_video", True)
     allow_image = prefs.get("allow_image", True)
     scout = scene.get("scout_config", {})
+
+    # Use all provided keywords for broader search
     keywords = scout.get("keywords", [])
-    query = keywords[0] if keywords else scene["text"]
+    if not keywords:
+        keywords = [scene["text"]]
 
     async with aiohttp.ClientSession() as session:
         tasks = []
-        if allow_video:
-            tasks.append(fetch_pexels_video(session, query))
-            tasks.append(fetch_pixabay_video(session, query))
-        if allow_image:
-            tasks.append(fetch_pexels_image(session, query))
+        for query in keywords:
+            if allow_video:
+                tasks.append(fetch_pexels_video(session, query))
+                tasks.append(fetch_pixabay_video(session, query))
+            if allow_image:
+                tasks.append(fetch_pexels_image(session, query))
+
         results = await asyncio.gather(*tasks)
 
     final = []
     for r in results:
         final.extend(r)
+
     final = deduplicate(final)
-    print(f"✅ [SCOUT] Total Candidates Found: {len(final)}")
-    return final[:20]
+    print(f"✅ [SCOUT] Total Mixed Candidates: {len(final)}")
+    return final[:40] # Increased candidate pool for better deduplication options
