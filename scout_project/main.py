@@ -21,13 +21,15 @@ from pydub import AudioSegment
 from core.scout import get_all_candidates
 from core.technical_filter import technical_filter
 from core.semantic_filter import semantic_filter
+from core.vision_auditor import VisionAuditor
+from core.model_manager import DEVICE
 
 # Path discovery for Colab vs Local
 DRIVE_BASE = "/content/drive/MyDrive/Counterism_Studio_V4"
 LOCAL_BASE = "./Counterism_Studio_V4"
 BASE = DRIVE_BASE if os.path.exists("/content/drive") else LOCAL_BASE
 
-# Manifest Template from Repository (Absolute path relative to this script)
+# Manifest Template from Repository
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE_PLAN_PATH = os.path.join(SCRIPT_DIR, "manifests", "production_plan.json")
 
@@ -46,6 +48,7 @@ os.makedirs(AUDIO_DIR, exist_ok=True)
 
 print(f"🚀 ENGINE STARTING. BASE: {BASE}")
 print(f"📂 REPO TEMPLATE: {TEMPLATE_PLAN_PATH}")
+print(f"⚡ HARDWARE ACCELERATION: {DEVICE.upper()}")
 
 # Visual Hash Registry to prevent duplicate footage
 HASH_REGISTRY = set()
@@ -79,7 +82,6 @@ def get_visual_hash(path, is_video=True):
     try:
         if is_video:
             cap = cv2.VideoCapture(path)
-            # Try to grab a frame at 1.0s or 50% to avoid black fades
             fps = cap.get(cv2.CAP_PROP_FPS)
             if fps > 0:
                 cap.set(cv2.CAP_PROP_POS_FRAMES, int(fps * 1.0))
@@ -106,7 +108,6 @@ def get_visual_hash(path, is_video=True):
 def generate_production_plan():
     print("\n🎙️ SCANNING AUDIO FILES FOR SCENE GENERATION...")
 
-    # Load Template from repository
     if os.path.exists(TEMPLATE_PLAN_PATH):
         print(f"📖 Loading manifest template: {TEMPLATE_PLAN_PATH}")
         with open(TEMPLATE_PLAN_PATH, "r", encoding="utf-8") as f:
@@ -114,11 +115,10 @@ def generate_production_plan():
             template_scenes = template_data.get("scenes", [])
             project_name = template_data.get("project_name", "Dynamic_Project")
     else:
-        print(f"⚠️ Template not found at {TEMPLATE_PLAN_PATH}! Please ensure it exists in the repo.")
+        print(f"⚠️ Template not found at {TEMPLATE_PLAN_PATH}!")
         template_scenes = []
         project_name = "Dynamic_Project"
 
-    # Find all SC_xx.wav files in Drive/Local audio folder
     audio_files = sorted(glob.glob(os.path.join(AUDIO_DIR, "SC_[0-9][0-9].wav")))
 
     if not audio_files:
@@ -130,7 +130,6 @@ def generate_production_plan():
     for idx, audio_path in enumerate(audio_files):
         audio_name = os.path.basename(audio_path)
 
-        # Calculate duration
         try:
             audio = AudioSegment.from_wav(audio_path)
             audio_duration = len(audio) / 1000.0
@@ -140,7 +139,6 @@ def generate_production_plan():
 
         final_duration = START_PADDING + audio_duration + END_PADDING
 
-        # Use template if available (matched by index)
         if idx < len(template_scenes):
             scene_template = template_scenes[idx]
             text = scene_template.get("text", "cinematic atmosphere")
@@ -156,21 +154,11 @@ def generate_production_plan():
                 "must_have_optional": []
             })
         else:
-            # Default fallback for extra audio files
             text = "cinematic atmosphere"
             negative_prompts = ["low quality", "blurry"]
-            asset_preferences = {
-                "allow_video": True,
-                "allow_image": True,
-                "preferred_type": "video"
-            }
-            scout_config = {
-                "keywords": ["cinematic background"],
-                "must_have_required": [],
-                "must_have_optional": []
-            }
+            asset_preferences = {"allow_video": True, "allow_image": True, "preferred_type": "video"}
+            scout_config = {"keywords": ["cinematic background"], "must_have_required": [], "must_have_optional": []}
 
-        # Scene blueprint
         scene = {
             "scene_id": f"scene_{idx+1}",
             "text": text,
@@ -185,13 +173,7 @@ def generate_production_plan():
         scenes.append(scene)
         print(f"✅ Scene {idx+1}: {audio_name} → {round(final_duration, 2)}s | Keywords: {scene['scout_config']['keywords']}")
 
-    # Save the updated production plan for execution
-    plan_data = {
-        "project_name": project_name,
-        "version": "REPO_TEMPLATE_V1",
-        "scenes": scenes
-    }
-
+    plan_data = {"project_name": project_name, "version": "REPO_TEMPLATE_V2", "scenes": scenes}
     with open(PLAN_PATH, "w", encoding="utf-8") as f:
         json.dump(plan_data, f, indent=2, ensure_ascii=False)
 
@@ -221,49 +203,22 @@ async def download_asset(url, path):
 def render_scene_video(asset_path, asset_type, audio, out, duration, delay):
     temp_v = os.path.join(TEMP_DIR, "temp_v_visual.mp4")
 
-    # Step 1: Process visual asset based on type
     if asset_type == "video":
         subprocess.run([
-            "ffmpeg","-y",
-            "-stream_loop","-1",
-            "-i",asset_path,
-            "-t",str(duration),
+            "ffmpeg","-y", "-stream_loop","-1", "-i",asset_path, "-t",str(duration),
             "-vf","scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,setsar=1",
-            "-r","24",
-            "-pix_fmt", "yuv420p",
-            "-c:v", "libx264",
-            "-preset", "superfast",
-            "-an",
-            temp_v
+            "-r","24", "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "superfast", "-an", temp_v
         ], check=True, capture_output=True)
     else:
         subprocess.run([
-            "ffmpeg","-y",
-            "-loop","1",
-            "-i",asset_path,
-            "-t",str(duration),
+            "ffmpeg","-y", "-loop","1", "-i",asset_path, "-t",str(duration),
             "-vf","scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,setsar=1",
-            "-r","24",
-            "-pix_fmt", "yuv420p",
-            "-c:v", "libx264",
-            "-preset", "superfast",
-            "-an",
-            temp_v
+            "-r","24", "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "superfast", "-an", temp_v
         ], check=True, capture_output=True)
 
-    # Step 2: Mux Audio
     subprocess.run([
-        "ffmpeg","-y",
-        "-i",temp_v,
-        "-itsoffset",str(delay),
-        "-i",audio,
-        "-map","0:v:0",
-        "-map","1:a:0",
-        "-c:v","copy",
-        "-c:a","aac",
-        "-b:a", "128k",
-        "-t",str(duration),
-        out
+        "ffmpeg","-y", "-i",temp_v, "-itsoffset",str(delay), "-i",audio,
+        "-map","0:v:0", "-map","1:a:0", "-c:v","copy", "-c:a","aac", "-b:a", "128k", "-t",str(duration), out
     ], check=True, capture_output=True)
 
 # =========================================================
@@ -273,13 +228,11 @@ def render_scene_video(asset_path, asset_type, audio, out, duration, delay):
 async def process_scene(scene, idx):
     print(f"\n🎬 [ENGINE] PROCESSING SCENE {idx}: {scene['scene_id']}")
 
-    # 1. Get raw candidates
     candidates = await get_all_candidates(scene)
     if not candidates:
         print("❌ [ENGINE] NO ASSETS FOUND")
         return None
 
-    # 2. Apply Filters and Log Scores
     print(f"🔍 [ENGINE] Evaluating {len(candidates)} candidates...")
     candidates = technical_filter(candidates, scene["duration"])
     candidates = semantic_filter(scene, candidates)
@@ -288,47 +241,54 @@ async def process_scene(scene, idx):
         print("❌ [ENGINE] NO ASSETS SURVIVED FILTERING")
         return None
 
-    # 3. Visual Deduplication (ImageHash)
+    # Deep Vision Auditor for Top 5
+    auditor = VisionAuditor(scene)
     final_selection = None
 
-    for rank, cand in enumerate(candidates, 1):
+    for rank, cand in enumerate(candidates[:5], 1):
         ext = ".mp4" if cand["type"]=="video" else ".jpg"
         trial_path = f"{TEMP_DIR}/trial_{idx}_{rank}{ext}"
 
         print(f"📥 [ENGINE] Evaluating Candidate #{rank}: {cand['source']} ({cand['type']})")
-        print(f"   📊 Tech Score: {cand.get('technical_score', 0):.2f} | Semantic Score: {cand.get('semantic_score', 0):.2f}")
 
         ok = await download_asset(cand["url"], trial_path)
         if not ok: continue
 
+        # 1. Visual Hash Check
         v_hash = get_visual_hash(trial_path, cand["type"]=="video")
         if v_hash in HASH_REGISTRY:
-            print(f"   ⚠️ [ENGINE] DUPLICATE DETECTED (Hash: {v_hash}). Skipping...")
+            print(f"      ⚠️ [ENGINE] DUPLICATE DETECTED. Skipping...")
             continue
 
-        # Valid Unique Asset Found
+        # 2. Vision Audit (BLIP + CLIP)
+        audit_results = auditor.audit_candidate(trial_path, cand["type"]=="video")
+        print(f"      📊 Scores -> Tech: {cand.get('technical_score', 0):.2f} | Semantic: {cand.get('semantic_score', 0):.2f} | Vision Audit: {audit_results['audit_score']}")
+        print(f"      📝 Captions: {audit_results['captions']}")
+
+        if audit_results["audit_score"] < 0:
+            print(f"      ❌ [ENGINE] Candidate failed vision audit (negative penalty). Skipping...")
+            continue
+
+        # Valid Selection
         HASH_REGISTRY.add(v_hash)
         final_selection = cand
         asset_path = f"{TEMP_DIR}/asset_{idx}{ext}"
         os.rename(trial_path, asset_path)
-        print(f"   ✨ [ENGINE] UNIQUE ASSET SELECTED (Hash: {v_hash})")
+        print(f"      ✨ [ENGINE] UNIQUE ASSET SELECTED (Hash: {v_hash})")
         break
 
     if not final_selection:
-        print("❌ [ENGINE] NO UNIQUE ASSETS FOUND AMONG TOP CANDIDATES")
-        return None
+        # Fallback to the top candidate if no unique/audit-passing one found among top 5
+        print("⚠️ [ENGINE] No ideal unique candidate found in top 5. Using top ranked available.")
+        final_selection = candidates[0]
+        ext = ".mp4" if final_selection["type"]=="video" else ".jpg"
+        asset_path = f"{TEMP_DIR}/asset_{idx}{ext}"
+        await download_asset(final_selection["url"], asset_path)
 
     out = f"{RENDER_DIR}/scene_{idx}.mp4"
 
     try:
-        render_scene_video(
-            asset_path,
-            final_selection["type"],
-            scene["audio_path"],
-            out,
-            scene["duration"],
-            scene["audio_start_in_scene"]
-        )
+        render_scene_video(asset_path, final_selection["type"], scene["audio_path"], out, scene["duration"], scene["audio_start_in_scene"])
         print(f"✅ [ENGINE] Scene {idx} saved to: {out}")
         return out
     except Exception as e:

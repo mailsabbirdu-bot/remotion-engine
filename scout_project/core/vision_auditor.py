@@ -1,226 +1,98 @@
 import torch
 import cv2
 import numpy as np
-
 from PIL import Image
 
 from core.model_manager import (
     DEVICE,
     CLIP_MODEL,
-    CLIP_PROCESSOR,    BLIP_MODEL,
+    CLIP_PROCESSOR,
+    BLIP_MODEL,
     BLIP_PROCESSOR
 )
 
-
 class VisionAuditor:
-
     def __init__(self, scene):
-
         self.scene = scene
         self.query = scene["text"]
+        self.negative_prompts = scene.get("negative_prompts", [])
 
-        self.rules = scene.get(
-            "audit_rules",
-            {}
-        )
-
-        self.weights = self.rules.get(
-            "fusion_weighting",
-            {
-                "clip": 3.0,
-                "siglip": 2.0,
-                "caption": 1.0,
-                "object_confidence": 3.0,
-                "negative_penalty": -1.0
-            }
-        )
-
-    def extract_frames(self, path):
-
-        cap = cv2.VideoCapture(path)
-
-        fps = cap.get(cv2.CAP_PROP_FPS)
-
-        total = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-
-        duration = total / fps if fps else 1
-
-        timestamps = np.linspace(
-            0,
-            max(1, duration - 1),
-            3
-        )
+    def extract_optimized_frames(self, path, is_video=True):
+        """Extracts exactly 2 frames from the middle area of the video for speed."""
+        if not is_video:
+            try:
+                img = Image.open(path).convert("RGB")
+                return [img]
+            except:
+                return []
 
         frames = []
+        try:
+            cap = cv2.VideoCapture(path)
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-        for t in timestamps:
+            # Sampling at 40% and 60% marks
+            sample_indices = [int(total_frames * 0.4), int(total_frames * 0.6)]
 
-            cap.set(
-                cv2.CAP_PROP_POS_FRAMES,
-                int(t * fps)
-            )
-
-            ret, frame = cap.read()
-
-            if not ret:
-                continue
-
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame = cv2.resize(frame, (224, 224))
-
-            frames.append(Image.fromarray(frame))
-
-        cap.release()
-
+            for idx in sample_indices:
+                cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
+                ret, frame = cap.read()
+                if ret:
+                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    frames.append(Image.fromarray(frame))
+            cap.release()
+        except:
+            pass
         return frames
 
-    def clip_score(self, frames):
+    def audit_candidate(self, path, is_video=True):
+        """Performs a visual audit using BLIP for captions and CLIP for alignment."""
+        frames = self.extract_optimized_frames(path, is_video)
+        if not frames:
+            return {"audit_score": 0.0, "captions": []}
 
-        inputs = CLIP_PROCESSOR(
+        # CLIP Score (Visual-Text Alignment)
+        clip_inputs = CLIP_PROCESSOR(
             text=[self.query],
             images=frames,
             return_tensors="pt",
             padding=True
         ).to(DEVICE)
 
-        with torch.no_grad():
+        if DEVICE == "cuda":
+            clip_inputs = {k: v.half() if v.dtype == torch.float32 else v for k, v in clip_inputs.items()}
 
-            out = CLIP_MODEL(**inputs)
-
-            score = torch.matmul(
-                out.image_embeds,
-                out.text_embeds.T
+        with torch.inference_mode():
+            clip_out = CLIP_MODEL(**clip_inputs)
+            # Average score across sampled frames
+            clip_score = torch.matmul(
+                clip_out.image_embeds,
+                clip_out.text_embeds.T
             ).mean().item()
 
-        return float(score)
+        # BLIP Captions & Negative Penalty
+        blip_inputs = BLIP_PROCESSOR(images=frames, return_tensors="pt").to(DEVICE)
+        if DEVICE == "cuda":
+            blip_inputs = {k: v.half() if v.dtype == torch.float32 else v for k, v in blip_inputs.items()}
 
-    def siglip_score(self, frames):
-        return 0.0
+        captions = []
+        negative_penalty = 0.0
 
-    def captions(self, frames):
+        with torch.inference_mode():
+            out = BLIP_MODEL.generate(**blip_inputs, max_new_tokens=20)
+            captions = [BLIP_PROCESSOR.decode(o, skip_special_tokens=True).lower() for o in out]
 
-        try:
+        for cap in captions:
+            for neg in self.negative_prompts:
+                if neg.lower() in cap:
+                    negative_penalty += 0.4
+                    print(f"      🚫 [AUDIT] Negative match found: '{neg}' in '{cap}'")
 
-            inputs = BLIP_PROCESSOR(
-                images=frames,
-                return_tensors="pt"
-            ).to(DEVICE)
-
-            with torch.no_grad():
-
-                out = BLIP_MODEL.generate(
-                    **inputs,
-                    max_new_tokens=13
-                )
-
-            return [
-                BLIP_PROCESSOR.decode(
-                    o,
-                    skip_special_tokens=True
-                ).lower()
-                for o in out
-            ]
-
-        except:
-            return []
-
-    def compute_caption_scores(self, captions):
-
-        positive = self.rules.get(
-            "caption_positive_terms",
-            []
-        )
-
-        negative = self.rules.get(
-            "caption_negative_terms",
-            []
-        )
-
-        caption_score = 0
-        object_hits = 0
-
-        required = self.scene.get(
-            "scout_config",
-            {}
-        ).get(
-            "must_have_required",
-            []
-        )
-
-        for c in captions:
-
-            for p in positive:
-                if p.lower() in c:
-                    caption_score += 0.2
-
-            for n in negative:
-                if n.lower() in c:
-                    caption_score -= 0.6
-
-            for r in required:
-                if r.lower() in c:
-                    object_hits += 1
-
-        return caption_score, object_hits
-
-    def audit(self, path):
-
-        frames = self.extract_frames(path)
-
-        clip = self.clip_score(frames)
-        siglip = 0
-
-        captions = self.captions(frames)
-
-        caption_score, object_hits = self.compute_caption_scores(captions)
-
-        negative_penalty = 0
-
-        for neg in self.scene.get("negative_prompts", []):
-
-            for c in captions:
-
-                if neg.lower() in c:
-                    negative_penalty += 0.3
-
-        object_confidence = object_hits / 3
-
-        fusion = (
-            clip * self.weights["clip"] +
-            siglip * self.weights["siglip"] +
-            caption_score * self.weights["caption"] +
-            object_confidence * self.weights["object_confidence"] +
-            (negative_penalty * self.weights["negative_penalty"])
-        )
-
-        confidence = max(
-            0,
-            min(
-                1,
-                (clip * 0.8 + object_confidence * 0.2)
-            )
-        )
+        final_audit_score = (clip_score * 10) - negative_penalty
 
         return {
-            "clip_score": clip,
-            "siglip_score": siglip,
-            "caption_score": caption_score,
-            "negative_penalty": negative_penalty,
-            "object_confidence": object_confidence,
-            "fusion_score": fusion,
-            "confidence": confidence,
+            "audit_score": round(final_audit_score, 3),
+            "clip_alignment": round(clip_score, 3),
             "captions": captions,
-            "final_score": fusion
+            "penalty": negative_penalty
         }
-
-    def fast_fusion_score(self, path):
-
-        frames = self.extract_frames(path)
-
-        clip = self.clip_score(frames)
-        siglip = 0
-
-        return (
-            clip * 0.7 +
-            siglip * 0.3
-        )
