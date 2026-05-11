@@ -1,21 +1,13 @@
-# 🚀 Scout Project Colab Guide
+# 🚀 Scout Engine for Google Colab
 
-Run the Scout Engine in Google Colab to automatically scout assets and render individual scenes synced with your audio.
+Run the Scout Engine to automatically find visual footage synced with your audio files in Google Drive.
 
-## 📁 Prerequisites (Google Drive)
-Ensure your Google Drive has the following folder structure:
-- `Counterism_Studio_V4/audio/` -> Put your `SC_01.wav`, `SC_02.wav`, etc. here.
-- `Counterism_Studio_V4/renders/` -> Individual scenes will be saved here.
-- `Counterism_Studio_V4/manifests/` -> Final `production_plan.json` will be saved here.
-
----
-
-## 🎬 Execution Code
+## 🎬 Automated Execution Code
 
 Copy and paste the following into a Google Colab code cell:
 
 ```python
-# @title 🚀 Start Scout Engine
+# @title 🚀 Run Scout Engine
 import os
 import shutil
 
@@ -26,33 +18,38 @@ if not os.path.exists('/content/drive'):
 
 # --- CONFIGURATION ---
 REPO_URL = "https://github.com/mailsabbirdu-bot/remotion-engine.git"
-PROJECT_DIR = "/content/scout-engine"
+WORK_DIR = "/content/scout-engine"
 
-# 2. Setup Environment
-if os.path.exists(PROJECT_DIR):
-    shutil.rmtree(PROJECT_DIR)
+# 2. Prepare Environment
+if os.path.exists(WORK_DIR):
+    shutil.rmtree(WORK_DIR)
 
-print("🛰️ Cloning engine...")
-!git clone {REPO_URL} {PROJECT_DIR}
-%cd {PROJECT_DIR}/scout_project
+print("🛰️ Cloning latest Scout Engine from GitHub...")
+!git clone {REPO_URL} {WORK_DIR}
+%cd {WORK_DIR}/scout_project
 
-# 3. Install System Dependencies
-print("📦 Installing system dependencies...")
+# 3. System Dependencies
+print("📦 Installing system components...")
 !apt-get install -y ffmpeg libavcodec-extra > /dev/null
 
-# 4. Install Python Dependencies
-print("🐍 Installing Python packages (This may take 2-3 minutes)...")
+# 4. Python Dependencies
+print("🐍 Installing AI models & Python packages (Transformers, Torch, MoviePy)...")
 !pip install -r requirements.txt --quiet
 
-# 5. Run the Engine
-# Note: Use T4 GPU in Colab for faster filtering
-print("\n🎬 STARTING ENGINE...")
+# 5. Execute Engine
+print("\n🔥 STARTING ENGINE...")
+# Recommended: Use T4 GPU runtime in Colab for faster matching
 !python main.py
 ```
 
-## 📝 Key Features
-- **Intelligent Scouting**: Uses the instructions from `production_plan.json` in the GitHub repo to find the best matching footage from **Pexels** and **Pixabay**.
-- **Negative Prompts**: Automatically filters out unwanted content (people, watermarks, etc.) based on scene-specific negative prompts.
-- **Audio-First Sync**: Detects your Drive audios (`SC_01.wav`, etc.) and adds **0.5s padding** at both ends.
-- **AI Filtering**: Uses CLIP and Semantic Transformers to rank assets by relevance to your text.
-- **Scene Isolation**: Renders each scene as an individual `.mp4` file in your Drive `renders/` folder.
+## 📁 Required Folder Structure
+Your Google Drive must have these folders for the engine to work:
+- `Counterism_Studio_V4/audio/` -> Place your `SC_01.wav`, `SC_02.wav`, etc. here.
+- `Counterism_Studio_V4/renders/` -> The engine will save the rendered scene videos here.
+- `Counterism_Studio_V4/manifests/` -> The engine will save the final generated plan here.
+
+## 📝 Key Details
+- **Syncing**: The engine reads visual instructions from `manifests/production_plan.json` in the GitHub repo but uses the audio files in your Drive to determine scene count and timing.
+- **Padding**: Every scene automatically gets **0.5s padding** at the beginning and end.
+- **Footage**: The engine scouts for both **Video and Images** from Pexels and Pixabay.
+- **Negative Prompts**: Scenes are automatically filtered to avoid unwanted content (people, text, watermarks) based on the prompts in the plan.
