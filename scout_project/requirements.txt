@@ -8,3 +8,5 @@ torchvision
 pillow
 opencv-python
 moviepy
+imagehash
+PyWavelets
