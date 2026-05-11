@@ -17,7 +17,7 @@ def deduplicate(candidates):
     return final
 
 
-async def fetch_pexels_video(session, query, limit=8):
+async def fetch_pexels_video(session, query, limit=12):
     print(f"📡 [SCOUT] Searching Pexels Videos for: '{query}'")
     url = f"https://api.pexels.com/videos/search?query={query}&per_page={limit}"
     headers = {
@@ -55,7 +55,7 @@ async def fetch_pexels_video(session, query, limit=8):
         return []
 
 
-async def fetch_pexels_image(session, query, limit=8):
+async def fetch_pexels_image(session, query, limit=12):
     print(f"📡 [SCOUT] Searching Pexels Images for: '{query}'")
     url = f"https://api.pexels.com/v1/search?query={query}&per_page={limit}"
     headers = {
@@ -89,7 +89,7 @@ async def fetch_pexels_image(session, query, limit=8):
         return []
 
 
-async def fetch_pixabay_video(session, query, limit=8):
+async def fetch_pixabay_video(session, query, limit=12):
     print(f"📡 [SCOUT] Searching Pixabay Videos for: '{query}'")
     key = API_KEYS["pixabay"]
     url = f"https://pixabay.com/api/videos/?key={key}&q={query}&per_page={limit}"
@@ -124,11 +124,13 @@ async def fetch_pixabay_video(session, query, limit=8):
 
 async def get_all_candidates(scene):
     prefs = scene.get("asset_preferences", {})
-    allow_video = prefs.get("allow_video", True)
-    allow_image = prefs.get("allow_image", True)
-    scout = scene.get("scout_config", {})
+    preferred_type = prefs.get("preferred_type", "video")
 
-    # Use all provided keywords for broader search
+    # Strict Preference Logic: If video is preferred, we ONLY look for videos.
+    allow_video = True if preferred_type == "video" else prefs.get("allow_video", True)
+    allow_image = False if preferred_type == "video" else prefs.get("allow_image", True)
+
+    scout = scene.get("scout_config", {})
     keywords = scout.get("keywords", [])
     if not keywords:
         keywords = [scene["text"]]
@@ -149,5 +151,5 @@ async def get_all_candidates(scene):
         final.extend(r)
 
     final = deduplicate(final)
-    print(f"✅ [SCOUT] Total Mixed Candidates: {len(final)}")
-    return final[:40] # Increased candidate pool for better deduplication options
+    print(f"✅ [SCOUT] Candidates Pool: {len(final)} ({'Videos Only' if preferred_type=='video' else 'Mixed'})")
+    return final[:40]
