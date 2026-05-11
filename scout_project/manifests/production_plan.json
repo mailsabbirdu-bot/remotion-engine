@@ -105,10 +105,10 @@
       },
       "scout_config": {
         "keywords": [
-          "cinematic science",
-          "4k background"
+          "cinematic computer science",
+          "4k computer background"
         ],
-        "must_have_required": [],
+        "must_have_required": ["computer"],
         "must_have_optional": []
       }
     }
