@@ -24,8 +24,13 @@ DRIVE_BASE = "/content/drive/MyDrive/Counterism_Studio_V4"
 LOCAL_BASE = "./Counterism_Studio_V4"
 BASE = DRIVE_BASE if os.path.exists("/content/drive") else LOCAL_BASE
 
-TEMPLATE_PLAN_PATH = "scout_project/manifests/production_plan.json"
-PLAN_PATH = f"{BASE}/manifests/production_plan.json"
+# The user places production_plan.json in Google Drive > manifests
+if os.path.exists("/content/drive"):
+    DRIVE_MANIFEST_DIR = "/content/drive/MyDrive/manifests"
+else:
+    DRIVE_MANIFEST_DIR = "./manifests"
+
+PLAN_PATH = os.path.join(DRIVE_MANIFEST_DIR, "production_plan.json")
 TEMP_DIR = "/content/temp_assets" if os.path.exists("/content") else "./temp_assets"
 RENDER_DIR = f"{BASE}/renders"
 FINAL_OUTPUT = f"{BASE}/final_video.mp4"
@@ -37,6 +42,7 @@ os.makedirs(os.path.dirname(PLAN_PATH), exist_ok=True)
 os.makedirs(AUDIO_DIR, exist_ok=True)
 
 print(f"🚀 ENGINE STARTING. BASE: {BASE}")
+print(f"📄 PLAN PATH: {PLAN_PATH}")
 
 def cleanup():
     print("🧹 CLEARING OLD RENDS & TEMP FILES...")
@@ -66,13 +72,16 @@ END_PADDING = 0.5
 def generate_production_plan():
     print("\n🎙️ SCANNING AUDIO FILES FOR SCENE GENERATION...")
 
-    # Load Template
-    if os.path.exists(TEMPLATE_PLAN_PATH):
-        with open(TEMPLATE_PLAN_PATH, "r", encoding="utf-8") as f:
+    # Load Template from the user's Drive manifest path
+    if os.path.exists(PLAN_PATH):
+        with open(PLAN_PATH, "r", encoding="utf-8") as f:
             template_data = json.load(f)
             template_scenes = template_data.get("scenes", [])
+            project_name = template_data.get("project_name", "Dynamic_Project")
     else:
+        print(f"⚠️ No baseline plan found at {PLAN_PATH}. Will use defaults.")
         template_scenes = []
+        project_name = "Dynamic_Project"
 
     # Find all SC_xx.wav files
     audio_files = sorted(glob.glob(os.path.join(AUDIO_DIR, "SC_[0-9][0-9].wav")))
@@ -96,7 +105,7 @@ def generate_production_plan():
 
         final_duration = START_PADDING + audio_duration + END_PADDING
 
-        # Use template if available
+        # Use template if available (matched by index)
         if idx < len(template_scenes):
             scene_template = template_scenes[idx]
             text = scene_template.get("text", "cinematic atmosphere")
@@ -141,10 +150,10 @@ def generate_production_plan():
         scenes.append(scene)
         print(f"✅ Scene {idx+1}: {audio_name} → {round(final_duration, 2)}s")
 
-    # Update the production plan file
+    # Update the production plan file in the Drive manifest folder
     plan_data = {
-        "project_name": "Dynamic_Project",
-        "version": "COLAB_AUTO_V1",
+        "project_name": project_name,
+        "version": "DRIVE_AUTO_V1",
         "scenes": scenes
     }
 
@@ -209,7 +218,7 @@ def render_scene_video(asset_path, asset_type, audio, out, duration, delay):
             temp_v
         ], check=True, capture_output=True)
 
-    # Step 2: Mux Audio
+    # Step 2: Mux Audio. We use -t {duration} instead of -shortest to preserve ending padding.
     subprocess.run([
         "ffmpeg","-y",
         "-i",temp_v,
@@ -220,7 +229,7 @@ def render_scene_video(asset_path, asset_type, audio, out, duration, delay):
         "-c:v","copy",
         "-c:a","aac",
         "-b:a", "128k",
-        "-shortest",
+        "-t",str(duration),
         out
     ], check=True, capture_output=True)
 
