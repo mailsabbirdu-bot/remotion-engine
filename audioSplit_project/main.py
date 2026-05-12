@@ -54,23 +54,31 @@ def split_audio():
         print("❌ Error: No scenes found in story.txt or file is empty.")
         return
 
+    # Join all scene text to use as a prompt for Whisper
+    full_script_text = " ".join(scenes_text)
+
     print(f"📖 Found {len(scenes_text)} scenes. Loading Whisper model...")
-    # 'small' is better for multilingual than 'base'.
     model = whisper.load_model("small")
 
-    print("🎙️ Transcribing story.wav with AI Timestamps (this may take a moment)...")
-    # Using word_timestamps for high-precision cutting
-    result = model.transcribe(STORY_WAV, word_timestamps=True)
+    print("🎙️ Transcribing story.wav with AI Timestamps...")
+    # Passing the script as 'initial_prompt' significantly helps Whisper with specialized vocabulary and accuracy
+    result = model.transcribe(
+        STORY_WAV,
+        word_timestamps=True,
+        initial_prompt=full_script_text[:1000] # Whisper prompt limit is ~1000 chars
+    )
 
     # Flatten all words into a single list with timestamps
     all_words = []
     for segment in result['segments']:
         for word in segment.get('words', []):
-            all_words.append({
-                'text': clean_text(word['word']),
-                'start': word['start'],
-                'end': word['end']
-            })
+            word_text = clean_text(word['word'])
+            if word_text:
+                all_words.append({
+                    'text': word_text,
+                    'start': word['start'],
+                    'end': word['end']
+                })
 
     if not all_words:
         print("❌ Error: No speech detected in story.wav")
@@ -84,41 +92,45 @@ def split_audio():
 
     for i, scene_raw_text in enumerate(scenes_text):
         scene_clean = clean_text(scene_raw_text)
-        scene_words = scene_clean.split()
         print(f"\n🎬 Processing Scene {i+1}/{len(scenes_text)}...")
 
-        if not scene_words:
+        if not scene_clean or current_word_idx >= num_words:
+            print(f"   ⚠️ Skipping Scene {i+1} (No script or end of audio reached)")
             continue
 
-        # Look for the last word of the scene in the transcript to find the split point
+        # Matching algorithm: Sliding window to find the best end point for this scene
         best_end_idx = current_word_idx
         max_score = -1
 
-        # Search window: from current position up to a reasonable limit
-        # We try to find where the scene ends by matching the accumulated transcript text
+        # We search forward in the transcript to find where the current scene script ends
         accumulated_transcript = ""
-        search_limit = min(current_word_idx + len(scene_words) * 3 + 20, num_words)
+        # Look ahead up to 2.5x the number of words in the scene script + buffer
+        look_ahead = len(scene_clean.split()) * 2 + 30
+        search_limit = min(current_word_idx + look_ahead, num_words)
 
         for j in range(current_word_idx, search_limit):
             accumulated_transcript += " " + all_words[j]['text']
-            score = fuzz.ratio(scene_clean, accumulated_transcript.strip())
 
-            if score > max_score:
+            # token_sort_ratio is more robust against word order or extra small words
+            score = fuzz.token_sort_ratio(scene_clean, accumulated_transcript.strip())
+
+            if score >= max_score:
                 max_score = score
                 best_end_idx = j
 
-            # If we have an excellent match, we can stop early
-            if score > 95:
-                break
-
-            # If the score starts dropping significantly, we've passed it
-            if max_score > 60 and (max_score - score) > 20:
-                break
+            # Early exit for perfect matches
+            if score > 98: break
+            # Drop-off check: if score is falling from a high peak, we likely passed it
+            if max_score > 70 and (max_score - score) > 25: break
 
         start_time = all_words[current_word_idx]['start'] * 1000
         end_time = all_words[best_end_idx]['end'] * 1000
 
-        print(f"   ✨ Alignment: {round(max_score)}% match.")
+        # Print first few words matched for user verification
+        matched_text = " ".join([w['text'] for w in all_words[current_word_idx:best_end_idx+1]])
+        print(f"   🔍 AI Matched: \"{matched_text[:60]}...\"")
+        print(f"   ✨ Confidence: {round(max_score)}%")
+
         current_word_idx = best_end_idx + 1
 
         # Slice and export
