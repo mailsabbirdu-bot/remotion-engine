@@ -1,6 +1,6 @@
-# 🎬 Smart ScriptWriter AI - Setup & Run
+# 🎬 ScriptWriter AI - Professional Setup & Run
 
-Paste and run this cell in Google Colab. It will find the project and set everything up automatically.
+Paste and run this cell in Google Colab. It will find the ScriptWriter project and set everything up automatically.
 
 ```python
 import os
@@ -10,60 +10,65 @@ from google.colab import drive, files
 
 # --- CONFIGURATION ---
 PROJECT_NAME = "scriptWriter_project"
-CORE_FILE = "core/pipeline.py"
+REQUIRED_FILES = ["main.py", "requirements.txt", "core/pipeline.py"]
 # ---------------------
+
+def is_project_dir(path):
+    return all(os.path.exists(os.path.join(path, f)) for f in REQUIRED_FILES)
 
 def locate_project():
     print(f"🔍 Searching for '{PROJECT_NAME}'...")
 
-    # 1. Check current directory
-    if os.path.exists(CORE_FILE):
+    # Priority 1: Current directory
+    if is_project_dir(os.getcwd()):
         return os.getcwd()
 
-    # 2. Check /content/PROJECT_NAME
-    if os.path.exists(f"/content/{PROJECT_NAME}/{CORE_FILE}"):
-        return f"/content/{PROJECT_NAME}"
+    # Priority 2: /content/PROJECT_NAME
+    colab_path = f"/content/{PROJECT_NAME}"
+    if os.path.exists(colab_path) and is_project_dir(colab_path):
+        return colab_path
 
-    # 3. Check inside any folder in /content (e.g. if repo was cloned)
-    for item in os.listdir("/content"):
-        potential = os.path.join("/content", item, PROJECT_NAME)
-        if os.path.isdir(potential) and os.path.exists(os.path.join(potential, CORE_FILE)):
-            return potential
-        # Maybe the repo IS the project (no subfolder)
-        repo_path = os.path.join("/content", item)
-        if os.path.isdir(repo_path) and os.path.exists(os.path.join(repo_path, CORE_FILE)):
-            return repo_path
+    # Priority 3: Deep search in /content (handles clones and subdirs)
+    print("📂 Searching local storage...")
+    for root, dirs, _ in os.walk("/content"):
+        if PROJECT_NAME in dirs:
+            path = os.path.join(root, PROJECT_NAME)
+            if is_project_dir(path): return path
+        # Check if the current root itself is the project
+        if is_project_dir(root): return root
 
-    # 4. Check Google Drive
+    # Priority 4: Google Drive
     if os.path.exists("/content/drive/MyDrive"):
         print("📂 Searching Google Drive (this may take a minute)...")
-        for root, dirs, files_list in os.walk("/content/drive/MyDrive"):
+        # Optimization: Check MyDrive root first
+        drive_root = "/content/drive/MyDrive"
+        for item in os.listdir(drive_root):
+            path = os.path.join(drive_root, item)
+            if os.path.isdir(path) and (item == PROJECT_NAME or is_project_dir(path)):
+                if is_project_dir(path): return path
+
+        # Deeper search
+        for root, dirs, _ in os.walk(drive_root):
             if PROJECT_NAME in dirs:
                 path = os.path.join(root, PROJECT_NAME)
-                if os.path.exists(os.path.join(path, CORE_FILE)):
-                    return path
-            if CORE_FILE.split('/')[0] in dirs:
-                if os.path.exists(os.path.join(root, CORE_FILE)):
-                    return root
+                if is_project_dir(path): return path
     return None
 
 # 1. Mount Drive
 if not os.path.exists('/content/drive'):
-    try:
-        drive.mount('/content/drive')
-    except:
-        print("⚠️ Drive mount skipped.")
+    try: drive.mount('/content/drive')
+    except: print("⚠️ Drive mount skipped.")
 
 # 2. Find Project
 target_dir = locate_project()
 
 # 3. Fallback: Git Clone or Upload
 if not target_dir:
-    print("\n❌ Project not found.")
-    choice = input("Would you like to (1) Clone from GitHub or (2) Upload a ZIP? [Enter 1 or 2]: ")
+    print("\n❌ Project folder not found!")
+    choice = input("Would you like to: \n(1) Clone from GitHub \n(2) Upload ZIP \n[Enter 1 or 2]: ")
 
     if choice == "1":
-        repo_url = input("Enter your GitHub Repo URL: ")
+        repo_url = input("Enter GitHub Repo URL: ")
         if repo_url:
             os.chdir("/content")
             !git clone {repo_url}
@@ -91,5 +96,5 @@ if target_dir:
     print("="*40 + "\n")
     !python main.py
 else:
-    print("\n❌ Setup failed. Please ensure the project folder is correctly uploaded.")
+    print("\n❌ Setup failed. Please ensure the project folder is uploaded correctly.")
 ```
