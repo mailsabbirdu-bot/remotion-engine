@@ -2,5 +2,3 @@ torch
 torchaudio
 transformers
 pydub
-fuzzywuzzy
-python-Levenshtein
