@@ -19,7 +19,7 @@ def main():
         return
 
     print("====================================================")
-    print("🎬 SCRIPT WRITER AI - DEEP RESEARCH & DOCUMENTARY")
+    print("🎬 SCRIPT WRITER AI (V1.0) - DEEP RESEARCH")
     print("====================================================\n")
 
     # User Input
