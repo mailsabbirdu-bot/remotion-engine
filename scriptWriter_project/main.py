@@ -28,9 +28,14 @@ def main():
         print("❌ No topic entered. Exiting.")
         sys.exit(1)
 
+    language = input("Enter the language (en for English, bn for Bangla): ").lower().strip()
+    if language not in ["en", "bn"]:
+        print("⚠️ Invalid language choice. Defaulting to 'en'.")
+        language = "en"
+
     # Run Pipeline
     pipeline = ResearchPipeline()
-    result = pipeline.run(topic)
+    result = pipeline.run(topic, language=language)
 
     # Save Output
     output_file = os.path.join(OUTPUT_DIR, "script.txt")

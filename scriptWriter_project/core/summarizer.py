@@ -62,14 +62,16 @@ class GeminiSummarizer:
 
         return summaries[0] if summaries else "Summary failed."
 
-    def deep_combined_analysis(self, summaries_list):
+    def deep_combined_analysis(self, summaries_list, language="en"):
         """
         Perform a deep cross-source analysis on a list of summaries.
         """
+        lang_instruction = "English" if language == "en" else "Bangla"
+
         combined_text = "\n\n--- SOURCE ---\n\n".join(summaries_list)
         prompt = f"""
         You are a world-class documentary researcher. Below are several summaries of articles and video transcripts regarding a specific topic.
-        Your task is to synthesize all this information into a Deep Analysis Report.
+        Your task is to synthesize all this information into a Deep Analysis Report written entirely in {lang_instruction}.
 
         Requirements:
         1. Identify the core narrative and main "story arc" of this topic.
@@ -81,7 +83,7 @@ class GeminiSummarizer:
         Source Material:
         {combined_text}
 
-        Deep Analysis Report:
+        Deep Analysis Report (In {lang_instruction}):
         """
         try:
             response = self.model.generate_content(prompt)
