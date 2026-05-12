@@ -11,6 +11,13 @@ OUTPUT_DIR = os.path.join(BASE, "audio")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 def main():
+    # Ensure we are in the project directory
+    if not os.path.exists("core/pipeline.py"):
+        print("❌ ERROR: Running from the wrong directory!")
+        print(f"Current dir: {os.getcwd()}")
+        print("Please 'cd' into the 'scriptWriter_project' folder before running.")
+        return
+
     print("====================================================")
     print("🎬 SCRIPT WRITER AI - DEEP RESEARCH & DOCUMENTARY")
     print("====================================================\n")
