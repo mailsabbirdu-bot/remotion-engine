@@ -30,13 +30,13 @@ def parse_story(txt_path):
 
 def clean_for_model(text, is_bangla):
     if is_bangla:
-        # Keep Bangla unicode range, replace others with space
+        # Keep Bangla unicode range including vowel signs and conjuncts
         text = re.sub(r'[^\u0980-\u09FF\s]', ' ', text)
     else:
         text = text.upper()
         text = re.sub(r'[^A-Z\s]', ' ', text)
-    # Join with space to keep words distinct
-    return "|".join(text.split()) # Use '|' as word separator for Wav2Vec2
+    # Return as space-separated string. We handle '|' at tokenization level if needed.
+    return " ".join(text.split())
 
 def get_trellis(emissions, tokens, blank_id=0):
     num_frame = emissions.size(0)
@@ -70,6 +70,19 @@ def backtrack(trellis, emissions, tokens, blank_id=0):
         t -= 1
     return path[::-1]
 
+def find_min_energy_point(audio_segment):
+    """Finds the timestamp with minimum RMS energy in the given segment."""
+    # Split segment into 10ms chunks and find the quietest one
+    chunk_size = 10
+    rms_values = []
+    for i in range(0, len(audio_segment), chunk_size):
+        chunk = audio_segment[i:i+chunk_size]
+        rms_values.append((i, chunk.rms))
+
+    if not rms_values: return 0
+    # Return the start time of the chunk with minimum RMS
+    return min(rms_values, key=lambda x: x[1])[0]
+
 def split_audio():
     print(f"🚀 GLOBAL TRELLIS ALIGNMENT ENGINE STARTING. DEVICE: {DEVICE}")
 
@@ -98,9 +111,10 @@ def split_audio():
     current_token_idx = 0
     for scene in scenes_text:
         cleaned = clean_for_model(scene, is_bangla)
-        # Convert text to processor tokens
-        # We handle word separators explicitly
-        tokens = processor.tokenizer(cleaned, add_special_tokens=False).input_ids
+        # Convert text to processor tokens.
+        # Wav2Vec2 uses '|' for word separation in its vocabulary.
+        formatted = cleaned.replace(" ", "|")
+        tokens = processor.tokenizer(formatted, add_special_tokens=False).input_ids
         master_tokens.extend(tokens)
         scene_token_ranges.append((current_token_idx, current_token_idx + len(tokens)))
         current_token_idx += len(tokens)
@@ -134,28 +148,48 @@ def split_audio():
     for frame_idx, token_idx in path:
         token_timestamps.append(frame_idx * time_per_frame)
 
-    print("✂️ Slicing audio files...")
+    print("✂️ Slicing audio files with Dynamic Silence Detection...")
+
+    # Pre-calculate transition windows to avoid cutting mid-breath
+    scene_boundaries = []
     for i, (start_idx, end_idx) in enumerate(scene_token_ranges):
-        # The start of the scene is the timestamp of its first token
-        # The end of the scene is the timestamp of its last token (end_idx - 1)
         if start_idx >= len(token_timestamps): continue
 
-        start_s = token_timestamps[start_idx]
-        # Use next scene's start or end of audio as end point for perfect continuity
-        if i + 1 < len(scene_token_ranges):
-            next_start_idx = scene_token_ranges[i+1][0]
-            end_s = token_timestamps[next_start_idx] if next_start_idx < len(token_timestamps) else token_timestamps[-1]
+        # Raw AI-aligned start/end
+        raw_start_s = token_timestamps[start_idx]
+        raw_end_s = token_timestamps[end_idx - 1] if end_idx - 1 < len(token_timestamps) else total_len/1000
+
+        scene_boundaries.append({'start': raw_start_s * 1000, 'end': raw_end_s * 1000})
+
+    for i in range(len(scene_boundaries)):
+        # Start: Find quietest point between end of previous scene and start of this one
+        if i == 0:
+            final_start_ms = scene_boundaries[i]['start']
         else:
-            end_s = total_len / 1000
+            # Transition window: from 200ms before current AI start to the start itself
+            # We look for the quietest point leading into the scene
+            window_start = max(scene_boundaries[i-1]['end'], scene_boundaries[i]['start'] - 500)
+            window_end = scene_boundaries[i]['start']
+            transition_audio = audio_full[window_start:window_end]
+            final_start_ms = window_start + find_min_energy_point(transition_audio)
+
+        # End: Find quietest point between end of this scene and start of next one
+        if i + 1 < len(scene_boundaries):
+            # Transition window: from end of current AI scene to start of next AI scene
+            window_start = scene_boundaries[i]['end']
+            window_end = min(scene_boundaries[i+1]['start'], scene_boundaries[i]['end'] + 500)
+            transition_audio = audio_full[window_start:window_end]
+            final_end_ms = window_start + find_min_energy_point(transition_audio)
+        else:
+            final_end_ms = total_len
 
         output_name = f"SC_{str(i+1).zfill(2)}.wav"
         output_path = os.path.join(AUDIO_DIR, output_name)
 
-        start_ms, end_ms = start_s * 1000, end_s * 1000
-        segment = audio_full[start_ms:end_ms]
+        segment = audio_full[final_start_ms:final_end_ms]
         segment.export(output_path, format="wav")
 
-        print(f"   ✅ Saved: {output_name} [{round(start_s, 2)}s - {round(end_s, 2)}s]")
+        print(f"   ✅ Saved: {output_name} [{round(final_start_ms/1000, 2)}s - {round(final_end_ms/1000, 2)}s]")
 
     print("\n🎉 Precision alignment complete! Drift eliminated.")
 
