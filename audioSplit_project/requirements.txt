@@ -1,0 +1,6 @@
+openai-whisper
+pydub
+torch
+numpy
+fuzzywuzzy
+python-Levenshtein
