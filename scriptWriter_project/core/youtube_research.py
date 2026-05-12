@@ -6,13 +6,14 @@ def search_youtube(topic, max_results=5):
     """
     Search YouTube for relevant videos.
     """
-    print(f"🎥 Searching YouTube for: {topic}...")
+    print(f"\n🎥 [YOUTUBE] Searching for: '{topic}'")
     try:
         videos_search = VideosSearch(topic, limit=max_results)
         results = videos_search.result()
 
         videos = []
-        for res in results.get('result', []):
+        for i, res in enumerate(results.get('result', []), 1):
+            print(f"   🎬 [{i}] Found: {res.get('title')} ({res.get('link')})")
             videos.append({
                 "id": res.get("id"),
                 "title": res.get("title"),
@@ -30,12 +31,14 @@ def get_transcript(video_id):
     """
     Fetch transcript for a given YouTube video ID.
     """
+    print(f"      📝 [TRANSCRIPT] Attempting to fetch transcript for {video_id}...")
     try:
         transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
         transcript_text = " ".join([t['text'] for t in transcript_list])
+        print(f"         ✅ Success: {len(transcript_text)} characters.")
         return transcript_text
     except Exception as e:
-        print(f"⚠️ Could not get transcript for video {video_id}: {e}")
+        print(f"         ⚠️ No transcript available: {e}")
         return None
 
 def get_video_metadata(url):
@@ -65,8 +68,9 @@ def process_youtube_research(topic, max_results=5):
     videos = search_youtube(topic, max_results=max_results)
     detailed_videos = []
 
+    print(f"\n📊 [YOUTUBE] Processing {len(videos)} videos for transcripts and metadata...")
     for v in videos:
-        print(f"  🎬 Processing: {v['title']}")
+        print(f"   🔎 Analyzing: {v['title'][:50]}...")
         transcript = get_transcript(v['id'])
         metadata = get_video_metadata(v['url'])
 

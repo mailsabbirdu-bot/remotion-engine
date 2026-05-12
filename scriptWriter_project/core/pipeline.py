@@ -3,6 +3,7 @@ from .article_extractor import extract_multiple_articles
 from .youtube_research import process_youtube_research
 from .summarizer import GeminiSummarizer
 from .script_writer import ScriptWriter
+from .config import MAX_WEB_RESULTS, MAX_YOUTUBE_RESULTS, MAX_WORKERS
 
 class ResearchPipeline:
     def __init__(self, gemini_api_key=None):
@@ -10,27 +11,30 @@ class ResearchPipeline:
         self.writer = ScriptWriter(api_key=gemini_api_key)
 
     def run(self, topic):
-        print(f"\n🚀 STARTING RESEARCH PIPELINE FOR: {topic}\n" + "="*50)
+        print(f"\n" + "🚀"*10)
+        print(f"🚀 STARTING RESEARCH PIPELINE FOR: '{topic}'")
+        print("🚀" * 10 + "\n")
 
         # 1. Web Research
-        search_results = web_search(topic, max_results=8)
+        search_results = web_search(topic, max_results=MAX_WEB_RESULTS)
         urls = [r['url'] for r in search_results]
 
         # 2. Article Extraction
-        articles = extract_multiple_articles(urls)
+        articles = extract_multiple_articles(urls, max_workers=MAX_WORKERS)
 
         # 3. YouTube Research
-        youtube_data = process_youtube_research(topic, max_results=5)
+        youtube_data = process_youtube_research(topic, max_results=MAX_YOUTUBE_RESULTS)
 
         # 4. Summarization
         all_summaries = []
 
-        print("\n📝 Summarizing Web Articles...")
+        print(f"\n📝 [SUMMARIZER] Summarizing {len(articles)} Web Articles...")
         for art in articles:
+            print(f"   ✍️ Summarizing: {art['title'][:50]}...")
             summary = self.summarizer.summarize_text(art['text'], source_type="article")
             all_summaries.append(f"ARTICLE: {art['title']}\n{summary}")
 
-        print("\n📝 Summarizing YouTube Transcripts...")
+        print(f"\n📝 [SUMMARIZER] Summarizing {len(youtube_data)} YouTube Transcripts...")
         for yt in youtube_data:
             if yt['transcript']:
                 summary = self.summarizer.summarize_text(yt['transcript'], source_type="video transcript")

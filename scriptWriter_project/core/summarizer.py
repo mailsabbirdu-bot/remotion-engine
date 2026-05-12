@@ -1,20 +1,25 @@
 import google.generativeai as genai
 import os
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from .config import GEMINI_API_KEY, CHUNK_SIZE, CHUNK_OVERLAP
 
 class GeminiSummarizer:
     def __init__(self, api_key=None):
         if not api_key:
-            api_key = os.getenv("GOOGLE_API_KEY")
+            api_key = GEMINI_API_KEY
 
-        if not api_key:
-            print("⚠️ WARNING: GOOGLE_API_KEY not found. Please set it for Gemini to work.")
+        print(f"🔑 [SUMMARIZER] Initializing Gemini API with key: {api_key[:10]}...{api_key[-5:]}")
 
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        try:
+            genai.configure(api_key=api_key)
+            self.model = genai.GenerativeModel('gemini-1.5-flash')
+            print("✅ [SUMMARIZER] Gemini Flash Model loaded successfully.")
+        except Exception as e:
+            print(f"❌ [SUMMARIZER] Failed to initialize Gemini: {e}")
+
         self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=10000,
-            chunk_overlap=1000
+            chunk_size=CHUNK_SIZE,
+            chunk_overlap=CHUNK_OVERLAP
         )
 
     def summarize_text(self, text, source_type="article"):

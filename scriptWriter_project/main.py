@@ -15,12 +15,6 @@ def main():
     print("🎬 SCRIPT WRITER AI - DEEP RESEARCH & DOCUMENTARY")
     print("====================================================\n")
 
-    api_key = os.getenv("GOOGLE_API_KEY")
-    if not api_key:
-        print("❌ ERROR: GOOGLE_API_KEY not found!")
-        print("Please set the environment variable before running.")
-        sys.exit(1)
-
     # User Input
     topic = input("Enter the topic for your documentary: ")
     if not topic:
@@ -28,7 +22,7 @@ def main():
         sys.exit(1)
 
     # Run Pipeline
-    pipeline = ResearchPipeline(gemini_api_key=api_key)
+    pipeline = ResearchPipeline()
     result = pipeline.run(topic)
 
     # Save Output
