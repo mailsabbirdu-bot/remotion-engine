@@ -1,8 +1,11 @@
-# Audio Split Engine - Colab Execution
+# ✂️ Audio Split Engine - Colab Execution
+
+**Note:** This project uses **AI Transcription (Whisper)** with word-level timestamps to precisely cut your audio based on your script. It does NOT rely on silence detection, which can be unreliable.
 
 Copy and run the following cell in your Google Colab notebook to split your `story.wav` into scene-wise audio files.
 
 ```python
+# @title ✂️ Run Audio Splitter
 # 1. Mount Google Drive
 from google.colab import drive
 import os

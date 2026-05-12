@@ -55,68 +55,71 @@ def split_audio():
         return
 
     print(f"📖 Found {len(scenes_text)} scenes. Loading Whisper model...")
-    # 'base' model is a good middle ground for speed and accuracy.
-    # Use 'small' or 'medium' if higher accuracy is needed for complex audio.
-    model = whisper.load_model("base")
+    # 'small' is better for multilingual than 'base'.
+    model = whisper.load_model("small")
 
-    print("🎙️ Transcribing story.wav (this might take a few minutes)...")
-    # For better alignment, we just need the segments.
-    result = model.transcribe(STORY_WAV)
-    segments = result['segments']
+    print("🎙️ Transcribing story.wav with AI Timestamps (this may take a moment)...")
+    # Using word_timestamps for high-precision cutting
+    result = model.transcribe(STORY_WAV, word_timestamps=True)
+
+    # Flatten all words into a single list with timestamps
+    all_words = []
+    for segment in result['segments']:
+        for word in segment.get('words', []):
+            all_words.append({
+                'text': clean_text(word['word']),
+                'start': word['start'],
+                'end': word['end']
+            })
+
+    if not all_words:
+        print("❌ Error: No speech detected in story.wav")
+        return
 
     print("✂️ Loading audio file for slicing...")
     full_audio = AudioSegment.from_wav(STORY_WAV)
 
-    current_seg_idx = 0
-    num_segments = len(segments)
+    current_word_idx = 0
+    num_words = len(all_words)
 
     for i, scene_raw_text in enumerate(scenes_text):
         scene_clean = clean_text(scene_raw_text)
+        scene_words = scene_clean.split()
         print(f"\n🎬 Processing Scene {i+1}/{len(scenes_text)}...")
 
-        best_end_idx = current_seg_idx
-        max_ratio = 0
-        accumulated_text = ""
+        if not scene_words:
+            continue
 
-        # We search forward from the current segment index to find the best match for this scene
-        temp_idx = current_seg_idx
-        while temp_idx < num_segments:
-            seg_text = clean_text(segments[temp_idx]['text'])
-            accumulated_text += " " + seg_text
+        # Look for the last word of the scene in the transcript to find the split point
+        best_end_idx = current_word_idx
+        max_score = -1
 
-            # Using partial_ratio because the accumulated text might be longer than the scene text
-            ratio = fuzz.partial_ratio(scene_clean, accumulated_text)
+        # Search window: from current position up to a reasonable limit
+        # We try to find where the scene ends by matching the accumulated transcript text
+        accumulated_transcript = ""
+        search_limit = min(current_word_idx + len(scene_words) * 3 + 20, num_words)
 
-            if ratio > 70: # Threshold for a decent match
-                if ratio >= max_ratio:
-                    max_ratio = ratio
-                    best_end_idx = temp_idx
-                else:
-                    # If ratio starts to drop significantly, we've likely passed the scene
-                    if max_ratio - ratio > 15:
-                        break
+        for j in range(current_word_idx, search_limit):
+            accumulated_transcript += " " + all_words[j]['text']
+            score = fuzz.ratio(scene_clean, accumulated_transcript.strip())
 
-            temp_idx += 1
-            # Safety break if we've accumulated way more text than expected
-            if len(accumulated_text) > len(scene_clean) * 2 + 100:
+            if score > max_score:
+                max_score = score
+                best_end_idx = j
+
+            # If we have an excellent match, we can stop early
+            if score > 95:
                 break
 
-        if max_ratio > 40: # Flexible threshold for alignment
-            start_time = segments[current_seg_idx]['start'] * 1000 # convert to ms
-            end_time = segments[best_end_idx]['end'] * 1000
-            current_seg_idx = best_end_idx + 1
+            # If the score starts dropping significantly, we've passed it
+            if max_score > 60 and (max_score - score) > 20:
+                break
 
-            print(f"   ✨ Match found (Score: {max_ratio})")
-        else:
-            print(f"   ⚠️ Warning: Weak match for Scene {i+1}. Using segment heuristic.")
-            # Fallback: take at least one segment if available
-            if current_seg_idx < num_segments:
-                start_time = segments[current_seg_idx]['start'] * 1000
-                end_time = segments[current_seg_idx]['end'] * 1000
-                current_seg_idx += 1
-            else:
-                print(f"   ❌ Could not find audio for Scene {i+1}")
-                continue
+        start_time = all_words[current_word_idx]['start'] * 1000
+        end_time = all_words[best_end_idx]['end'] * 1000
+
+        print(f"   ✨ Alignment: {round(max_score)}% match.")
+        current_word_idx = best_end_idx + 1
 
         # Slice and export
         output_name = f"SC_{str(i+1).zfill(2)}.wav"
