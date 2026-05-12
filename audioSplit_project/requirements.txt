@@ -1,7 +1,6 @@
-openai-whisper
-stable-ts
-pydub
 torch
-numpy
+torchaudio
+transformers
+pydub
 fuzzywuzzy
 python-Levenshtein

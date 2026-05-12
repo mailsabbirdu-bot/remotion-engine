@@ -1,9 +1,9 @@
 # ✂️ Audio Split Engine - Colab Execution
 
 **IMPORTANT:**
-1. This project uses **AI Alignment (Stable-Whisper)** for surgical precision.
-2. You **MUST** use a **GPU (T4)** runtime in Colab. (Runtime > Change runtime type > T4 GPU).
-3. It uses your script to guide the AI, ensuring perfect matches even in noisy audio.
+1. This project uses **Forced Alignment (Wav2Vec2)** for ultra-fast and precise cutting.
+2. It is significantly faster and more accurate than transcription-based methods for script-audio alignment.
+3. You **MUST** use a **GPU (T4)** runtime in Colab for the best performance.
 
 Copy and run the following cell in your Google Colab notebook to split your `story.wav` into scene-wise audio files.
 
