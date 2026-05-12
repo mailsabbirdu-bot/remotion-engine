@@ -1,9 +1,9 @@
 # ✂️ Audio Split Engine - Colab Execution
 
 **IMPORTANT:**
-1. This project uses **AI Transcription (Whisper)** with word-level timestamps.
-2. You **MUST** use a **GPU (T4)** runtime in Colab for high accuracy and speed. (Runtime > Change runtime type > T4 GPU).
-3. It does NOT rely on silence detection, making it much more precise for stories.
+1. This project uses **AI Alignment (Stable-Whisper)** for surgical precision.
+2. You **MUST** use a **GPU (T4)** runtime in Colab. (Runtime > Change runtime type > T4 GPU).
+3. It uses your script to guide the AI, ensuring perfect matches even in noisy audio.
 
 Copy and run the following cell in your Google Colab notebook to split your `story.wav` into scene-wise audio files.
 
