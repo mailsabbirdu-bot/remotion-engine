@@ -1,6 +1,7 @@
 import os
 import re
 import whisper
+import stable_whisper
 import shutil
 from pydub import AudioSegment
 from fuzzywuzzy import fuzz
@@ -57,28 +58,33 @@ def split_audio():
     # Join all scene text to use as a prompt for Whisper
     full_script_text = " ".join(scenes_text)
 
-    print(f"📖 Found {len(scenes_text)} scenes. Loading Whisper model...")
-    model = whisper.load_model("small")
+    # Detect language: Check for Bangla characters
+    is_bangla = bool(re.search(r'[\u0980-\u09FF]', full_script_text))
+    lang_code = "bn" if is_bangla else "en"
+    print(f"🌍 Detected Language: {'Bangla' if is_bangla else 'English'} ({lang_code})")
 
-    print("🎙️ Transcribing story.wav with AI Timestamps...")
-    # Passing the script as 'initial_prompt' significantly helps Whisper with specialized vocabulary and accuracy
+    print(f"📖 Found {len(scenes_text)} scenes. Loading Stable-Whisper model...")
+    # stable_whisper provides much more accurate word-level timestamps
+    model = stable_whisper.load_model("small")
+
+    print("🎙️ Transcribing story.wav with AI Alignment...")
+    # Passing the script as 'initial_prompt' significantly helps Whisper with specialized vocabulary
     result = model.transcribe(
         STORY_WAV,
-        word_timestamps=True,
-        initial_prompt=full_script_text[:1000] # Whisper prompt limit is ~1000 chars
+        language=lang_code,
+        initial_prompt=full_script_text[:1000]
     )
 
     # Flatten all words into a single list with timestamps
     all_words = []
-    for segment in result['segments']:
-        for word in segment.get('words', []):
-            word_text = clean_text(word['word'])
-            if word_text:
-                all_words.append({
-                    'text': word_text,
-                    'start': word['start'],
-                    'end': word['end']
-                })
+    for word in result.all_words():
+        word_text = clean_text(word.word)
+        if word_text:
+            all_words.append({
+                'text': word_text,
+                'start': word.start,
+                'end': word.end
+            })
 
     if not all_words:
         print("❌ Error: No speech detected in story.wav")

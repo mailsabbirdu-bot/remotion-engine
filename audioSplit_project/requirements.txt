@@ -1,4 +1,5 @@
 openai-whisper
+stable-ts
 pydub
 torch
 numpy
