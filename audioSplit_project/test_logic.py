@@ -51,14 +51,18 @@ class TestAudioSplit(unittest.TestCase):
 
     def test_clean_text(self):
         try:
-            from main import clean_text
+            from main import clean_for_model
         except ImportError:
-            def clean_text(text):
-                cleaned = re.sub(r'[।!,.;:?\"\'\(\)\[\]\{\}]', '', text)
-                return cleaned.lower().strip()
+            def clean_for_model(text, is_bangla):
+                if is_bangla:
+                    text = re.sub(r'[^\u0980-\u09FF\s]', '', text)
+                else:
+                    text = text.upper()
+                    text = re.sub(r'[^A-Z\s]', '', text)
+                return " ".join(text.split())
 
-        self.assertEqual(clean_text("Hello, World!"), "hello world")
-        self.assertEqual(clean_text("রাফি।"), "রাফি")
+        self.assertEqual(clean_for_model("Hello, World!", False), "HELLO WORLD")
+        self.assertEqual(clean_for_model("রাফি।", True), "রাফি")
 
 if __name__ == "__main__":
     unittest.main()
