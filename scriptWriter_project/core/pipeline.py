@@ -10,9 +10,9 @@ class ResearchPipeline:
         self.summarizer = GeminiSummarizer(api_key=gemini_api_key)
         self.writer = ScriptWriter(api_key=gemini_api_key)
 
-    def run(self, topic):
+    def run(self, topic, language="en"):
         print(f"\n" + "🚀"*10)
-        print(f"🚀 STARTING RESEARCH PIPELINE FOR: '{topic}'")
+        print(f"🚀 STARTING RESEARCH PIPELINE FOR: '{topic}' (Lang: {language})")
         print("🚀" * 10 + "\n")
 
         # 1. Web Research
@@ -46,12 +46,12 @@ class ResearchPipeline:
                 all_summaries.append(f"VIDEO (METADATA ONLY): {yt['basic']['title']}\n{summary}")
 
         # 5. Deep Combined Analysis
-        print("\n🧠 Performing Deep Cross-Source Analysis...")
-        deep_analysis = self.summarizer.deep_combined_analysis(all_summaries)
+        print(f"\n🧠 Performing Deep Cross-Source Analysis ({language})...")
+        deep_analysis = self.summarizer.deep_combined_analysis(all_summaries, language=language)
 
         # 6. Final Script Generation
-        print("\n🎬 Writing Final Documentary Script...")
-        final_script = self.writer.generate_script(topic, deep_analysis)
+        print(f"\n🎬 Writing Final Documentary Script ({language})...")
+        final_script = self.writer.generate_script(topic, deep_analysis, language=language)
 
         print("\n✅ PIPELINE COMPLETE!")
         return {

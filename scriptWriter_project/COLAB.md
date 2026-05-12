@@ -9,6 +9,7 @@ import sys
 from google.colab import drive, files
 
 # --- CONFIGURATION ---
+REPO_URL = "https://github.com/mailsabbirdu-bot/remotion-engine.git"
 PROJECT_NAME = "scriptWriter_project"
 REQUIRED_FILES = ["main.py", "requirements.txt", "core/pipeline.py"]
 # ---------------------
@@ -65,14 +66,12 @@ target_dir = locate_project()
 # 3. Fallback: Git Clone or Upload
 if not target_dir:
     print("\n❌ Project folder not found!")
-    choice = input("Would you like to: \n(1) Clone from GitHub \n(2) Upload ZIP \n[Enter 1 or 2]: ")
+    choice = input("Would you like to: \n(1) Auto-Clone from GitHub \n(2) Upload ZIP \n[Enter 1 or 2]: ")
 
     if choice == "1":
-        repo_url = input("Enter GitHub Repo URL: ")
-        if repo_url:
-            os.chdir("/content")
-            !git clone {repo_url}
-            target_dir = locate_project()
+        os.chdir("/content")
+        !git clone {REPO_URL}
+        target_dir = locate_project()
     elif choice == "2":
         print("Please upload your project ZIP file...")
         uploaded = files.upload()

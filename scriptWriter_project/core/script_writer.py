@@ -16,13 +16,15 @@ class ScriptWriter:
         except Exception as e:
             print(f"❌ [WRITER] Failed to initialize Gemini Pro: {e}")
 
-    def generate_script(self, topic, research_analysis):
+    def generate_script(self, topic, research_analysis, language="en"):
         """
         Generate a professional YouTube documentary script based on research analysis.
         """
+        lang_instruction = "English" if language == "en" else "Bangla"
+
         prompt = f"""
         You are a master documentary scriptwriter for a top-tier YouTube channel like MagnatesMedia, ColdFusion, or SunnyV2.
-        Your task is to write a highly engaging, cinematic, and professional documentary script about: "{topic}".
+        Your task is to write a highly engaging, cinematic, and professional documentary script about: "{topic}" written entirely in {lang_instruction}.
 
         Use the following Deep Research Analysis as your source material:
         ---
@@ -38,11 +40,11 @@ class ScriptWriter:
         6. **Conclusion**: A powerful ending that leaves the viewer thinking. A final "parting thought."
 
         FORMAT:
-        - [Visual: Describe what should be on screen]
-        - [Narrator: The actual spoken words]
+        - [Visual: Describe what should be on screen (In {lang_instruction})]
+        - [Narrator: The actual spoken words (In {lang_instruction})]
         - [Music: Describe the mood of the music - e.g., Orchestral, Dark Ambient, Upbeat Tech]
 
-        Write the FULL script now. Make it at least 2000 words for a deep dive documentary.
+        Write the FULL script now in {lang_instruction}. Make it at least 2000 words for a deep dive documentary.
         """
 
         try:
