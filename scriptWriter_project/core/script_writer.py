@@ -1,13 +1,20 @@
 import google.generativeai as genai
 import os
+from .config import GEMINI_API_KEY
 
 class ScriptWriter:
     def __init__(self, api_key=None):
         if not api_key:
-            api_key = os.getenv("GOOGLE_API_KEY")
+            api_key = GEMINI_API_KEY
 
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-pro') # Using Pro for better writing quality
+        print(f"🔑 [WRITER] Initializing Gemini API with key: {api_key[:10]}...{api_key[-5:]}")
+
+        try:
+            genai.configure(api_key=api_key)
+            self.model = genai.GenerativeModel('gemini-1.5-pro') # Using Pro for better writing quality
+            print("✅ [WRITER] Gemini Pro Model loaded successfully.")
+        except Exception as e:
+            print(f"❌ [WRITER] Failed to initialize Gemini Pro: {e}")
 
     def generate_script(self, topic, research_analysis):
         """

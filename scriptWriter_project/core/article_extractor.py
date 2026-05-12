@@ -12,10 +12,12 @@ def extract_article_text(url):
     """
     Extract clean text from a given URL using newspaper3k.
     """
+    print(f"   📄 [EXTRACTOR] Fetching: {url[:60]}...")
     try:
         article = Article(url)
         article.download()
         article.parse()
+        print(f"      ✅ Success: {article.title[:50]}... ({len(article.text)} chars)")
         return {
             "url": url,
             "title": article.title,
@@ -24,14 +26,14 @@ def extract_article_text(url):
             "publish_date": str(article.publish_date) if article.publish_date else None
         }
     except Exception as e:
-        print(f"⚠️ Failed to extract article from {url}: {e}")
+        print(f"      ⚠️ Failed: {url[:50]}... Error: {e}")
         return None
 
 def extract_multiple_articles(urls, max_workers=5):
     """
     Extract text from multiple URLs in parallel.
     """
-    print(f"📄 Extracting content from {len(urls)} articles...")
+    print(f"\n📑 [EXTRACTOR] Starting parallel extraction of {len(urls)} articles (Workers: {max_workers})...")
     results = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_to_url = {executor.submit(extract_article_text, url): url for url in urls}
