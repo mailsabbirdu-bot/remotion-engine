@@ -11,23 +11,25 @@ class ScriptWriter:
 
         try:
             genai.configure(api_key=api_key)
-            # Try 1.5-pro, fallback to 1.5-flash or gemini-pro (1.0)
-            try:
-                self.model = genai.GenerativeModel('gemini-1.5-pro')
-                self.model.generate_content("test")
-                print("✅ [WRITER] Gemini 1.5 Pro Model loaded successfully.")
-            except Exception:
-                print("⚠️ [WRITER] gemini-1.5-pro not found or restricted. Trying gemini-1.5-flash...")
+            # Try 1.5-pro, fallback to flash or 1.0 versions
+            models_to_try = ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-flash-latest', 'gemini-pro-latest', 'gemini-pro']
+            self.model = None
+
+            for model_name in models_to_try:
                 try:
-                    self.model = genai.GenerativeModel('gemini-1.5-flash')
-                    self.model.generate_content("test")
-                    print("✅ [WRITER] Gemini 1.5 Flash Model loaded successfully.")
+                    m = genai.GenerativeModel(model_name)
+                    m.generate_content("test")
+                    self.model = m
+                    print(f"✅ [WRITER] Gemini {model_name} Model loaded successfully.")
+                    break
                 except Exception:
-                    print("⚠️ [WRITER] Falling back to gemini-pro...")
-                    self.model = genai.GenerativeModel('gemini-pro')
-                    print("✅ [WRITER] Gemini Pro (1.0) Model loaded successfully.")
+                    continue
+
+            if not self.model:
+                raise Exception("Could not initialize any Gemini model.")
+
         except Exception as e:
-            print(f"❌ [WRITER] Failed to initialize Gemini Pro: {e}")
+            print(f"❌ [WRITER] Failed to initialize Gemini Writer: {e}")
 
     def generate_script(self, topic, research_analysis, language="en"):
         """
