@@ -1,12 +1,13 @@
 from duckduckgo_search import DDGS
 
-def is_relevant(text, keywords):
+def is_relevant(text, keywords, threshold=0.3):
     """
-    Simple relevance check based on keyword overlap.
+    Improved relevance check based on keyword overlap percentage.
     """
     if not text: return False
     text = text.lower()
-    return any(k.lower() in text for k in keywords)
+    found_count = sum(1 for k in keywords if k.lower() in text)
+    return (found_count / len(keywords)) >= threshold
 
 def web_search(topic, max_results=10):
     """
@@ -18,9 +19,10 @@ def web_search(topic, max_results=10):
 
     if "bangladesh" not in topic.lower():
         # Heuristic: if topic is in Bangla or about common BD topics, add Bangladesh
-        if any(ord(c) > 128 for c in topic) or any(k in topic.lower() for k in ["sheikh", "hasina", "dhaka", "taka"]):
+        # We now add it more aggressively to search_query but keep relevance flexible
+        if any(ord(c) > 128 for c in topic) or any(k in topic.lower() for k in ["sheikh", "hasina", "dhaka", "taka", "baishakh", "poverty", "economy"]):
             search_query += " Bangladesh"
-            relevance_keywords.append("Bangladesh")
+            if "Bangladesh" not in relevance_keywords: relevance_keywords.append("Bangladesh")
 
     print(f"\n🔍 [SEARCH] Starting web search for: '{search_query}'")
     results = []
