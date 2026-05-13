@@ -58,6 +58,10 @@ class ResearchPipeline:
             "topic": topic,
             "deep_analysis": deep_analysis,
             "script": final_script,
+            "raw_data": {
+                "articles": articles,
+                "youtube": youtube_data
+            },
             "sources": {
                 "articles": [a['url'] for a in articles],
                 "videos": [v['basic']['url'] for v in youtube_data]

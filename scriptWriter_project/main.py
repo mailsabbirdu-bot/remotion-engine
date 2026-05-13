@@ -76,6 +76,36 @@ def main():
     pipeline = ResearchPipeline()
     result = pipeline.run(topic, language=language)
 
+    # Save Raw Data Fallback
+    raw_output_file = os.path.join(OUTPUT_DIR, "rawScript.txt")
+    if not os.path.exists("/content/drive") and "/content" in os.getcwd():
+        raw_output_file = "rawScript.txt"
+
+    try:
+        with open(raw_output_file, "w", encoding="utf-8") as f:
+            f.write(f"RAW RESEARCH DATA FOR: {topic}\n")
+            f.write("="*50 + "\n\n")
+
+            f.write("--- WEB ARTICLES ---\n")
+            for art in result['raw_data']['articles']:
+                f.write(f"\nTITLE: {art['title']}\n")
+                f.write(f"URL: {art['url']}\n")
+                f.write("-" * 20 + "\n")
+                f.write(art['text'] + "\n")
+                f.write("=" * 30 + "\n")
+
+            f.write("\n\n--- YOUTUBE DATA ---\n")
+            for yt in result['raw_data']['youtube']:
+                f.write(f"\nVIDEO: {yt['basic']['title']}\n")
+                f.write(f"URL: {yt['basic']['url']}\n")
+                f.write(f"DESCRIPTION: {yt['metadata'].get('description', 'N/A')}\n")
+                f.write("-" * 20 + "\n")
+                f.write(f"TRANSCRIPT: {yt['transcript'] or 'No transcript available'}\n")
+                f.write("=" * 30 + "\n")
+        print(f"📁 Raw research data saved to: {raw_output_file}")
+    except Exception as e:
+        print(f"⚠️ Could not save rawScript.txt: {e}")
+
     # Save Output
     output_file = os.path.join(OUTPUT_DIR, "script.txt")
 
