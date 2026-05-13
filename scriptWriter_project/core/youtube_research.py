@@ -30,15 +30,28 @@ def search_youtube(topic, max_results=5):
 def get_transcript(video_id):
     """
     Fetch transcript for a given YouTube video ID.
+    Supports both v0.6.x (static get_transcript) and v1.x (instance fetch)
     """
     print(f"      📝 [TRANSCRIPT] Attempting to fetch transcript for {video_id}...")
     try:
-        # Based on environment inspection, using an instance and fetch() works.
-        api = YouTubeTranscriptApi()
-        transcript_data = api.fetch(video_id)
-        # transcript_data is a FetchedTranscript object, which is iterable over FetchedTranscriptSnippet objects.
-        # Snippets are dataclasses, so we use t.text instead of t['text'].
-        transcript_text = " ".join([t.text for t in transcript_data])
+        # Try v1.x style (instance fetch)
+        try:
+            api = YouTubeTranscriptApi()
+            transcript_data = api.fetch(video_id)
+        except (TypeError, AttributeError):
+            # Fallback to v0.6.x style (static get_transcript)
+            transcript_data = YouTubeTranscriptApi.get_transcript(video_id)
+
+        # Handle both list of dicts (v0.6) and list of dataclasses (v1.x)
+        processed_texts = []
+        for snippet in transcript_data:
+            if isinstance(snippet, dict):
+                processed_texts.append(snippet.get('text', ''))
+            else:
+                # Handle dataclass/object (v1.x)
+                processed_texts.append(getattr(snippet, 'text', ''))
+
+        transcript_text = " ".join(processed_texts)
         print(f"         ✅ Success: {len(transcript_text)} characters.")
         return transcript_text
     except Exception as e:

@@ -12,7 +12,10 @@ class ScriptWriter:
         try:
             genai.configure(api_key=api_key)
             # Try 1.5-pro, fallback to flash or 1.0 versions
-            models_to_try = ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-flash-latest', 'gemini-pro-latest', 'gemini-pro']
+            models_to_try = [
+                'gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash',
+                'gemini-flash-latest', 'gemini-pro-latest', 'gemini-pro'
+            ]
             self.model = None
 
             for model_name in models_to_try:
