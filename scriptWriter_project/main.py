@@ -86,26 +86,32 @@ def main():
             f.write(f"RAW RESEARCH DATA FOR: {topic}\n")
             f.write("="*50 + "\n\n")
 
+            f.write("--- DEEP ANALYSIS ---\n\n")
+            f.write(result.get('deep_analysis', 'Deep analysis failed.'))
+            f.write("\n\n" + "="*50 + "\n\n")
+
             f.write("--- WEB ARTICLES ---\n")
-            if not result['raw_data']['articles']:
+            articles = result.get('raw_data', {}).get('articles', [])
+            if not articles:
                 f.write("No articles found.\n")
-            for art in result['raw_data']['articles']:
-                f.write(f"\nTITLE: {art['title']}\n")
-                f.write(f"URL: {art['url']}\n")
+            for art in articles:
+                f.write(f"\nTITLE: {art.get('title', 'N/A')}\n")
+                f.write(f"URL: {art.get('url', 'N/A')}\n")
                 f.write("-" * 20 + "\n")
-                f.write(str(art['text']) + "\n")
+                f.write(str(art.get('text', 'N/A')) + "\n")
                 f.write("=" * 30 + "\n")
 
             f.write("\n\n--- YOUTUBE DATA ---\n")
-            if not result['raw_data']['youtube']:
+            youtube = result.get('raw_data', {}).get('youtube', [])
+            if not youtube:
                 f.write("No YouTube data found.\n")
-            for yt in result['raw_data']['youtube']:
-                f.write(f"\nVIDEO: {yt['basic']['title']}\n")
-                f.write(f"URL: {yt['basic']['url']}\n")
-                f.write(f"UPLOADER: {yt['basic'].get('channel', 'N/A')}\n")
-                f.write(f"DESCRIPTION: {yt['metadata'].get('description', 'N/A')}\n")
+            for yt in youtube:
+                f.write(f"\nVIDEO: {yt.get('basic', {}).get('title', 'N/A')}\n")
+                f.write(f"URL: {yt.get('basic', {}).get('url', 'N/A')}\n")
+                f.write(f"UPLOADER: {yt.get('basic', {}).get('channel', 'N/A')}\n")
+                f.write(f"DESCRIPTION: {yt.get('metadata', {}).get('description', 'N/A')}\n")
                 f.write("-" * 20 + "\n")
-                f.write(f"TRANSCRIPT: {yt['transcript'] or 'No transcript available'}\n")
+                f.write(f"TRANSCRIPT: {yt.get('transcript') or 'No transcript available'}\n")
                 f.write("=" * 30 + "\n")
         print(f"📁 Raw research data saved to: {raw_output_file}")
     except Exception as e:

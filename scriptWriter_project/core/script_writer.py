@@ -37,6 +37,25 @@ class ScriptWriter:
         except Exception as e:
             print(f"❌ [WRITER] Failed to initialize Gemini Writer: {e}")
 
+    def _call_gemini_with_retry(self, prompt, retries=3, initial_delay=5):
+        """
+        Call Gemini API with exponential backoff.
+        """
+        import time
+        delay = initial_delay
+        for attempt in range(retries):
+            try:
+                response = self.model.generate_content(prompt)
+                return response.text
+            except Exception as e:
+                if "429" in str(e) and attempt < retries - 1:
+                    print(f"⚠️ Quota exceeded. Retrying in {delay} seconds... (Attempt {attempt+1}/{retries})")
+                    time.sleep(delay)
+                    delay *= 2
+                else:
+                    raise e
+        return None
+
     def generate_script(self, topic, research_analysis, language="en"):
         """
         Generate a professional YouTube documentary script based on research analysis.
@@ -70,8 +89,7 @@ class ScriptWriter:
 
         try:
             print(f"✍️ Generating cinematic script for: {topic}...")
-            response = self.model.generate_content(prompt)
-            return response.text
+            return self._call_gemini_with_retry(prompt)
         except Exception as e:
             print(f"❌ Gemini Error during script writing: {e}")
             return f"Failed to generate script for {topic}."

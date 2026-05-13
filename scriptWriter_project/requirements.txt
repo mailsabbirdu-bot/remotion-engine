@@ -10,5 +10,11 @@ faiss-cpu
 yt-dlp
 pydantic
 googlesearch-python
+transformers
+torch
+accelerate
+bitsandbytes
+sentencepiece
+protobuf
 # youtube-search-python removed in favor of yt-dlp native search
 # httpx pinning removed; compatibility handled via monkeypatch in main.py

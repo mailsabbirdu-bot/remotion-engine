@@ -6,6 +6,8 @@ from .config import GEMINI_API_KEY, CHUNK_SIZE, CHUNK_OVERLAP
 
 class GeminiSummarizer:
     def __init__(self, api_key=None):
+        self.local_model = None
+        self.local_tokenizer = None
         if not api_key:
             api_key = GEMINI_API_KEY
 
@@ -30,6 +32,11 @@ class GeminiSummarizer:
                     break
 
             if not self.model:
+                # Try to load local fallback if Gemini is completely unavailable
+                print("⚠️ [SUMMARIZER] Gemini unavailable. Attempting to load local LLM fallback...")
+                self._setup_local_llm()
+
+            if not self.model and not self.local_model:
                 # Absolute fallback to first available model
                 if available_models:
                     self.model = genai.GenerativeModel(available_models[0])
@@ -45,6 +52,72 @@ class GeminiSummarizer:
             chunk_overlap=CHUNK_OVERLAP
         )
 
+    def _setup_local_llm(self):
+        """
+        Initialize a lightweight local LLM as fallback.
+        """
+        try:
+            import torch
+            from transformers import AutoTokenizer, AutoModelForCausalLM
+
+            model_id = "HuggingFaceTB/SmolLM2-1.7B-Instruct"
+            print(f"📥 [LOCAL LLM] Loading {model_id}...")
+
+            self.local_tokenizer = AutoTokenizer.from_pretrained(model_id)
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+
+            # Load in 4-bit if on GPU for memory efficiency
+            load_kwargs = {"device_map": "auto"}
+            if device == "cuda":
+                load_kwargs["load_in_4bit"] = True
+
+            self.local_model = AutoModelForCausalLM.from_pretrained(
+                model_id,
+                **load_kwargs
+            )
+            print(f"✅ [LOCAL LLM] Loaded successfully on {device}.")
+        except Exception as e:
+            print(f"❌ [LOCAL LLM] Failed to load: {e}")
+
+    def _summarize_locally(self, text, source_type):
+        """
+        Summarize using the local LLM.
+        """
+        if not self.local_model:
+            return "Local summarization failed (model not loaded)."
+
+        messages = [
+            {"role": "system", "content": f"You are a helpful assistant that summarizes {source_type} content concisely."},
+            {"role": "user", "content": f"Extract key facts and insights from this {source_type}:\n\n{text}"}
+        ]
+
+        input_text = self.local_tokenizer.apply_chat_template(messages, tokenize=False)
+        inputs = self.local_tokenizer(input_text, return_tensors="pt").to(self.local_model.device)
+
+        outputs = self.local_model.generate(**inputs, max_new_tokens=500, temperature=0.2)
+        response = self.local_tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+        # Strip the prompt
+        return response.split("assistant\n")[-1].strip()
+
+    def _call_gemini_with_retry(self, prompt, retries=3, initial_delay=5):
+        """
+        Call Gemini API with exponential backoff to handle 429 errors.
+        """
+        delay = initial_delay
+        for attempt in range(retries):
+            try:
+                response = self.model.generate_content(prompt)
+                return response.text
+            except Exception as e:
+                if "429" in str(e) and attempt < retries - 1:
+                    print(f"⚠️ Quota exceeded. Retrying in {delay} seconds... (Attempt {attempt+1}/{retries})")
+                    time.sleep(delay)
+                    delay *= 2
+                else:
+                    raise e
+        return None
+
     def summarize_text(self, text, source_type="article"):
         """
         Summarize a long text using Gemini with chunking if necessary.
@@ -56,9 +129,9 @@ class GeminiSummarizer:
         summaries = []
 
         for i, chunk in enumerate(chunks):
-            # Respect Free Tier RPM limits (approx 15 RPM for some models)
+            # Respect Free Tier RPM limits
             if i > 0:
-                time.sleep(4)
+                time.sleep(2)
 
             prompt = f"""
             Analyze and summarize the following {source_type} content.
@@ -72,18 +145,28 @@ class GeminiSummarizer:
             {chunk}
             """
             try:
-                response = self.model.generate_content(prompt)
-                summaries.append(response.text)
+                if self.model:
+                    summary = self._call_gemini_with_retry(prompt)
+                else:
+                    summary = self._summarize_locally(chunk, source_type)
+                summaries.append(summary)
             except Exception as e:
-                print(f"❌ Gemini Error during summarization: {e}")
-                summaries.append(f"Summary failed for chunk {i}")
+                print(f"❌ Summarization Error: {e}")
+                if self.local_model:
+                    print("🔄 Retrying with local LLM...")
+                    try:
+                        summary = self._summarize_locally(chunk, source_type)
+                        summaries.append(summary)
+                    except:
+                        summaries.append(f"Summary failed for chunk {i}")
+                else:
+                    summaries.append(f"Summary failed for chunk {i}")
 
         if len(summaries) > 1:
             # Combine summaries if multi-chunk
             final_prompt = f"Combine these summaries into one comprehensive deep analysis:\n\n" + "\n\n".join(summaries)
             try:
-                final_response = self.model.generate_content(final_prompt)
-                return final_response.text
+                return self._call_gemini_with_retry(final_prompt)
             except:
                 return "\n\n".join(summaries)
 
@@ -113,8 +196,7 @@ class GeminiSummarizer:
         Deep Analysis Report (In {lang_instruction}):
         """
         try:
-            response = self.model.generate_content(prompt)
-            return response.text
+            return self._call_gemini_with_retry(prompt)
         except Exception as e:
             print(f"❌ Gemini Error during deep analysis: {e}")
             return "Deep analysis failed."

@@ -51,14 +51,24 @@ class ResearchPipeline:
                 all_summaries.append(f"VIDEO (METADATA ONLY): {yt['basic']['title']}\n{summary}")
 
         # 5. Deep Combined Analysis
-        time.sleep(5)
-        print(f"\n🧠 Performing Deep Cross-Source Analysis ({language})...")
-        deep_analysis = self.summarizer.deep_combined_analysis(all_summaries, language=language)
+        deep_analysis = "Deep analysis failed."
+        if all_summaries:
+            time.sleep(2)
+            print(f"\n🧠 Performing Deep Cross-Source Analysis ({language})...")
+            try:
+                deep_analysis = self.summarizer.deep_combined_analysis(all_summaries, language=language)
+            except Exception as e:
+                print(f"❌ Deep Analysis Error: {e}")
 
         # 6. Final Script Generation
-        time.sleep(5)
-        print(f"\n🎬 Writing Final Documentary Script ({language})...")
-        final_script = self.writer.generate_script(topic, deep_analysis, language=language)
+        final_script = f"Failed to generate script for {topic}."
+        if deep_analysis != "Deep analysis failed.":
+            time.sleep(2)
+            print(f"\n🎬 Writing Final Documentary Script ({language})...")
+            try:
+                final_script = self.writer.generate_script(topic, deep_analysis, language=language)
+            except Exception as e:
+                print(f"❌ Script Writing Error: {e}")
 
         print("\n✅ PIPELINE COMPLETE!")
         return {
