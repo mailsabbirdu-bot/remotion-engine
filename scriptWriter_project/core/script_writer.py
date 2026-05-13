@@ -11,25 +11,28 @@ class ScriptWriter:
 
         try:
             genai.configure(api_key=api_key)
-            # Try 1.5-pro, fallback to flash or 1.0 versions
-            models_to_try = [
+            # Efficiently find an available model
+            available_models = [m.name.replace('models/', '') for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+
+            # Prioritized preference list for high quality script writing
+            preferred_models = [
                 'gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash',
                 'gemini-flash-latest', 'gemini-pro-latest', 'gemini-pro'
             ]
-            self.model = None
 
-            for model_name in models_to_try:
-                try:
-                    m = genai.GenerativeModel(model_name)
-                    m.generate_content("test")
-                    self.model = m
-                    print(f"✅ [WRITER] Gemini {model_name} Model loaded successfully.")
+            self.model = None
+            for model_name in preferred_models:
+                if model_name in available_models:
+                    self.model = genai.GenerativeModel(model_name)
+                    print(f"✅ [WRITER] Gemini {model_name} Model selected.")
                     break
-                except Exception:
-                    continue
 
             if not self.model:
-                raise Exception("Could not initialize any Gemini model.")
+                if available_models:
+                    self.model = genai.GenerativeModel(available_models[0])
+                    print(f"⚠️ [WRITER] Using absolute fallback model: {available_models[0]}")
+                else:
+                    raise Exception("No Gemini models available.")
 
         except Exception as e:
             print(f"❌ [WRITER] Failed to initialize Gemini Writer: {e}")
