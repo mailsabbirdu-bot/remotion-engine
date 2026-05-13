@@ -1,6 +1,6 @@
 import google.generativeai as genai
 import os
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from .config import GEMINI_API_KEY, CHUNK_SIZE, CHUNK_OVERLAP
 
 class GeminiSummarizer:

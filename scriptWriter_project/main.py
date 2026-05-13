@@ -28,10 +28,7 @@ def main():
         print("❌ No topic entered. Exiting.")
         sys.exit(1)
 
-    language = input("Enter the language (en for English, bn for Bangla): ").lower().strip()
-    if language not in ["en", "bn"]:
-        print("⚠️ Invalid language choice. Defaulting to 'en'.")
-        language = "en"
+    language = "en"
 
     # Run Pipeline
     pipeline = ResearchPipeline()

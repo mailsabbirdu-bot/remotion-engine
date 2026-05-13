@@ -63,22 +63,12 @@ if not os.path.exists('/content/drive'):
 # 2. Find Project
 target_dir = locate_project()
 
-# 3. Fallback: Git Clone or Upload
+# 3. Fallback: Git Clone
 if not target_dir:
-    print("\n❌ Project folder not found!")
-    choice = input("Would you like to: \n(1) Auto-Clone from GitHub \n(2) Upload ZIP \n[Enter 1 or 2]: ")
-
-    if choice == "1":
-        os.chdir("/content")
-        !git clone {REPO_URL}
-        target_dir = locate_project()
-    elif choice == "2":
-        print("Please upload your project ZIP file...")
-        uploaded = files.upload()
-        for fn in uploaded.keys():
-            if fn.endswith('.zip'):
-                !unzip -q {fn} -d /content/uploaded_project
-                target_dir = locate_project()
+    print("\n❌ Project folder not found! Auto-cloning from GitHub...")
+    os.chdir("/content")
+    !git clone {REPO_URL}
+    target_dir = locate_project()
 
 if target_dir:
     print(f"✅ Project active at: {target_dir}")
