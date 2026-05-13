@@ -17,44 +17,6 @@ REQUIRED_FILES = ["main.py", "requirements.txt", "core/pipeline.py"]
 def is_project_dir(path):
     return all(os.path.exists(os.path.join(path, f)) for f in REQUIRED_FILES)
 
-def locate_project():
-    print(f"🔍 Searching for '{PROJECT_NAME}'...")
-
-    # Priority 1: Current directory
-    if is_project_dir(os.getcwd()):
-        return os.getcwd()
-
-    # Priority 2: /content/PROJECT_NAME
-    colab_path = f"/content/{PROJECT_NAME}"
-    if os.path.exists(colab_path) and is_project_dir(colab_path):
-        return colab_path
-
-    # Priority 3: Deep search in /content (handles clones and subdirs)
-    print("📂 Searching local storage...")
-    for root, dirs, _ in os.walk("/content"):
-        if PROJECT_NAME in dirs:
-            path = os.path.join(root, PROJECT_NAME)
-            if is_project_dir(path): return path
-        # Check if the current root itself is the project
-        if is_project_dir(root): return root
-
-    # Priority 4: Google Drive
-    if os.path.exists("/content/drive/MyDrive"):
-        print("📂 Searching Google Drive (this may take a minute)...")
-        # Optimization: Check MyDrive root first
-        drive_root = "/content/drive/MyDrive"
-        for item in os.listdir(drive_root):
-            path = os.path.join(drive_root, item)
-            if os.path.isdir(path) and (item == PROJECT_NAME or is_project_dir(path)):
-                if is_project_dir(path): return path
-
-        # Deeper search
-        for root, dirs, _ in os.walk(drive_root):
-            if PROJECT_NAME in dirs:
-                path = os.path.join(root, PROJECT_NAME)
-                if is_project_dir(path): return path
-    return None
-
 # 1. Mount Drive (RECOMMENDED for saving scripts)
 if not os.path.exists('/content/drive'):
     print("🛰️ Mounting Google Drive...")
@@ -64,15 +26,15 @@ if not os.path.exists('/content/drive'):
         print(f"⚠️ Drive mount failed: {e}")
         print("💡 Continuing in local mode. Your scripts will be deleted when Colab disconnects.")
 
-# 2. Find Project
-target_dir = locate_project()
+# 2. Fast Path: Directly go to cloning / execution
+print(f"🚀 Initializing ScriptWriter...")
+target_dir = f"/content/remotion-engine/{PROJECT_NAME}"
 
-# 3. Fallback: Git Clone
-if not target_dir:
-    print("\n❌ Project folder not found! Auto-cloning from GitHub...")
+if not os.path.exists(target_dir):
+    print("\n📦 Cloning repository from GitHub...")
     os.chdir("/content")
-    !git clone {REPO_URL}
-    target_dir = locate_project()
+    !git clone {REPO_URL} --quiet
+    target_dir = f"/content/remotion-engine/{PROJECT_NAME}"
 
 if target_dir:
     print(f"✅ Project active at: {target_dir}")
