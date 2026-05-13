@@ -31,16 +31,14 @@ class ResearchPipeline:
 
         print(f"\n📝 [SUMMARIZER] Summarizing {len(articles)} Web Articles...")
         for i, art in enumerate(articles):
-            if i > 0:
-                time.sleep(5) # Delay between summaries
+            # No fixed delay; handled by backoff
             print(f"   ✍️ Summarizing: {art['title'][:50]}...")
             summary = self.summarizer.summarize_text(art['text'], source_type="article")
             all_summaries.append(f"ARTICLE: {art['title']}\n{summary}")
 
         print(f"\n📝 [SUMMARIZER] Summarizing {len(youtube_data)} YouTube Transcripts...")
         for i, yt in enumerate(youtube_data):
-            if i > 0 or articles:
-                time.sleep(5)
+            # No fixed delay; handled by backoff
             if yt['transcript']:
                 summary = self.summarizer.summarize_text(yt['transcript'], source_type="video transcript")
                 all_summaries.append(f"VIDEO: {yt['basic']['title']}\n{summary}")

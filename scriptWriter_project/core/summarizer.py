@@ -54,20 +54,20 @@ class GeminiSummarizer:
 
     def _setup_local_llm(self):
         """
-        Initialize a very lightweight local LLM optimized for CPU fallback.
+        Initialize an ultra-lightweight local LLM optimized for CPU fallback.
         """
         try:
             import torch
             from transformers import AutoTokenizer, AutoModelForCausalLM
 
-            # Qwen2.5-0.5B is extremely capable for its size and fast on CPU
-            model_id = "Qwen/Qwen2.5-0.5B-Instruct"
-            print(f"📥 [LOCAL LLM] Loading {model_id} for CPU fallback...")
+            # SmolLM2-360M is tiny (360M params) and extremely fast on CPU
+            model_id = "HuggingFaceTB/SmolLM2-360M-Instruct"
+            print(f"📥 [LOCAL LLM] Loading {model_id} for ultra-fast CPU fallback...")
 
             self.local_tokenizer = AutoTokenizer.from_pretrained(model_id)
             device = "cuda" if torch.cuda.is_available() else "cpu"
 
-            # CPU-friendly loading
+            # CPU-optimized loading
             load_kwargs = {"device_map": "auto", "torch_dtype": "auto"}
             if device == "cpu":
                 load_kwargs["low_cpu_mem_usage"] = True
@@ -101,7 +101,7 @@ class GeminiSummarizer:
         # Strip the prompt
         return response.split("assistant\n")[-1].strip()
 
-    def _call_gemini_with_retry(self, prompt, retries=3, initial_delay=5):
+    def _call_gemini_with_retry(self, prompt, retries=3, initial_delay=2):
         """
         Call Gemini API with exponential backoff to handle 429 errors.
         """
@@ -111,10 +111,16 @@ class GeminiSummarizer:
                 response = self.model.generate_content(prompt)
                 return response.text
             except Exception as e:
-                if "429" in str(e) and attempt < retries - 1:
-                    print(f"⚠️ Quota exceeded. Retrying in {delay} seconds... (Attempt {attempt+1}/{retries})")
-                    time.sleep(delay)
-                    delay *= 2
+                if "429" in str(e):
+                    if attempt < retries - 1:
+                        print(f"⚠️ Quota exceeded. Retrying in {delay} seconds... (Attempt {attempt+1}/{retries})")
+                        time.sleep(delay)
+                        delay *= 2
+                    else:
+                        # Sticky Fallback: deactivate Gemini for this session if it keeps failing
+                        print("🚫 Gemini is heavily rate-limited. Switching to Local LLM permanently for this session.")
+                        self.model = None
+                        raise e
                 else:
                     raise e
         return None
@@ -130,9 +136,7 @@ class GeminiSummarizer:
         summaries = []
 
         for i, chunk in enumerate(chunks):
-            # Respect Free Tier RPM limits
-            if i > 0:
-                time.sleep(2)
+            # No fixed delay needed anymore as exponential backoff handles it
 
             prompt = f"""
             Analyze and summarize the following {source_type} content.

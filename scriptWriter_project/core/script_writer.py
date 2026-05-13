@@ -37,7 +37,7 @@ class ScriptWriter:
         except Exception as e:
             print(f"❌ [WRITER] Failed to initialize Gemini Writer: {e}")
 
-    def _call_gemini_with_retry(self, prompt, retries=3, initial_delay=5):
+    def _call_gemini_with_retry(self, prompt, retries=3, initial_delay=2):
         """
         Call Gemini API with exponential backoff.
         """

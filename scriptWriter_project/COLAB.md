@@ -26,17 +26,16 @@ if not os.path.exists('/content/drive'):
         print(f"⚠️ Drive mount failed: {e}")
         print("💡 Continuing in local mode. Your scripts will be deleted when Colab disconnects.")
 
-# 2. Fast Path: Directly go to cloning / execution
+# 2. Fast Path: Fresh Clone
 print(f"🚀 Initializing ScriptWriter...")
+os.chdir("/content")
+# Remove existing clone to ensure fresh code
+!rm -rf remotion-engine
+print("📦 Fetching latest engine from GitHub...")
+!git clone {REPO_URL} --quiet
 target_dir = f"/content/remotion-engine/{PROJECT_NAME}"
 
-if not os.path.exists(target_dir):
-    print("\n📦 Cloning repository from GitHub...")
-    os.chdir("/content")
-    !git clone {REPO_URL} --quiet
-    target_dir = f"/content/remotion-engine/{PROJECT_NAME}"
-
-if target_dir:
+if os.path.exists(target_dir):
     print(f"✅ Project active at: {target_dir}")
     os.chdir(target_dir)
 
