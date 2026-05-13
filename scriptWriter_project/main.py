@@ -87,17 +87,22 @@ def main():
             f.write("="*50 + "\n\n")
 
             f.write("--- WEB ARTICLES ---\n")
+            if not result['raw_data']['articles']:
+                f.write("No articles found.\n")
             for art in result['raw_data']['articles']:
                 f.write(f"\nTITLE: {art['title']}\n")
                 f.write(f"URL: {art['url']}\n")
                 f.write("-" * 20 + "\n")
-                f.write(art['text'] + "\n")
+                f.write(str(art['text']) + "\n")
                 f.write("=" * 30 + "\n")
 
             f.write("\n\n--- YOUTUBE DATA ---\n")
+            if not result['raw_data']['youtube']:
+                f.write("No YouTube data found.\n")
             for yt in result['raw_data']['youtube']:
                 f.write(f"\nVIDEO: {yt['basic']['title']}\n")
                 f.write(f"URL: {yt['basic']['url']}\n")
+                f.write(f"UPLOADER: {yt['basic'].get('channel', 'N/A')}\n")
                 f.write(f"DESCRIPTION: {yt['metadata'].get('description', 'N/A')}\n")
                 f.write("-" * 20 + "\n")
                 f.write(f"TRANSCRIPT: {yt['transcript'] or 'No transcript available'}\n")

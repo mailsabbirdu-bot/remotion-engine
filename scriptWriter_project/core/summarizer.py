@@ -1,5 +1,6 @@
 import google.generativeai as genai
 import os
+import time
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from .config import GEMINI_API_KEY, CHUNK_SIZE, CHUNK_OVERLAP
 
@@ -12,25 +13,29 @@ class GeminiSummarizer:
 
         try:
             genai.configure(api_key=api_key)
-            # Try latest models, with fallbacks
-            models_to_try = [
+            # Efficiently find an available model
+            available_models = [m.name.replace('models/', '') for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+
+            # Prioritized preference list
+            preferred_models = [
                 'gemini-2.0-flash', 'gemini-1.5-flash',
                 'gemini-flash-latest', 'gemini-pro-latest', 'gemini-pro'
             ]
-            self.model = None
 
-            for model_name in models_to_try:
-                try:
-                    m = genai.GenerativeModel(model_name)
-                    m.generate_content("test")
-                    self.model = m
-                    print(f"✅ [SUMMARIZER] Gemini {model_name} Model loaded successfully.")
+            self.model = None
+            for model_name in preferred_models:
+                if model_name in available_models:
+                    self.model = genai.GenerativeModel(model_name)
+                    print(f"✅ [SUMMARIZER] Gemini {model_name} Model selected.")
                     break
-                except Exception:
-                    continue
 
             if not self.model:
-                raise Exception("Could not initialize any Gemini model.")
+                # Absolute fallback to first available model
+                if available_models:
+                    self.model = genai.GenerativeModel(available_models[0])
+                    print(f"⚠️ [SUMMARIZER] Using absolute fallback model: {available_models[0]}")
+                else:
+                    raise Exception("No Gemini models available for this API key.")
 
         except Exception as e:
             print(f"❌ [SUMMARIZER] Failed to initialize Gemini: {e}")
@@ -51,6 +56,10 @@ class GeminiSummarizer:
         summaries = []
 
         for i, chunk in enumerate(chunks):
+            # Respect Free Tier RPM limits (approx 15 RPM for some models)
+            if i > 0:
+                time.sleep(4)
+
             prompt = f"""
             Analyze and summarize the following {source_type} content.
             Extract:

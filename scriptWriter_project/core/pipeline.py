@@ -1,6 +1,7 @@
 from .search import web_search
 from .article_extractor import extract_multiple_articles
 from .youtube_research import process_youtube_research
+import time
 from .summarizer import GeminiSummarizer
 from .script_writer import ScriptWriter
 from .config import MAX_WEB_RESULTS, MAX_YOUTUBE_RESULTS, MAX_WORKERS
@@ -29,13 +30,17 @@ class ResearchPipeline:
         all_summaries = []
 
         print(f"\n📝 [SUMMARIZER] Summarizing {len(articles)} Web Articles...")
-        for art in articles:
+        for i, art in enumerate(articles):
+            if i > 0:
+                time.sleep(5) # Delay between summaries
             print(f"   ✍️ Summarizing: {art['title'][:50]}...")
             summary = self.summarizer.summarize_text(art['text'], source_type="article")
             all_summaries.append(f"ARTICLE: {art['title']}\n{summary}")
 
         print(f"\n📝 [SUMMARIZER] Summarizing {len(youtube_data)} YouTube Transcripts...")
-        for yt in youtube_data:
+        for i, yt in enumerate(youtube_data):
+            if i > 0 or articles:
+                time.sleep(5)
             if yt['transcript']:
                 summary = self.summarizer.summarize_text(yt['transcript'], source_type="video transcript")
                 all_summaries.append(f"VIDEO: {yt['basic']['title']}\n{summary}")
@@ -46,10 +51,12 @@ class ResearchPipeline:
                 all_summaries.append(f"VIDEO (METADATA ONLY): {yt['basic']['title']}\n{summary}")
 
         # 5. Deep Combined Analysis
+        time.sleep(5)
         print(f"\n🧠 Performing Deep Cross-Source Analysis ({language})...")
         deep_analysis = self.summarizer.deep_combined_analysis(all_summaries, language=language)
 
         # 6. Final Script Generation
+        time.sleep(5)
         print(f"\n🎬 Writing Final Documentary Script ({language})...")
         final_script = self.writer.generate_script(topic, deep_analysis, language=language)
 
