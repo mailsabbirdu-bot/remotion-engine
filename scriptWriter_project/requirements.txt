@@ -10,5 +10,4 @@ langchain-text-splitters
 faiss-cpu
 yt-dlp
 pydantic
-# Pinning httpx to avoid proxy error in youtube-search-python while maintaining compatibility
-httpx>=0.27.0,<0.28.0
+# httpx pinning removed; compatibility handled via monkeypatch in main.py
