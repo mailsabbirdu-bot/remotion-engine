@@ -32,9 +32,9 @@ class GeminiSummarizer:
                     break
 
             if not self.model:
-                # Try to load local fallback if Gemini is completely unavailable
-                print("⚠️ [SUMMARIZER] Gemini unavailable. Attempting to load local LLM fallback...")
-                self._setup_local_llm()
+                # We won't setup local LLM here anymore to save time.
+                # It will be setup lazily in summarize_text if needed.
+                print("⚠️ [SUMMARIZER] Gemini unavailable. Local fallback will be used if needed.")
 
             if not self.model and not self.local_model:
                 # Absolute fallback to first available model
@@ -54,22 +54,23 @@ class GeminiSummarizer:
 
     def _setup_local_llm(self):
         """
-        Initialize a lightweight local LLM as fallback.
+        Initialize a very lightweight local LLM optimized for CPU fallback.
         """
         try:
             import torch
             from transformers import AutoTokenizer, AutoModelForCausalLM
 
-            model_id = "HuggingFaceTB/SmolLM2-1.7B-Instruct"
-            print(f"📥 [LOCAL LLM] Loading {model_id}...")
+            # Qwen2.5-0.5B is extremely capable for its size and fast on CPU
+            model_id = "Qwen/Qwen2.5-0.5B-Instruct"
+            print(f"📥 [LOCAL LLM] Loading {model_id} for CPU fallback...")
 
             self.local_tokenizer = AutoTokenizer.from_pretrained(model_id)
             device = "cuda" if torch.cuda.is_available() else "cpu"
 
-            # Load in 4-bit if on GPU for memory efficiency
-            load_kwargs = {"device_map": "auto"}
-            if device == "cuda":
-                load_kwargs["load_in_4bit"] = True
+            # CPU-friendly loading
+            load_kwargs = {"device_map": "auto", "torch_dtype": "auto"}
+            if device == "cpu":
+                load_kwargs["low_cpu_mem_usage"] = True
 
             self.local_model = AutoModelForCausalLM.from_pretrained(
                 model_id,
@@ -148,10 +149,16 @@ class GeminiSummarizer:
                 if self.model:
                     summary = self._call_gemini_with_retry(prompt)
                 else:
+                    if not self.local_model: self._setup_local_llm()
                     summary = self._summarize_locally(chunk, source_type)
                 summaries.append(summary)
             except Exception as e:
                 print(f"❌ Summarization Error: {e}")
+                # Lazy initialization of local LLM
+                if not self.local_model:
+                    print("🔄 Attempting local LLM fallback...")
+                    self._setup_local_llm()
+
                 if self.local_model:
                     print("🔄 Retrying with local LLM...")
                     try:

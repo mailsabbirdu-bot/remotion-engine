@@ -1,22 +1,44 @@
 from duckduckgo_search import DDGS
 
+def is_relevant(text, keywords):
+    """
+    Simple relevance check based on keyword overlap.
+    """
+    if not text: return False
+    text = text.lower()
+    return any(k.lower() in text for k in keywords)
+
 def web_search(topic, max_results=10):
     """
     Search the web for a given topic using DuckDuckGo with fallbacks.
     """
-    print(f"\n🔍 [SEARCH] Starting web search for: '{topic}'")
+    # Augment topic for better relevance if it seems specific to Bangladesh
+    search_query = topic
+    relevance_keywords = topic.split()
+
+    if "bangladesh" not in topic.lower():
+        # Heuristic: if topic is in Bangla or about common BD topics, add Bangladesh
+        if any(ord(c) > 128 for c in topic) or any(k in topic.lower() for k in ["sheikh", "hasina", "dhaka", "taka"]):
+            search_query += " Bangladesh"
+            relevance_keywords.append("Bangladesh")
+
+    print(f"\n🔍 [SEARCH] Starting web search for: '{search_query}'")
     results = []
 
     # 1. Try DuckDuckGo Text Search
     try:
         with DDGS() as ddgs:
-            ddgs_gen = ddgs.text(topic, max_results=max_results)
-            for i, r in enumerate(ddgs_gen, 1):
-                results.append({
-                    "title": r.get('title'),
-                    "url": r.get('href'),
-                    "description": r.get('body')
-                })
+            ddgs_gen = ddgs.text(search_query, max_results=max_results * 2) # Get more candidates
+            for r in ddgs_gen:
+                title = r.get('title', '')
+                body = r.get('body', '')
+                if is_relevant(title + " " + body, relevance_keywords):
+                    results.append({
+                        "title": title,
+                        "url": r.get('href'),
+                        "description": body
+                    })
+                if len(results) >= max_results: break
         if results:
             print(f"✅ [SEARCH] Successfully fetched {len(results)} results from DuckDuckGo.")
             return results
@@ -27,8 +49,8 @@ def web_search(topic, max_results=10):
     try:
         print("🔍 [SEARCH] Attempting DuckDuckGo News search...")
         with DDGS() as ddgs:
-            ddgs_gen = ddgs.news(topic, max_results=max_results)
-            for i, r in enumerate(ddgs_gen, 1):
+            ddgs_gen = ddgs.news(search_query, max_results=max_results)
+            for r in ddgs_gen:
                 results.append({
                     "title": r.get('title'),
                     "url": r.get('url'),
@@ -45,7 +67,7 @@ def web_search(topic, max_results=10):
         print("🔍 [SEARCH] Attempting Google Search fallback...")
         from googlesearch import search
         # googlesearch-python returns a generator of URLs
-        google_urls = search(topic, num_results=max_results)
+        google_urls = search(search_query, num_results=max_results)
         for url in google_urls:
             results.append({
                 "title": "Web Article",
