@@ -1,6 +1,5 @@
 google-generativeai
 duckduckgo-search
-youtube-search-python
 youtube-transcript-api
 newspaper3k
 lxml_html_clean
@@ -10,4 +9,6 @@ langchain-text-splitters
 faiss-cpu
 yt-dlp
 pydantic
+googlesearch-python
+# youtube-search-python removed in favor of yt-dlp native search
 # httpx pinning removed; compatibility handled via monkeypatch in main.py

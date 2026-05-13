@@ -1,27 +1,32 @@
-from youtubesearchpython import VideosSearch
 from youtube_transcript_api import YouTubeTranscriptApi
 import yt_dlp
 
 def search_youtube(topic, max_results=5):
     """
-    Search YouTube for relevant videos.
+    Search YouTube for relevant videos using yt-dlp.
     """
     print(f"\n🎥 [YOUTUBE] Searching for: '{topic}'")
     try:
-        videos_search = VideosSearch(topic, limit=max_results)
-        results = videos_search.result()
-
+        ydl_opts = {'quiet': True, 'extract_flat': True, 'no_warnings': True}
         videos = []
-        for i, res in enumerate(results.get('result', []), 1):
-            print(f"   🎬 [{i}] Found: {res.get('title')} ({res.get('link')})")
-            videos.append({
-                "id": res.get("id"),
-                "title": res.get("title"),
-                "url": res.get("link"),
-                "channel": res.get("channel", {}).get("name"),
-                "duration": res.get("duration"),
-                "viewCount": res.get("viewCount", {}).get("short")
-            })
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            # ytsearch: prefix allows searching YouTube
+            search_results = ydl.extract_info(f"ytsearch{max_results}:{topic}", download=False)
+
+            for i, res in enumerate(search_results.get('entries', []), 1):
+                title = res.get('title')
+                video_id = res.get('id')
+                url = res.get('url') or f"https://www.youtube.com/watch?v={video_id}"
+
+                print(f"   🎬 [{i}] Found: {title} ({url})")
+                videos.append({
+                    "id": video_id,
+                    "title": title,
+                    "url": url,
+                    "channel": res.get("uploader"),
+                    "duration": res.get("duration_string"),
+                    "viewCount": res.get("view_count")
+                })
         return videos
     except Exception as e:
         print(f"❌ Error during YouTube search: {e}")
