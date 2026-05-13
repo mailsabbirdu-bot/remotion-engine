@@ -36,6 +36,12 @@ def main():
 
     # Save Output
     output_file = os.path.join(OUTPUT_DIR, "script.txt")
+
+    # Fallback for Colab environment if Drive is not mounted
+    if not os.path.exists("/content/drive") and "/content" in os.getcwd():
+        print("\n⚠️ WARNING: Google Drive not detected! Saving a copy to local storage for easy download.")
+        output_file = "script.txt"
+
     try:
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(f"TOPIC: {topic}\n")
@@ -53,6 +59,13 @@ def main():
                 f.write(f"- {url}\n")
 
         print(f"\n✨ SUCCESS! Your script has been saved to: {output_file}")
+
+        # Provide download instructions for Colab if not using Drive
+        if not os.path.exists("/content/drive"):
+            print("\n📥 To download your script, run this in a new cell:")
+            print(f"   from google.colab import files")
+            print(f"   files.download('{output_file}')")
+
     except Exception as e:
         print(f"❌ Error saving script to file: {e}")
 

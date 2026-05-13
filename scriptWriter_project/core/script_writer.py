@@ -11,8 +11,21 @@ class ScriptWriter:
 
         try:
             genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel('gemini-1.5-pro') # Using Pro for better writing quality
-            print("✅ [WRITER] Gemini Pro Model loaded successfully.")
+            # Try 1.5-pro, fallback to 1.5-flash or gemini-pro (1.0)
+            try:
+                self.model = genai.GenerativeModel('gemini-1.5-pro')
+                self.model.generate_content("test")
+                print("✅ [WRITER] Gemini 1.5 Pro Model loaded successfully.")
+            except Exception:
+                print("⚠️ [WRITER] gemini-1.5-pro not found or restricted. Trying gemini-1.5-flash...")
+                try:
+                    self.model = genai.GenerativeModel('gemini-1.5-flash')
+                    self.model.generate_content("test")
+                    print("✅ [WRITER] Gemini 1.5 Flash Model loaded successfully.")
+                except Exception:
+                    print("⚠️ [WRITER] Falling back to gemini-pro...")
+                    self.model = genai.GenerativeModel('gemini-pro')
+                    print("✅ [WRITER] Gemini Pro (1.0) Model loaded successfully.")
         except Exception as e:
             print(f"❌ [WRITER] Failed to initialize Gemini Pro: {e}")
 

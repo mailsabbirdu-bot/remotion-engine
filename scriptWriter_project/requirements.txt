@@ -10,3 +10,4 @@ langchain-text-splitters
 faiss-cpu
 yt-dlp
 pydantic
+httpx<0.28.0

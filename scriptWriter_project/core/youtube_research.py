@@ -33,8 +33,9 @@ def get_transcript(video_id):
     """
     print(f"      📝 [TRANSCRIPT] Attempting to fetch transcript for {video_id}...")
     try:
-        transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
-        transcript_text = " ".join([t['text'] for t in transcript_list])
+        # YouTubeTranscriptApi.get_transcript is a static method, not an instance method.
+        transcript_data = YouTubeTranscriptApi.get_transcript(video_id)
+        transcript_text = " ".join([t['text'] for t in transcript_data])
         print(f"         ✅ Success: {len(transcript_text)} characters.")
         return transcript_text
     except Exception as e:

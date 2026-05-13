@@ -12,8 +12,16 @@ class GeminiSummarizer:
 
         try:
             genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel('gemini-1.5-flash')
-            print("✅ [SUMMARIZER] Gemini Flash Model loaded successfully.")
+            # Try 1.5-flash, fallback to gemini-pro (1.0) if not available
+            try:
+                self.model = genai.GenerativeModel('gemini-1.5-flash')
+                # Test the model with a tiny prompt to see if it exists
+                self.model.generate_content("test")
+                print("✅ [SUMMARIZER] Gemini 1.5 Flash Model loaded successfully.")
+            except Exception:
+                print("⚠️ [SUMMARIZER] gemini-1.5-flash not found or restricted. Falling back to gemini-pro...")
+                self.model = genai.GenerativeModel('gemini-pro')
+                print("✅ [SUMMARIZER] Gemini Pro Model loaded successfully.")
         except Exception as e:
             print(f"❌ [SUMMARIZER] Failed to initialize Gemini: {e}")
 

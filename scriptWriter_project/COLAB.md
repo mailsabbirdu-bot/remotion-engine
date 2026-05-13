@@ -55,10 +55,14 @@ def locate_project():
                 if is_project_dir(path): return path
     return None
 
-# 1. Mount Drive
+# 1. Mount Drive (RECOMMENDED for saving scripts)
 if not os.path.exists('/content/drive'):
-    try: drive.mount('/content/drive')
-    except: print("⚠️ Drive mount skipped.")
+    print("🛰️ Mounting Google Drive...")
+    try:
+        drive.mount('/content/drive')
+    except Exception as e:
+        print(f"⚠️ Drive mount failed: {e}")
+        print("💡 Continuing in local mode. Your scripts will be deleted when Colab disconnects.")
 
 # 2. Find Project
 target_dir = locate_project()
