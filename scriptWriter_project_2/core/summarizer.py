@@ -11,12 +11,14 @@ class BrowserSummarizer:
             chunk_overlap=CHUNK_OVERLAP
         )
 
-    def summarize_text(self, text, source_type="article"):
+    def summarize_text(self, text, source_type="article", language="en"):
         """
         Summarize long text by sending it in chunks to the browser-based AI.
         """
         if not text:
             return "No content to summarize."
+
+        lang_instruction = "English" if language == "en" else "Bangla"
 
         chunks = self.text_splitter.split_text(text)
         summaries = []
@@ -24,10 +26,10 @@ class BrowserSummarizer:
         for i, chunk in enumerate(chunks):
             print(f"   ✍️ [BROWSER] Processing chunk {i+1}/{len(chunks)}...")
             prompt = f"""
-            Analyze and summarize the following {source_type} content concisely.
+            Analyze and summarize the following {source_type} content concisely in {lang_instruction}.
             Extract key facts, insights, and dramatic turning points.
 
-            IMPORTANT: Provide ONLY the raw summary text. Do not include conversational fillers like "Here is a summary" or "Sure, I can help with that".
+            IMPORTANT: Provide ONLY the raw summary text in {lang_instruction}. Do not include conversational fillers like "Here is a summary" or "Sure, I can help with that".
 
             Content:
             {chunk}
@@ -43,7 +45,7 @@ class BrowserSummarizer:
 
         if len(summaries) > 1:
             print("   ✍️ [BROWSER] Combining multiple summaries...")
-            final_prompt = "Combine these summaries into one comprehensive analysis. Provide only the combined summary text, no extra commentary:\n\n" + "\n\n".join(summaries)
+            final_prompt = f"Combine these summaries into one comprehensive analysis in {lang_instruction}. Provide only the combined summary text in {lang_instruction}, no extra commentary:\n\n" + "\n\n".join(summaries)
             return self.browser_ai.send_prompt(final_prompt)
 
         return summaries[0] if summaries else "Summary failed."
@@ -62,7 +64,7 @@ class BrowserSummarizer:
             print(f"   🧠 [BROWSER] Analysis material too large, processing in {len(text_chunks)} chunks...")
             partial_analyses = []
             for i, chunk in enumerate(text_chunks):
-                prompt = f"Analyze this part of the research material ({i+1}/{len(text_chunks)}). Provide raw analysis only:\n\n{chunk}"
+                prompt = f"Analyze this part of the research material ({i+1}/{len(text_chunks)}) in {lang_instruction}. Provide raw analysis only in {lang_instruction}:\n\n{chunk}"
                 partial_analyses.append(self.browser_ai.send_prompt(prompt))
 
             combined_text = "\n\n".join([p for p in partial_analyses if p])
@@ -77,7 +79,7 @@ class BrowserSummarizer:
         4. Organize key events chronologically.
         5. Extract compelling hooks.
 
-        IMPORTANT: Start directly with the report. Do not include any introductory remarks.
+        IMPORTANT: Write the entire report in {lang_instruction}. Start directly with the report. Do not include any introductory remarks.
 
         Source Material:
         {combined_text}

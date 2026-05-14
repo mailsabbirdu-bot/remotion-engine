@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 
 from core.pipeline import ResearchPipeline
 
@@ -11,6 +12,10 @@ BASE = DRIVE_BASE if os.path.exists("/content/drive") else LOCAL_BASE
 OUTPUT_DIR = os.path.join(BASE, "audio")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
+def is_bangla(text):
+    """Detects if a string contains Bangla characters."""
+    return bool(re.search(r'[\u0980-\u09ff]', text))
+
 def main():
     # Ensure we are in the project directory
     if not os.path.exists("core/pipeline.py"):
@@ -20,7 +25,7 @@ def main():
         return
 
     print("====================================================")
-    print("🎬 BROWSER SCRIPT WRITER AI (V1.1) - DEEP RESEARCH")
+    print("🎬 BROWSER SCRIPT WRITER AI (V1.2) - DEEP RESEARCH")
     print("====================================================\n")
 
     # User Input
@@ -29,7 +34,13 @@ def main():
         print("❌ No topic entered. Exiting.")
         sys.exit(1)
 
-    language = "en"
+    # Auto-detect language
+    if is_bangla(topic):
+        language = "bn"
+        print("🌏 Detected Language: Bangla")
+    else:
+        language = "en"
+        print("🌏 Detected Language: English")
 
     # Run Pipeline
     pipeline = ResearchPipeline()

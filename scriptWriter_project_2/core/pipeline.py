@@ -15,7 +15,7 @@ class ResearchPipeline:
 
     def run(self, topic, language="en"):
         print(f"\n" + "🚀"*10)
-        print(f"🚀 STARTING BROWSER-BASED RESEARCH PIPELINE FOR: '{topic}'")
+        print(f"🚀 STARTING BROWSER-BASED RESEARCH PIPELINE FOR: '{topic}' ({language})")
         print("🚀" * 10 + "\n")
 
         try:
@@ -37,17 +37,17 @@ class ResearchPipeline:
 
             print(f"\n📝 [SUMMARIZER] Summarizing {len(articles)} Web Articles via Browser...")
             for art in articles:
-                summary = self.summarizer.summarize_text(art['text'], source_type="article")
+                summary = self.summarizer.summarize_text(art['text'], source_type="article", language=language)
                 all_summaries.append(f"ARTICLE: {art['title']}\n{summary}")
 
             print(f"\n📝 [SUMMARIZER] Summarizing {len(youtube_data)} YouTube Transcripts via Browser...")
             for yt in youtube_data:
                 if yt['transcript']:
-                    summary = self.summarizer.summarize_text(yt['transcript'], source_type="video transcript")
+                    summary = self.summarizer.summarize_text(yt['transcript'], source_type="video transcript", language=language)
                     all_summaries.append(f"VIDEO: {yt['basic']['title']}\n{summary}")
                 else:
                     metadata_text = f"Title: {yt['basic']['title']}\nDescription: {yt['metadata'].get('description', '')}"
-                    summary = self.summarizer.summarize_text(metadata_text, source_type="video metadata")
+                    summary = self.summarizer.summarize_text(metadata_text, source_type="video metadata", language=language)
                     all_summaries.append(f"VIDEO (METADATA ONLY): {yt['basic']['title']}\n{summary}")
 
             # 5. Deep Combined Analysis
