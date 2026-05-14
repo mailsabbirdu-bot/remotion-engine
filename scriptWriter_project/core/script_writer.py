@@ -4,15 +4,17 @@ from .config import GEMINI_API_KEY
 
 class ScriptWriter:
     def __init__(self, api_key=None):
-        if not api_key:
-            api_key = GEMINI_API_KEY
+        self.api_key = api_key or GEMINI_API_KEY
+        self.available_models = []
+        self.current_model_index = 0
+        self.model = None
 
-        print(f"🔑 [WRITER] Initializing Gemini API with key: {api_key[:10]}...{api_key[-5:]}")
+        print(f"🔑 [WRITER] Initializing Gemini API with key: {self.api_key[:10]}...{self.api_key[-5:]}")
 
         try:
-            genai.configure(api_key=api_key)
+            genai.configure(api_key=self.api_key)
             # Efficiently find an available model
-            available_models = [m.name.replace('models/', '') for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+            remote_models = [m.name.replace('models/', '') for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
 
             # Prioritized preference list for high quality script writing
             preferred_models = [
@@ -20,38 +22,61 @@ class ScriptWriter:
                 'gemini-flash-latest', 'gemini-pro-latest', 'gemini-pro'
             ]
 
-            self.model = None
-            for model_name in preferred_models:
-                if model_name in available_models:
-                    self.model = genai.GenerativeModel(model_name)
-                    print(f"✅ [WRITER] Gemini {model_name} Model selected.")
-                    break
+            for m in preferred_models:
+                if m in remote_models:
+                    self.available_models.append(m)
 
-            if not self.model:
-                if available_models:
-                    self.model = genai.GenerativeModel(available_models[0])
-                    print(f"⚠️ [WRITER] Using absolute fallback model: {available_models[0]}")
-                else:
-                    raise Exception("No Gemini models available.")
+            for m in remote_models:
+                if m not in self.available_models:
+                    self.available_models.append(m)
+
+            if self.available_models:
+                model_name = self.available_models[0]
+                self.model = genai.GenerativeModel(model_name)
+                print(f"✅ [WRITER] Gemini {model_name} Model selected.")
+            else:
+                print("⚠️ [WRITER] No Gemini models available.")
 
         except Exception as e:
             print(f"❌ [WRITER] Failed to initialize Gemini Writer: {e}")
 
-    def _call_gemini_with_retry(self, prompt, retries=3, initial_delay=2):
+    def _cycle_model(self):
         """
-        Call Gemini API with exponential backoff.
+        Switch to the next available Gemini model if the current one is rate-limited.
+        """
+        if len(self.available_models) > 1:
+            self.current_model_index = (self.current_model_index + 1) % len(self.available_models)
+            model_name = self.available_models[self.current_model_index]
+            print(f"🔄 [QUOTA-WRITER] Cycling to next model: {model_name}")
+            self.model = genai.GenerativeModel(model_name)
+            return True
+        return False
+
+    def _call_gemini_with_retry(self, prompt, retries=5, initial_delay=2):
+        """
+        Call Gemini API with exponential backoff and model cycling.
         """
         import time
         delay = initial_delay
         for attempt in range(retries):
+            if not self.model: break
+
             try:
                 response = self.model.generate_content(prompt)
                 return response.text
             except Exception as e:
-                if "429" in str(e) and attempt < retries - 1:
-                    print(f"⚠️ Quota exceeded. Retrying in {delay} seconds... (Attempt {attempt+1}/{retries})")
-                    time.sleep(delay)
-                    delay *= 2
+                error_msg = str(e)
+                if "429" in error_msg:
+                    if attempt % 2 == 0 and self._cycle_model():
+                        time.sleep(1)
+                        continue
+
+                    if attempt < retries - 1:
+                        print(f"⚠️ Quota exceeded. Retrying in {delay} seconds... (Attempt {attempt+1}/{retries})")
+                        time.sleep(delay)
+                        delay *= 2
+                    else:
+                        raise e
                 else:
                     raise e
         return None
@@ -89,7 +114,8 @@ class ScriptWriter:
 
         try:
             print(f"✍️ Generating cinematic script for: {topic}...")
-            return self._call_gemini_with_retry(prompt)
+            res = self._call_gemini_with_retry(prompt)
+            return res if res else f"Failed to generate script for {topic}."
         except Exception as e:
             print(f"❌ Gemini Error during script writing: {e}")
             return f"Failed to generate script for {topic}."

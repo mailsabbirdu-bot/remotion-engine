@@ -8,41 +8,41 @@ class GeminiSummarizer:
     def __init__(self, api_key=None):
         self.local_model = None
         self.local_tokenizer = None
-        if not api_key:
-            api_key = GEMINI_API_KEY
+        self.api_key = api_key or GEMINI_API_KEY
 
-        print(f"🔑 [SUMMARIZER] Initializing Gemini API with key: {api_key[:10]}...{api_key[-5:]}")
+        # Track available models for cycling
+        self.available_models = []
+        self.current_model_index = 0
+        self.model = None
+
+        print(f"🔑 [SUMMARIZER] Initializing Gemini API with key: {self.api_key[:10]}...{self.api_key[-5:]}")
 
         try:
-            genai.configure(api_key=api_key)
+            genai.configure(api_key=self.api_key)
             # Efficiently find an available model
-            available_models = [m.name.replace('models/', '') for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+            remote_models = [m.name.replace('models/', '') for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
 
             # Prioritized preference list
             preferred_models = [
                 'gemini-2.0-flash', 'gemini-1.5-flash',
-                'gemini-flash-latest', 'gemini-pro-latest', 'gemini-pro'
+                'gemini-flash-latest', 'gemini-pro-latest', 'gemini-1.5-pro'
             ]
 
-            self.model = None
-            for model_name in preferred_models:
-                if model_name in available_models:
-                    self.model = genai.GenerativeModel(model_name)
-                    print(f"✅ [SUMMARIZER] Gemini {model_name} Model selected.")
-                    break
+            for m in preferred_models:
+                if m in remote_models:
+                    self.available_models.append(m)
 
-            if not self.model:
-                # We won't setup local LLM here anymore to save time.
-                # It will be setup lazily in summarize_text if needed.
+            # Add any other remaining models as last resort
+            for m in remote_models:
+                if m not in self.available_models:
+                    self.available_models.append(m)
+
+            if self.available_models:
+                model_name = self.available_models[0]
+                self.model = genai.GenerativeModel(model_name)
+                print(f"✅ [SUMMARIZER] Gemini {model_name} Model selected.")
+            else:
                 print("⚠️ [SUMMARIZER] Gemini unavailable. Local fallback will be used if needed.")
-
-            if not self.model and not self.local_model:
-                # Absolute fallback to first available model
-                if available_models:
-                    self.model = genai.GenerativeModel(available_models[0])
-                    print(f"⚠️ [SUMMARIZER] Using absolute fallback model: {available_models[0]}")
-                else:
-                    raise Exception("No Gemini models available for this API key.")
 
         except Exception as e:
             print(f"❌ [SUMMARIZER] Failed to initialize Gemini: {e}")
@@ -101,28 +101,49 @@ class GeminiSummarizer:
         # Strip the prompt
         return response.split("assistant\n")[-1].strip()
 
-    def _call_gemini_with_retry(self, prompt, retries=3, initial_delay=2):
+    def _cycle_model(self):
         """
-        Call Gemini API with exponential backoff to handle 429 errors.
+        Switch to the next available Gemini model if the current one is rate-limited.
+        """
+        if len(self.available_models) > 1:
+            self.current_model_index = (self.current_model_index + 1) % len(self.available_models)
+            model_name = self.available_models[self.current_model_index]
+            print(f"🔄 [QUOTA] Cycling to next model: {model_name}")
+            self.model = genai.GenerativeModel(model_name)
+            return True
+        return False
+
+    def _call_gemini_with_retry(self, prompt, retries=5, initial_delay=2):
+        """
+        Call Gemini API with exponential backoff and model cycling to handle 429 errors.
         """
         delay = initial_delay
         for attempt in range(retries):
+            if not self.model: break
+
             try:
                 response = self.model.generate_content(prompt)
                 return response.text
             except Exception as e:
-                if "429" in str(e):
+                error_msg = str(e)
+                if "429" in error_msg:
+                    # If we have other models, try cycling first before long wait
+                    if attempt % 2 == 0 and self._cycle_model():
+                        time.sleep(1) # Short breath
+                        continue
+
                     if attempt < retries - 1:
                         print(f"⚠️ Quota exceeded. Retrying in {delay} seconds... (Attempt {attempt+1}/{retries})")
                         time.sleep(delay)
                         delay *= 2
                     else:
-                        # Sticky Fallback: deactivate Gemini for this session if it keeps failing
-                        print("🚫 Gemini is heavily rate-limited. Switching to Local LLM permanently for this session.")
-                        self.model = None
+                        # Exhausted retries for this prompt
+                        print("🚫 Gemini exhausted for this request.")
                         raise e
                 else:
                     raise e
+
+        # If we reach here, either model is None or retries failed
         return None
 
     def summarize_text(self, text, source_type="article"):
@@ -207,7 +228,8 @@ class GeminiSummarizer:
         Deep Analysis Report (In {lang_instruction}):
         """
         try:
-            return self._call_gemini_with_retry(prompt)
+            res = self._call_gemini_with_retry(prompt)
+            return res if res else "Deep analysis failed."
         except Exception as e:
             print(f"❌ Gemini Error during deep analysis: {e}")
             return "Deep analysis failed."

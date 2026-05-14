@@ -1,13 +1,27 @@
 from duckduckgo_search import DDGS
 
-def is_relevant(text, keywords, threshold=0.3):
+def is_relevant(text, keywords, threshold=0.4):
     """
     Improved relevance check based on keyword overlap percentage.
+    Filters out common stop words to ensure accuracy.
     """
     if not text: return False
+
+    # Common English stop words to ignore in relevance check
+    stop_words = {
+        'a', 'an', 'the', 'and', 'or', 'but', 'if', 'then', 'else', 'of', 'at', 'by',
+        'from', 'for', 'with', 'in', 'on', 'to', 'is', 'are', 'was', 'were', 'be',
+        'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'about', 'most',
+        'more', 'very', 'than', 'some', 'any', 'each', 'all', 'such', 'only', 'own'
+    }
+
+    clean_keywords = [k.lower() for k in keywords if k.lower() not in stop_words and len(k) > 1]
+    if not clean_keywords: clean_keywords = [k.lower() for k in keywords] # Fallback if all are stop words
+    if not clean_keywords: return False
+
     text = text.lower()
-    found_count = sum(1 for k in keywords if k.lower() in text)
-    return (found_count / len(keywords)) >= threshold
+    found_count = sum(1 for k in clean_keywords if k in text)
+    return (found_count / len(clean_keywords)) >= threshold
 
 def web_search(topic, max_results=10):
     """
@@ -30,7 +44,8 @@ def web_search(topic, max_results=10):
     # 1. Try DuckDuckGo Text Search
     try:
         with DDGS() as ddgs:
-            ddgs_gen = ddgs.text(search_query, max_results=max_results * 2) # Get more candidates
+            # Using the recommended DDGS text search parameters
+            ddgs_gen = ddgs.text(search_query, max_results=max_results * 2)
             for r in ddgs_gen:
                 title = r.get('title', '')
                 body = r.get('body', '')
