@@ -8,10 +8,13 @@ class BrowserScriptWriter:
         """
         Generate a professional YouTube documentary script using browser-based AI.
         """
-        lang_instruction = "English" if language == "en" else "Bangla"
+        lang_instruction = "English" if language == "en" else "Bengali (Bangla / বাংলা)"
 
         prompt = f"""
-        You are a master documentary scriptwriter. Write a highly engaging, cinematic, and professional documentary script about: "{topic}" written entirely in {lang_instruction}.
+        You are a master documentary scriptwriter. Write a highly engaging, cinematic, and professional documentary script about: "{topic}".
+
+        CRITICAL REQUIREMENT: The entire script (including visual descriptions and narration) MUST be written entirely in {lang_instruction}.
+        MANDATORY: DO NOT USE ENGLISH. Translate everything to {lang_instruction}.
 
         Use the following Deep Research Analysis as your source material:
         ---
@@ -27,12 +30,12 @@ class BrowserScriptWriter:
         6. **Conclusion**: A powerful final thought.
 
         FORMAT:
-        - [Visual: Description (In {lang_instruction})]
-        - [Narrator: Spoken words (In {lang_instruction})]
-        - [Music: Mood description]
+        - [দৃশ্য: বর্ণনা ({lang_instruction})]
+        - [বর্ণনাকারী: কথা ({lang_instruction})]
+        - [সঙ্গীত: মেজাজ ({lang_instruction})]
 
-        IMPORTANT: Provide the FULL script now in {lang_instruction}. Make it very detailed and long. Start directly with the script, no conversational intro.
+        IMPORTANT: Write the FULL script now in {lang_instruction}. Make it very detailed and long. Start directly with the script, no conversational intro or English.
         """
 
-        print(f"✍️ [BROWSER] Generating cinematic script for: {topic}...")
+        print(f"✍️ [BROWSER] Generating cinematic script for: {topic} in {lang_instruction}...")
         return self.browser_ai.send_prompt(prompt, wait_time=10)
