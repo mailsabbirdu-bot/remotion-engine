@@ -132,7 +132,7 @@ def split_scenes_browser(updated_script, language="en"):
     lang_label = "Bengali (Bangla)" if is_bn else "English"
     scene_word = "দৃশ্য" if is_bn else "Scene"
 
-    prompt = f\"\"\"You are a professional cinematic director and storyboard artist.
+    prompt = f"""You are a professional cinematic director and storyboard artist.
     Analyze the following narrator segments from a documentary script and divide them into a logical sequence of high-end, visual scenes.
 
     NARRATION CONTENT:
@@ -152,7 +152,7 @@ def split_scenes_browser(updated_script, language="en"):
     5. NUMERALS: {"Use Bangla numerals (e.g., দৃশ্য ১, দৃশ্য ২)" if is_bn else "Use standard numerals (e.g., Scene 1, Scene 2)"}.
     6. DO NOT include the narrator text in the output. ONLY the scene markers and visual descriptions.
     7. Start directly with the first scene, no intro or outro.
-    \"\"\"
+    """
 
     story_content = ""
     try:
@@ -176,14 +176,14 @@ def split_scenes_api_fallback(narrator_content, language="en"):
     scene_word = "দৃশ্য" if is_bn else "Scene"
     lang_label = "Bengali (Bangla)" if is_bn else "English"
 
-    prompt = f\"\"\"You are a professional cinematic director. Divide these segments into visual scenes in {lang_label}.
+    prompt = f"""You are a professional cinematic director. Divide these segments into visual scenes in {lang_label}.
     FORMAT:
     {scene_word} 1
     Visual description...
 
     Segments:
     {narrator_content}
-    \"\"\"
+    """
     model = genai.GenerativeModel('gemini-2.0-flash')
     try:
         res = model.generate_content(prompt)
@@ -210,8 +210,8 @@ def validate_content(content):
     return topic, script_content, script_match
 
 def main():
-    print("🎬 SCENE SPLITER ENGINE (V3.2) - HYBRID EDITION")
-    print("==============================================")
+    print("🎬 SCENE SPLITER ENGINE (V3.4) - HYBRID STABLE FIX")
+    print("================================================")
 
     content = read_script()
     print(f"✅ Successfully read {SCRIPT_FILE}")
@@ -230,6 +230,7 @@ def main():
         else:
             print("🌏 Topic is in English. Skipping translation.")
 
+        # Re-construct the full file content
         start, end = match.span(2)
         new_content = content[:start] + updated_script + content[end:]
 
