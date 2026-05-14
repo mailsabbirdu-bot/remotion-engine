@@ -48,15 +48,17 @@ def translate_narrator_blocks_browser(script_content):
     updated_script = script_content
 
     narrator_texts = [m.group(2).strip() for m in matches]
-    combined_prompt = """You are a master documentary scriptwriter and translator.
-    Your task is to translate the following English narrator segments into high-end, extremely engaging, and hooky Bengali (Bangla).
+    combined_prompt = """You are a master documentary scriptwriter and translator specializing in viral social media content.
+    Your task is to translate or rewrite the following narrator segments into ultra-modern, extremely hooky, and "Gen-Z/Millennial" trendy Bengali (Bangla).
 
     GUIDELINES:
-    1. Use cinematic and professional language suitable for a top-tier YouTube documentary.
-    2. The tone should be dramatic, evocative, and designed to keep viewers hooked.
-    3. Ensure the flow is natural and carries emotional weight.
-    4. MANDATORY: Return the translations as a list matching the order provided, separated by exactly '---SEG---'.
-    5. DO NOT include any introductory text, segment numbers, or commentary. Just the translations.
+    1. STYLE: Ultra-modern, punchy, and cinematic. ABSOLUTELY AVOID "textbook" or formal "Sadhubhasha". No "Kothito" or "Suddho" formal words that sound like a news broadcast. Use the language of the internet, the youth, and viral YouTube storytellers.
+    2. VOCABULARY: Use trendy, fresh, and powerful Bengali words. If a modern English term is commonly used by the generation (like 'Hub', 'Startup', 'Tech', 'Vibe'), feel free to keep it or use the Bengali phonetic version if it sounds cooler.
+    3. HOOK: Every single sentence must be a "hook". It should create a "WOW" factor. The narration should be addictive.
+    4. TONE: High-energy, professional yet "cool" and "edgy". Think of high-end Netflix tech-documentaries (like 'The Social Dilemma') or viral international storytellers.
+    5. FLOW: Short, rhythmic, and emotionally charged sentences.
+    5. MANDATORY: Return the translations as a list matching the order provided, separated by exactly '---SEG---'.
+    6. DO NOT include any introductory text, segment numbers, or commentary. Just the translations.
 
     Segments to translate:
     """
@@ -137,7 +139,7 @@ def validate_content(content):
     return topic, script_content, script_match
 
 def main():
-    print("🎬 SCENE SPLITER ENGINE (V2.1) - HIGH-END BROWSER EDITION")
+    print("🎬 SCENE SPLITER ENGINE (V2.2) - ULTRA-MODERN BROWSER EDITION")
     print("==========================================================")
 
     content = read_script()
