@@ -1,10 +1,16 @@
 import time
 import random
+import os
 from playwright.sync_api import sync_playwright
+try:
+    from playwright_stealth import stealth_sync
+except ImportError:
+    stealth_sync = None
 
 class BrowserAI:
-    def __init__(self, headless=True):
+    def __init__(self, headless=True, session_path="gemini_session"):
         self.headless = headless
+        self.session_path = session_path
         self.playwright = None
         self.browser = None
         self.context = None
@@ -18,31 +24,59 @@ class BrowserAI:
         if self.initialized:
             return
 
-        print("🌐 [BROWSER] Starting headless browser...")
+        print("🌐 [BROWSER] Starting browser...")
         self.playwright = sync_playwright().start()
-        # Using a persistent context to potentially keep cookies/session if needed
-        self.browser = self.playwright.chromium.launch(headless=self.headless)
-        self.context = self.browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+
+        # Use persistent context to save login state
+        self.context = self.playwright.chromium.launch_persistent_context(
+            user_data_dir=self.session_path,
+            headless=self.headless,
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+            viewport={'width': 1280, 'height': 720}
         )
-        self.page = self.context.new_page()
+
+        self.page = self.context.pages[0] if self.context.pages else self.context.new_page()
+
+        if stealth_sync:
+            stealth_sync(self.page)
 
         print("🌐 [BROWSER] Navigating to Gemini (gemini.google.com)...")
-        self.page.goto("https://gemini.google.com/app")
-
-        # Wait for the chat input to be available - this also acts as a check for being logged in
         try:
+            self.page.goto("https://gemini.google.com/app", timeout=60000)
+
+            # Check if login is required
+            if "signin" in self.page.url or self.page.is_visible("a[href*='accounts.google.com']"):
+                print("🔑 [BROWSER] Login required!")
+                if self.headless:
+                    print("❌ ERROR: Cannot login in headless mode. Please run once in non-headless mode to login.")
+                    # We continue but it will likely fail
+                else:
+                    print("👉 Please log in to your Google account in the browser window.")
+                    # Wait for the user to login and reach the app
+                    self.page.wait_for_selector("div[contenteditable='true']", timeout=300000)
+                    print("✅ [BROWSER] Login successful.")
+
+            # Basic cookie/consent handling if it appears
+            try:
+                consent_selectors = ["button:has-text('I agree')", "button:has-text('Accept all')", "button:has-text('Accept')"]
+                for selector in consent_selectors:
+                    if self.page.is_visible(selector, timeout=2000):
+                        self.page.click(selector)
+                        break
+            except:
+                pass
+
+            # Wait for the chat input to be available
             self.page.wait_for_selector("div[contenteditable='true']", timeout=30000)
             print("✅ [BROWSER] Gemini interface loaded.")
             self.initialized = True
-        except Exception:
-            print("⚠️ [BROWSER] Could not find Gemini input. You might need to be logged in.")
-            # In a real scenario, we might need to handle login or wait for user
-            self.initialized = True # Proceeding anyway, hoping for the best or manual intervention in non-headless
+        except Exception as e:
+            print(f"⚠️ [BROWSER] Could not fully initialize Gemini: {e}")
+            self.initialized = True # Proceed anyway
 
-    def send_prompt(self, prompt, wait_time=15):
+    def send_prompt(self, prompt, wait_time=5, timeout=180):
         """
-        Send a prompt to Gemini and extract the response.
+        Send a prompt to Gemini and extract the response with dynamic waiting.
         """
         if not self.initialized:
             self.start()
@@ -50,32 +84,65 @@ class BrowserAI:
         try:
             print(f"💬 [BROWSER] Sending prompt ({len(prompt)} chars)...")
 
-            # Clear previous if necessary (optional)
-            # Find input area
             input_selector = "div[contenteditable='true']"
+            self.page.wait_for_selector(input_selector, timeout=10000)
+
+            # Focus and clear input
+            self.page.click(input_selector)
+            self.page.keyboard.press("Control+A")
+            self.page.keyboard.press("Backspace")
+
+            # Fill the prompt
             self.page.fill(input_selector, prompt)
 
-            # Press Enter or click send
-            self.page.keyboard.press("Enter")
+            # Press Send button
+            send_button_selector = "button[aria-label='Send message']"
+            self.page.wait_for_selector(send_button_selector, state="visible")
+            self.page.click(send_button_selector)
 
-            print(f"⏳ [BROWSER] Waiting for AI response (~{wait_time}s)...")
+            print(f"⏳ [BROWSER] Waiting for AI response (up to {timeout}s)...")
+
+            # Generation indicators
+            stop_button_selector = "button[aria-label='Stop generating']"
+
+            # Wait for stop button to appear (indicates generation started)
+            try:
+                self.page.wait_for_selector(stop_button_selector, state="visible", timeout=5000)
+            except:
+                pass
+
+            # Wait for stop button to disappear (indicates generation finished)
+            try:
+                self.page.wait_for_selector(stop_button_selector, state="hidden", timeout=timeout*1000)
+            except:
+                print("⚠️ [BROWSER] Timeout waiting for generation to finish. Attempting extraction anyway.")
+
+            # Ensure send button is back to enabled state
+            try:
+                self.page.wait_for_selector(send_button_selector, state="visible", timeout=10000)
+            except:
+                pass
+
+            # Brief pause for DOM to settle
             time.sleep(wait_time)
 
-            # Extract the last response
-            # Note: Selectors might change as Google updates the UI
-            responses = self.page.query_selector_all(".model-response-text")
-            if responses:
-                last_response = responses[-1].inner_text()
-                print(f"✅ [BROWSER] Received response ({len(last_response)} chars).")
-                return last_response
-            else:
-                # Fallback selector if the above fails
-                responses = self.page.query_selector_all("message-content")
+            # Extraction selectors
+            extract_selectors = [
+                ".model-response-text",
+                "message-content",
+                ".markdown",
+                "div[data-message-author-role='assistant']"
+            ]
+
+            for selector in extract_selectors:
+                responses = self.page.query_selector_all(selector)
                 if responses:
                     last_response = responses[-1].inner_text()
-                    return last_response
+                    if last_response and len(last_response.strip()) > 10:
+                        print(f"✅ [BROWSER] Received response ({len(last_response)} chars).")
+                        return last_response
 
-            print("⚠️ [BROWSER] Could not extract response text.")
+            print("⚠️ [BROWSER] Could not extract response text. Selectors might be outdated.")
             return None
         except Exception as e:
             print(f"❌ [BROWSER] Error during automation: {e}")
@@ -83,8 +150,11 @@ class BrowserAI:
 
     def close(self):
         if self.playwright:
-            self.browser.close()
-            self.playwright.stop()
+            try:
+                self.context.close()
+                self.playwright.stop()
+            except:
+                pass
             self.initialized = False
 
 if __name__ == "__main__":

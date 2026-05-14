@@ -31,8 +31,8 @@ class BrowserScriptWriter:
         - [Narrator: Spoken words (In {lang_instruction})]
         - [Music: Mood description]
 
-        Write the FULL script now in {lang_instruction}. Make it very detailed and long.
+        IMPORTANT: Provide the FULL script now in {lang_instruction}. Make it very detailed and long. Start directly with the script, no conversational intro.
         """
 
         print(f"✍️ [BROWSER] Generating cinematic script for: {topic}...")
-        return self.browser_ai.send_prompt(prompt, wait_time=40)
+        return self.browser_ai.send_prompt(prompt, wait_time=10)
