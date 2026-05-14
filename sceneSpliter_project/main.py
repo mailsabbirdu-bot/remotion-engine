@@ -4,6 +4,7 @@ import re
 import time
 import google.generativeai as genai
 from core.config import GEMINI_API_KEY
+from core.browser_automator import BrowserAI
 
 # Path discovery for Colab vs Local
 DRIVE_BASE = "/content/drive/MyDrive/Counterism_Studio_V4"
@@ -17,6 +18,14 @@ STORY_FILE = os.path.join(AUDIO_DIR, "story.txt")
 
 # Configure Gemini API
 genai.configure(api_key=GEMINI_API_KEY)
+
+def read_script():
+    if not os.path.exists(SCRIPT_FILE):
+        print(f"❌ Error: {SCRIPT_FILE} not found.")
+        sys.exit(1)
+
+    with open(SCRIPT_FILE, "r", encoding="utf-8") as f:
+        return f.read()
 
 def is_bangla(text):
     """Detects if a string contains Bangla characters."""
@@ -100,15 +109,21 @@ def translate_narrator_blocks_api(script_content):
 
     return updated_script
 
-def split_scenes_api(updated_script, language="en"):
-    """Splits narrations into cinematic scenes with visual descriptions using Gemini API."""
-    print("🎬 [AI] Dividing narrations into high-end cinematic scenes...")
+def split_scenes_browser(updated_script, language="en"):
+    """Splits narrations into cinematic scenes with visual descriptions using Browser-based Gemini."""
+    print("🎬 [BROWSER] Dividing narrations into high-end cinematic scenes...")
 
+    # Initialize browser
+    browser_ai = BrowserAI(headless=True)
+    browser_ai.start()
+
+    # Extract only narrator parts for context
     pattern = r"(?im)^[\[\* ]*(Narrator|বর্ণনাকারী)[\:\*\] ]+\s*(.*?)(?=\s*\]?\n\s*(?:\[|\*\*|Narrator|বর্ণনাকারী|Scene|দৃশ্য|Music|সঙ্গীত|={5,})|\Z)"
     matches = list(re.finditer(pattern, updated_script, re.DOTALL))
 
     if not matches:
         print("⚠️ No narrator blocks found for scene analysis.")
+        browser_ai.close()
         return ""
 
     narrator_content = "\n\n".join([f"Narrator Segment {i+1}: {m.group(2).strip()}" for i, m in enumerate(matches)])
@@ -117,7 +132,7 @@ def split_scenes_api(updated_script, language="en"):
     lang_label = "Bengali (Bangla)" if is_bn else "English"
     scene_word = "দৃশ্য" if is_bn else "Scene"
 
-    prompt = f"""You are a professional cinematic director and storyboard artist.
+    prompt = f\"\"\"You are a professional cinematic director and storyboard artist.
     Analyze the following narrator segments from a documentary script and divide them into a logical sequence of high-end, visual scenes.
 
     NARRATION CONTENT:
@@ -137,18 +152,43 @@ def split_scenes_api(updated_script, language="en"):
     5. NUMERALS: {"Use Bangla numerals (e.g., দৃশ্য ১, দৃশ্য ২)" if is_bn else "Use standard numerals (e.g., Scene 1, Scene 2)"}.
     6. DO NOT include the narrator text in the output. ONLY the scene markers and visual descriptions.
     7. Start directly with the first scene, no intro or outro.
-    """
+    \"\"\"
 
+    story_content = ""
+    try:
+        story_content = browser_ai.send_prompt(prompt, wait_time=15)
+        if not story_content:
+            raise Exception("No response from browser AI for scene splitting")
+
+        print(f"✅ Scene division complete ({len(story_content)} chars).")
+    except Exception as e:
+        print(f"❌ Scene division failed: {e}. Falling back to API...")
+        # Fallback to API if browser fails (common in Colab due to login)
+        story_content = split_scenes_api_fallback(narrator_content, language)
+
+    browser_ai.close()
+    return story_content.strip()
+
+def split_scenes_api_fallback(narrator_content, language="en"):
+    """Fallback scene splitter using API."""
+    print("🧠 [AI] Falling back to API for scene division...")
+    is_bn = (language == "bn")
+    scene_word = "দৃশ্য" if is_bn else "Scene"
+    lang_label = "Bengali (Bangla)" if is_bn else "English"
+
+    prompt = f\"\"\"You are a professional cinematic director. Divide these segments into visual scenes in {lang_label}.
+    FORMAT:
+    {scene_word} 1
+    Visual description...
+
+    Segments:
+    {narrator_content}
+    \"\"\"
     model = genai.GenerativeModel('gemini-2.0-flash')
     try:
-        response = model.generate_content(prompt)
-        if not response or not response.text:
-            raise Exception("No response from Gemini API for scene splitting")
-
-        print(f"✅ Scene division complete ({len(response.text)} chars).")
-        return response.text.strip()
-    except Exception as e:
-        print(f"❌ Scene division failed: {e}")
+        res = model.generate_content(prompt)
+        return res.text
+    except:
         return ""
 
 def validate_content(content):
@@ -170,8 +210,8 @@ def validate_content(content):
     return topic, script_content, script_match
 
 def main():
-    print("🎬 SCENE SPLITER ENGINE (V3.1) - API EDITION")
-    print("===========================================")
+    print("🎬 SCENE SPLITER ENGINE (V3.2) - HYBRID EDITION")
+    print("==============================================")
 
     content = read_script()
     print(f"✅ Successfully read {SCRIPT_FILE}")
@@ -197,8 +237,8 @@ def main():
             f.write(new_content)
         print(f"✨ Updated script saved to: {UPDATED_SCRIPT_FILE}")
 
-        print("\n🔍 Starting Deep Analysis for scene division...")
-        story_content = split_scenes_api(updated_script, language=target_language)
+        print("\n🔍 Starting Deep Analysis for scene division (using Browser AI)...")
+        story_content = split_scenes_browser(updated_script, language=target_language)
 
         if story_content:
             with open(STORY_FILE, "w", encoding="utf-8") as f:
@@ -211,6 +251,8 @@ def main():
 
     except Exception as e:
         print(f"❌ An error occurred: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 if __name__ == "__main__":
