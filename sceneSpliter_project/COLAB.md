@@ -29,8 +29,10 @@ if os.path.exists(target_dir):
     os.chdir(target_dir)
 
     # 4. Install Dependencies
-    print("\n📦 Installing dependencies...")
-    !pip install google-generativeai --quiet
+    print("\n📦 Installing system dependencies and browser...")
+    !pip install -r requirements.txt --quiet
+    !playwright install chromium
+    !python3 -m playwright install-deps
 
     # 5. Run
     print("\n" + "="*40)
