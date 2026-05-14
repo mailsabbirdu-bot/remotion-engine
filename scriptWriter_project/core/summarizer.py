@@ -20,7 +20,13 @@ class GeminiSummarizer:
         try:
             genai.configure(api_key=self.api_key)
             # Efficiently find an available model
-            remote_models = [m.name.replace('models/', '') for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+            remote_models = []
+            for m in genai.list_models():
+                if 'generateContent' in m.supported_generation_methods:
+                    name = m.name.replace('models/', '')
+                    # Filter out non-text/experimental models that often fail text tasks
+                    if 'tts' not in name.lower() and 'embedding' not in name.lower():
+                        remote_models.append(name)
 
             # Prioritized preference list
             preferred_models = [
@@ -170,13 +176,17 @@ class GeminiSummarizer:
             Content:
             {chunk}
             """
+            summary = None
             try:
                 if self.model:
                     summary = self._call_gemini_with_retry(prompt)
-                else:
+
+                if not summary:
                     if not self.local_model: self._setup_local_llm()
                     summary = self._summarize_locally(chunk, source_type)
-                summaries.append(summary)
+
+                if summary:
+                    summaries.append(summary)
             except Exception as e:
                 print(f"❌ Summarization Error: {e}")
                 # Lazy initialization of local LLM
@@ -188,17 +198,19 @@ class GeminiSummarizer:
                     print("🔄 Retrying with local LLM...")
                     try:
                         summary = self._summarize_locally(chunk, source_type)
-                        summaries.append(summary)
+                        if summary: summaries.append(summary)
                     except:
-                        summaries.append(f"Summary failed for chunk {i}")
-                else:
-                    summaries.append(f"Summary failed for chunk {i}")
+                        pass
+
+        # Filter out any None values that might have slipped through
+        summaries = [s for s in summaries if s]
 
         if len(summaries) > 1:
             # Combine summaries if multi-chunk
             final_prompt = f"Combine these summaries into one comprehensive deep analysis:\n\n" + "\n\n".join(summaries)
             try:
-                return self._call_gemini_with_retry(final_prompt)
+                res = self._call_gemini_with_retry(final_prompt)
+                return res if res else "\n\n".join(summaries)
             except:
                 return "\n\n".join(summaries)
 

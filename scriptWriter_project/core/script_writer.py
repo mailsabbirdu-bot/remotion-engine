@@ -14,7 +14,12 @@ class ScriptWriter:
         try:
             genai.configure(api_key=self.api_key)
             # Efficiently find an available model
-            remote_models = [m.name.replace('models/', '') for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+            remote_models = []
+            for m in genai.list_models():
+                if 'generateContent' in m.supported_generation_methods:
+                    name = m.name.replace('models/', '')
+                    if 'tts' not in name.lower() and 'embedding' not in name.lower():
+                        remote_models.append(name)
 
             # Prioritized preference list for high quality script writing
             preferred_models = [
