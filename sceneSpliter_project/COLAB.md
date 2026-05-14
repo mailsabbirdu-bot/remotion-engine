@@ -1,43 +1,46 @@
-# Scene Spliter Project - Google Colab Setup
+# 🎬 Scene Spliter AI - High-End Setup & Run
 
-Run the following code in a single cell in Google Colab to set up and run the Scene Spliter engine.
+Paste and run this cell in Google Colab. It will set up the browser engine and process your script automatically.
 
 ```python
-# ==========================================
-# 🎬 SCENE SPLITER ENGINE - ONE-CLICK SETUP
-# ==========================================
-
 import os
-import shutil
-
-# 1. Mount Google Drive
+import subprocess
+import sys
 from google.colab import drive
-if not os.path.exists("/content/drive"):
+
+# --- CONFIGURATION ---
+REPO_URL = "https://github.com/mailsabbirdu-bot/remotion-engine.git"
+PROJECT_NAME = "sceneSpliter_project"
+# ---------------------
+
+# 1. Mount Drive
+if not os.path.exists('/content/drive'):
+    print("🛰️ Mounting Google Drive...")
     drive.mount('/content/drive')
 
-# 2. Project Path
-PROJECT_DIR = "sceneSpliter_project"
+# 2. Fresh Clone
+print(f"🚀 Initializing Scene Spliter...")
+os.chdir("/content")
+!rm -rf remotion-engine
+print("📦 Fetching latest engine from GitHub...")
+!git clone {REPO_URL} --quiet
+target_dir = f"/content/remotion-engine/{PROJECT_NAME}"
 
-# 3. Install Dependencies
-!pip install playwright playwright-stealth google-generativeai
-!playwright install chromium
-!python3 -m playwright install-deps
+if os.path.exists(target_dir):
+    print(f"✅ Project active at: {target_dir}")
+    os.chdir(target_dir)
 
-# 4. Clone/Set up the project (Assuming files are already there or need to be moved)
-# If you are running this from the repo root:
-if not os.path.exists(PROJECT_DIR):
-    print(f"❌ {PROJECT_DIR} not found in current directory.")
+    # 4. Install Dependencies
+    print("\n📦 Installing system dependencies and browser...")
+    !pip install -r requirements.txt --quiet
+    !playwright install chromium
+    !python3 -m playwright install-deps
+
+    # 5. Run
+    print("\n" + "="*40)
+    print("🎬 SCENE SPLITER AI STARTING")
+    print("="*40 + "\n")
+    !python main.py
 else:
-    os.chdir(PROJECT_DIR)
-
-    # 5. Execute the Engine
-    !python3 main.py
-```
-
-### Manual Mode (Local)
-If you are running locally, ensure you have a `Counterism_Studio_V4/audio/script.txt` file and run:
-```bash
-pip install -r requirements.txt
-playwright install chromium
-python main.py
+    print("\n❌ Setup failed. Please ensure the project folder is uploaded correctly.")
 ```
