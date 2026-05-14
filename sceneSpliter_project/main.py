@@ -48,7 +48,7 @@ def translate_narrator_blocks_browser(browser_ai, script_content):
     1. STYLE: Ultra-modern, punchy, and cinematic. ABSOLUTELY AVOID "textbook" or formal "Sadhubhasha". No "Kothito" or "Suddho" formal words that sound like a news broadcast. Use the language of the internet, the youth, and viral YouTube storytellers.
     2. VOCABULARY: Use trendy, fresh, and powerful Bengali words. If a modern English term is commonly used by the generation (like 'Hub', 'Startup', 'Tech', 'Vibe'), feel free to keep it or use the Bengali phonetic version if it sounds cooler.
     3. HOOK: Every single sentence must be a "hook". It should create a "WOW" factor. The narration should be addictive.
-    4. TONE: High-energy, professional yet "cool" and "edgy". Think of high-end Netflix tech-documentaries or viral international storytellers.
+    4. TONE: High-energy, professional yet "cool" and "edgy". Think of high-end Netflix tech-documentaries (like 'The Social Dilemma') or viral international storytellers.
     5. FLOW: Short, rhythmic, and emotionally charged sentences.
     6. MANDATORY: Return the translations as a list matching the order provided, separated by exactly '---SEG---'.
     7. DO NOT include any introductory text, segment numbers, or commentary. Just the translations.
@@ -78,8 +78,8 @@ def translate_narrator_blocks_browser(browser_ai, script_content):
             end_idx = match.end()
 
             trans = translated_segments[i] if i < len(translated_segments) else match.group(2).strip()
-            # Clean up AI noise
-            trans = re.sub(r"^(?i)Segment \d+:\s*", "", trans).strip()
+            # Clean up AI noise - Fixed regex flag position
+            trans = re.sub(r"^Segment \d+:\s*", "", trans, flags=re.IGNORECASE).strip()
 
             # Reconstruct with original header formatting
             original_full_block_head = script_content[start_idx:match.start(2)]
@@ -90,8 +90,6 @@ def translate_narrator_blocks_browser(browser_ai, script_content):
         print("✅ Translation complete.")
     except Exception as e:
         print(f"❌ Translation failed: {e}. Keeping original text.")
-        import traceback
-        traceback.print_exc()
 
     return updated_script
 
@@ -165,7 +163,7 @@ def validate_content(content):
     return topic, script_content, script_match
 
 def main():
-    print("🎬 SCENE SPLITER ENGINE (V5.2) - FULL BROWSER AUTOMATION")
+    print("🎬 SCENE SPLITER ENGINE (V5.3) - FULL BROWSER STABLE")
     print("==========================================================")
 
     content = read_script()
