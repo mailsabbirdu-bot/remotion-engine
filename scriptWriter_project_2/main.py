@@ -1,6 +1,7 @@
 import os
 import sys
 import re
+import shutil
 
 from core.pipeline import ResearchPipeline
 
@@ -25,7 +26,7 @@ def main():
         return
 
     print("====================================================")
-    print("🎬 BROWSER SCRIPT WRITER AI (V1.2) - DEEP RESEARCH")
+    print("🎬 BROWSER SCRIPT WRITER AI (V1.3) - DEEP RESEARCH")
     print("====================================================\n")
 
     # User Input
@@ -42,9 +43,41 @@ def main():
         language = "en"
         print("🌏 Detected Language: English")
 
-    # Run Pipeline
-    pipeline = ResearchPipeline()
-    result = pipeline.run(topic, language=language)
+    max_retries = 3
+    attempt = 1
+    result = None
+
+    while attempt <= max_retries:
+        print(f"\n🔄 [ATTEMPT {attempt}/{max_retries}] Running pipeline...")
+
+        # Run Pipeline
+        pipeline = ResearchPipeline()
+        result = pipeline.run(topic, language=language)
+
+        script_content = result.get('script', '')
+
+        # Check for failure in the script
+        if "Failed to generate script" in script_content:
+            print(f"⚠️ Attempt {attempt} failed to generate a cinematic script.")
+            if attempt < max_retries:
+                print("🧹 Cleaning up browser session memory for retry...")
+                # The browser context is closed by the pipeline finally block
+                # We delete the persistent session directory to clear "memory"
+                session_dir = "gemini_session"
+                if os.path.exists(session_dir):
+                    try:
+                        shutil.rmtree(session_dir)
+                        print(f"✅ Deleted {session_dir}")
+                    except Exception as e:
+                        print(f"⚠️ Could not delete session directory: {e}")
+                attempt += 1
+                continue
+            else:
+                print("🚫 Maximum retries reached. Proceeding with current output.")
+                break
+        else:
+            print("✨ Script generated successfully!")
+            break
 
     # Save Raw Data Fallback
     raw_output_file = os.path.join(OUTPUT_DIR, "rawScript.txt")
