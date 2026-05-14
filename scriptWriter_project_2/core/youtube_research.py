@@ -32,20 +32,24 @@ def search_youtube(topic, max_results=5):
         print(f"❌ Error during YouTube search: {e}")
         return []
 
-def get_transcript(video_id):
+def get_transcript(video_id, languages=['bn', 'en']):
     """
-    Fetch transcript for a given YouTube video ID.
-    Supports both v0.6.x (static get_transcript) and v1.x (instance fetch)
+    Fetch transcript for a given YouTube video ID, attempting specified languages.
     """
     print(f"      📝 [TRANSCRIPT] Attempting to fetch transcript for {video_id}...")
     try:
-        # Try v1.x style (instance fetch)
+        # We use list_transcripts to have more control over fallbacks
+        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+
         try:
-            api = YouTubeTranscriptApi()
-            transcript_data = api.fetch(video_id)
-        except (TypeError, AttributeError):
-            # Fallback to v0.6.x style (static get_transcript)
-            transcript_data = YouTubeTranscriptApi.get_transcript(video_id)
+            # Try to get one of the preferred languages (manual or generated)
+            transcript = transcript_list.find_transcript(languages)
+        except:
+            # Fallback: Just get the first available transcript regardless of language
+            print(f"         ℹ️ Preferred languages {languages} not found. Trying any available...")
+            transcript = next(iter(transcript_list))
+
+        transcript_data = transcript.fetch()
 
         # Handle both list of dicts (v0.6) and list of dataclasses (v1.x)
         processed_texts = []
@@ -57,7 +61,7 @@ def get_transcript(video_id):
                 processed_texts.append(getattr(snippet, 'text', ''))
 
         transcript_text = " ".join(processed_texts)
-        print(f"         ✅ Success: {len(transcript_text)} characters.")
+        print(f"         ✅ Success: {len(transcript_text)} characters ({transcript.language}).")
         return transcript_text
     except Exception as e:
         print(f"         ⚠️ No transcript available: {e}")
@@ -83,17 +87,20 @@ def get_video_metadata(url):
         print(f"⚠️ Error extracting metadata for {url}: {e}")
         return {}
 
-def process_youtube_research(topic, max_results=5):
+def process_youtube_research(topic, max_results=5, language="en"):
     """
     Combine search, metadata, and transcript extraction.
     """
     videos = search_youtube(topic, max_results=max_results)
     detailed_videos = []
 
+    # Prioritize target language for transcripts
+    preferred_langs = [language, 'en'] if language != 'en' else ['en', 'bn']
+
     print(f"\n📊 [YOUTUBE] Processing {len(videos)} videos for transcripts and metadata...")
     for v in videos:
         print(f"   🔎 Analyzing: {v['title'][:50]}...")
-        transcript = get_transcript(v['id'])
+        transcript = get_transcript(v['id'], languages=preferred_langs)
         metadata = get_video_metadata(v['url'])
 
         detailed_videos.append({
