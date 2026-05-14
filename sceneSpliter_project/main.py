@@ -30,10 +30,9 @@ def translate_narrator_blocks_browser(browser_ai, script_content):
     """Translates Narrator blocks to ultra-modern Bangla using Browser-based Gemini."""
     print("✍️ [BROWSER] Translating Narrator blocks to ultra-modern Bangla...")
 
-    # Ultra-flexible pattern for Narrator blocks:
-    # Supports [Narrator: ...], **Narrator:** ..., Narrator: ... even if not at start of line
-    pattern = r"(?i)(?:\*\*|\[)?\s*(Narrator|বর্ণনাকারী)\s*[\:\*\] ]+\s*(.*?)(?=\s*(?:\*\*|\[|Narrator|বর্ণনাকারী|Scene|দৃশ্য|Music|সঙ্গীত|={5,})|\Z)"
-    matches = list(re.finditer(pattern, script_content, re.DOTALL))
+    # Ultra-flexible pattern for Narrator blocks
+    pattern = r"(?:\*\*|\[)?\s*(Narrator|বর্ণনাকারী)\s*[\:\*\] ]+\s*(.*?)(?=\s*(?:\*\*|\[|Narrator|বর্ণনাকারী|Scene|দৃশ্য|Music|সঙ্গীত|={5,})|\Z)"
+    matches = list(re.finditer(pattern, script_content, re.DOTALL | re.IGNORECASE))
 
     if not matches:
         print("⚠️ No Narrator blocks found to translate. Regex might need adjustment.")
@@ -74,7 +73,6 @@ def translate_narrator_blocks_browser(browser_ai, script_content):
         # Perform replacement in reverse order to preserve indices
         for i in range(len(matches) - 1, -1, -1):
             match = matches[i]
-            label = match.group(1)
 
             start_idx = match.start()
             end_idx = match.end()
@@ -82,9 +80,8 @@ def translate_narrator_blocks_browser(browser_ai, script_content):
             trans = translated_segments[i] if i < len(translated_segments) else match.group(2).strip()
             # Clean up AI noise
             trans = re.sub(r"^(?i)Segment \d+:\s*", "", trans).strip()
-            # If original had trailing bolding or brackets not captured by group 2, we might lose it,
-            # but usually the lookahead handles it. Let's try to preserve the style based on match start/end content.
 
+            # Reconstruct with original header formatting
             original_full_block_head = script_content[start_idx:match.start(2)]
 
             replacement = f"{original_full_block_head}{trans}"
@@ -93,6 +90,8 @@ def translate_narrator_blocks_browser(browser_ai, script_content):
         print("✅ Translation complete.")
     except Exception as e:
         print(f"❌ Translation failed: {e}. Keeping original text.")
+        import traceback
+        traceback.print_exc()
 
     return updated_script
 
@@ -101,8 +100,8 @@ def split_scenes_browser(browser_ai, updated_script, language="en"):
     print("\n🎬 [BROWSER] Dividing narrations into scenes (Voice Over text focus)...")
 
     # Extract only narrator parts
-    pattern = r"(?i)(?:\*\*|\[)?\s*(Narrator|বর্ণনাকারী)\s*[\:\*\] ]+\s*(.*?)(?=\s*(?:\*\*|\[|Narrator|বর্ণনাকারী|Scene|দৃশ্য|Music|সঙ্গীত|={5,})|\Z)"
-    matches = list(re.finditer(pattern, updated_script, re.DOTALL))
+    pattern = r"(?:\*\*|\[)?\s*(Narrator|বর্ণনাকারী)\s*[\:\*\] ]+\s*(.*?)(?=\s*(?:\*\*|\[|Narrator|বর্ণনাকারী|Scene|দৃশ্য|Music|সঙ্গীত|={5,})|\Z)"
+    matches = list(re.finditer(pattern, updated_script, re.DOTALL | re.IGNORECASE))
 
     if not matches:
         print("⚠️ No narrator blocks found for scene analysis.")
@@ -166,7 +165,7 @@ def validate_content(content):
     return topic, script_content, script_match
 
 def main():
-    print("🎬 SCENE SPLITER ENGINE (V5.1) - FULL BROWSER AUTOMATION")
+    print("🎬 SCENE SPLITER ENGINE (V5.2) - FULL BROWSER AUTOMATION")
     print("==========================================================")
 
     content = read_script()
