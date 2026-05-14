@@ -1,8 +1,8 @@
 import os
 import sys
 import re
-import google.generativeai as genai
-from core.config import GEMINI_API_KEY
+import time
+from core.browser_automator import BrowserAI
 
 # Path discovery for Colab vs Local
 DRIVE_BASE = "/content/drive/MyDrive/Counterism_Studio_V4"
@@ -25,31 +25,74 @@ def is_bangla(text):
     """Detects if a string contains Bangla characters."""
     return bool(re.search(r'[\u0980-\u09ff]', text))
 
-def translate_narrator_blocks(script_content):
-    """Translates Narrator blocks to Bangla using Gemini."""
-    genai.configure(api_key=GEMINI_API_KEY)
-
-    # Using a model that exists in this environment
-    model = genai.GenerativeModel('gemini-2.0-flash')
-
-    def translate_match(match):
-        label = match.group(1) # Narrator or বর্ণনাকারী
-        text = match.group(2)
-
-        prompt = f"Translate the following documentary narration text into pure Bengali (Bangla). Provide only the translated text, no extra commentary:\n\n{text}"
-
-        try:
-            response = model.generate_content(prompt)
-            translated_text = response.text.strip()
-            return f"[{label}: {translated_text}]"
-        except Exception as e:
-            print(f"⚠️ Translation failed for block: {text[:50]}... Error: {e}")
-            return match.group(0)
+def translate_narrator_blocks_browser(script_content):
+    """Translates Narrator blocks to Bangla using Browser-based Gemini for high quality."""
+    print("🌐 [BROWSER] Initializing high-end translation engine...")
+    # Headless mode for Colab
+    browser_ai = BrowserAI(headless=True)
+    browser_ai.start()
 
     # Pattern to match [Narrator: text] or [বর্ণনাকারী: text]
     pattern = r"\[(Narrator|বর্ণনাকারী):\s*(.*?)\]"
-    updated_script = re.sub(pattern, translate_match, script_content, flags=re.DOTALL)
+    matches = list(re.finditer(pattern, script_content, flags=re.DOTALL))
 
+    if not matches:
+        print("⚠️ No Narrator blocks found to translate.")
+        browser_ai.close()
+        return script_content
+
+    print(f"✍️ [BROWSER] Found {len(matches)} narrator blocks. Translating...")
+
+    updated_script = script_content
+
+    narrator_texts = [m.group(2) for m in matches]
+    combined_prompt = """You are a master documentary scriptwriter and translator.
+    Your task is to translate the following English narrator segments into high-end, extremely engaging, and hooky Bengali (Bangla).
+
+    GUIDELINES:
+    1. Use cinematic and professional language suitable for a top-tier YouTube documentary.
+    2. The tone should be dramatic, evocative, and designed to keep viewers hooked.
+    3. Ensure the flow is natural and carries emotional weight.
+    4. MANDATORY: Return the translations as a list matching the order provided, separated by exactly '---SEG---'.
+    5. DO NOT include any introductory text, segment numbers, or commentary. Just the translations.
+
+    Segments to translate:
+    """
+    for i, text in enumerate(narrator_texts):
+        combined_prompt += f"\nSegment {i+1}:\n{text}\n"
+
+    try:
+        response = browser_ai.send_prompt(combined_prompt, wait_time=10)
+        if not response:
+            raise Exception("No response from browser AI")
+
+        translated_segments = response.split("---SEG---")
+        translated_segments = [s.strip() for s in translated_segments if s.strip()]
+
+        if len(translated_segments) != len(narrator_texts):
+             print(f"⚠️ Segment count mismatch (Got {len(translated_segments)}, expected {len(narrator_texts)}). Attempting to clean response...")
+             # Attempt to clean if AI included "Segment X:"
+             cleaned = []
+             for s in translated_segments:
+                 cleaned.append(re.sub(r"^Segment \d+:\s*", "", s, flags=re.IGNORECASE).strip())
+             translated_segments = cleaned
+
+        # Perform replacement in reverse order to preserve indices
+        for i in range(len(matches) - 1, -1, -1):
+            match = matches[i]
+            label = match.group(1)
+            trans = translated_segments[i] if i < len(translated_segments) else match.group(2)
+
+            # Final cleaning of any residual segment labels
+            trans = re.sub(r"^Segment \d+:\s*", "", trans, flags=re.IGNORECASE).strip()
+
+            replacement = f"[{label}: {trans}]"
+            updated_script = updated_script[:match.start()] + replacement + updated_script[match.end():]
+
+    except Exception as e:
+        print(f"❌ High-end translation failed: {e}. Keeping original text.")
+
+    browser_ai.close()
     return updated_script
 
 def validate_content(content):
@@ -58,7 +101,6 @@ def validate_content(content):
     topic = topic_match.group(1).strip() if topic_match else ""
 
     # Search for CINEMATIC SCRIPT heading
-    # It looks for the heading and captures everything after it until the next separator
     script_pattern = r"(CINEMATIC SCRIPT.*?)\s*\n(.*?)(?:\n={10,}|$)"
     script_match = re.search(script_pattern, content, re.DOTALL | re.IGNORECASE)
 
@@ -68,7 +110,6 @@ def validate_content(content):
 
     script_content = script_match.group(2).strip()
 
-    # Check if the content is empty or just contains separators
     if not script_content or script_content.isspace() or all(line.startswith("=") for line in script_content.splitlines()):
         print("❌ Error: 'CINEMATIC SCRIPT' section is empty.")
         sys.exit(1)
@@ -76,8 +117,8 @@ def validate_content(content):
     return topic, script_content, script_match
 
 def main():
-    print("🎬 SCENE SPLITER ENGINE (V1.2)")
-    print("==============================")
+    print("🎬 SCENE SPLITER ENGINE (V2.0) - HIGH-END BROWSER EDITION")
+    print("==========================================================")
 
     content = read_script()
     print(f"✅ Successfully read {SCRIPT_FILE}")
@@ -89,14 +130,13 @@ def main():
 
         updated_script = script
         if is_bangla(topic):
-            print("🌏 Bangla detected in topic. Translating Narrator blocks...")
-            updated_script = translate_narrator_blocks(script)
+            print("🌏 Bangla detected in topic. Translating Narrator blocks (High-End)...")
+            updated_script = translate_narrator_blocks_browser(script)
             print("✅ Translation complete.")
         else:
             print("🌏 Topic is in English. Skipping translation.")
 
         # Re-construct the full file content
-        # Group 2 of the match is the script content
         start, end = match.span(2)
         new_content = content[:start] + updated_script + content[end:]
 
@@ -106,8 +146,6 @@ def main():
 
     except Exception as e:
         print(f"❌ An error occurred: {e}")
-        import traceback
-        traceback.print_exc()
         sys.exit(1)
 
 if __name__ == "__main__":
