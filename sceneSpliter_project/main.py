@@ -210,8 +210,8 @@ def validate_content(content):
     return topic, script_content, script_match
 
 def main():
-    print("🎬 SCENE SPLITER ENGINE (V3.3) - HYBRID STABLE")
-    print("==============================================")
+    print("🎬 SCENE SPLITER ENGINE (V3.4) - HYBRID STABLE FIX")
+    print("================================================")
 
     content = read_script()
     print(f"✅ Successfully read {SCRIPT_FILE}")
