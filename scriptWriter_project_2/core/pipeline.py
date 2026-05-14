@@ -30,7 +30,7 @@ class ResearchPipeline:
             articles = extract_multiple_articles(urls, max_workers=MAX_WORKERS)
 
             # 3. YouTube Research
-            youtube_data = process_youtube_research(topic, max_results=MAX_YOUTUBE_RESULTS)
+            youtube_data = process_youtube_research(topic, max_results=MAX_YOUTUBE_RESULTS, language=language)
 
             # 4. Summarization (Sequential for browser stability)
             all_summaries = []
