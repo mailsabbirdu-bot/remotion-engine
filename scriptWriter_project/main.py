@@ -1,5 +1,11 @@
 import os
 import sys
+import warnings
+
+# Suppress deprecation warnings for a cleaner output
+warnings.filterwarnings("ignore", category=FutureWarning, module="google.generativeai")
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 # Monkeypatch for youtube-search-python + httpx 0.28+ compatibility
 # This fixes the "unexpected keyword argument 'proxies'" error by redirecting it to 'proxy'

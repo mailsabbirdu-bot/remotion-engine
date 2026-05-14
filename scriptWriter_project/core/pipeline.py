@@ -26,27 +26,40 @@ class ResearchPipeline:
         # 3. YouTube Research
         youtube_data = process_youtube_research(topic, max_results=MAX_YOUTUBE_RESULTS)
 
-        # 4. Summarization
+        # 4. Parallel Summarization
         all_summaries = []
+        import concurrent.futures
+        import random
 
-        print(f"\n📝 [SUMMARIZER] Summarizing {len(articles)} Web Articles...")
-        for i, art in enumerate(articles):
-            # No fixed delay; handled by backoff
-            print(f"   ✍️ Summarizing: {art['title'][:50]}...")
-            summary = self.summarizer.summarize_text(art['text'], source_type="article")
-            all_summaries.append(f"ARTICLE: {art['title']}\n{summary}")
+        def task_wrapper(content, source_type, title, prefix):
+            # Small jitter to prevent simultaneous 429s
+            time.sleep(random.uniform(0.1, 1.5))
+            print(f"   ✍️ Summarizing: {title[:50]}...")
+            summary = self.summarizer.summarize_text(content, source_type=source_type)
+            return f"{prefix}: {title}\n{summary}"
 
-        print(f"\n📝 [SUMMARIZER] Summarizing {len(youtube_data)} YouTube Transcripts...")
-        for i, yt in enumerate(youtube_data):
-            # No fixed delay; handled by backoff
+        tasks = []
+        # Prepare Web Article tasks
+        for art in articles:
+            tasks.append((art['text'], "article", art['title'], "ARTICLE"))
+
+        # Prepare YouTube tasks
+        for yt in youtube_data:
             if yt['transcript']:
-                summary = self.summarizer.summarize_text(yt['transcript'], source_type="video transcript")
-                all_summaries.append(f"VIDEO: {yt['basic']['title']}\n{summary}")
+                tasks.append((yt['transcript'], "video transcript", yt['basic']['title'], "VIDEO"))
             else:
-                # Use metadata if no transcript
                 metadata_text = f"Title: {yt['basic']['title']}\nDescription: {yt['metadata'].get('description', '')}"
-                summary = self.summarizer.summarize_text(metadata_text, source_type="video metadata")
-                all_summaries.append(f"VIDEO (METADATA ONLY): {yt['basic']['title']}\n{summary}")
+                tasks.append((metadata_text, "video metadata", yt['basic']['title'], "VIDEO (METADATA ONLY)"))
+
+        if tasks:
+            print(f"\n📝 [SUMMARIZER] Summarizing {len(tasks)} sources in parallel...")
+            with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+                future_to_task = {executor.submit(task_wrapper, *t): t for t in tasks}
+                for future in concurrent.futures.as_completed(future_to_task):
+                    try:
+                        all_summaries.append(future.result())
+                    except Exception as e:
+                        print(f"❌ Summarization task failed: {e}")
 
         # 5. Deep Combined Analysis
         deep_analysis = "Deep analysis failed."
