@@ -28,24 +28,26 @@ def is_bangla(text):
 def translate_narrator_blocks_browser(script_content):
     """Translates Narrator blocks to Bangla using Browser-based Gemini for high quality."""
     print("🌐 [BROWSER] Initializing high-end translation engine...")
-    # Headless mode for Colab
-    browser_ai = BrowserAI(headless=True)
-    browser_ai.start()
 
-    # Pattern to match [Narrator: text] or [বর্ণনাকারী: text]
-    pattern = r"\[(Narrator|বর্ণনাকারী):\s*(.*?)\]"
-    matches = list(re.finditer(pattern, script_content, flags=re.DOTALL))
+    # Flexible pattern for Narrator blocks:
+    # Supports [Narrator: ...], **Narrator:** ..., Narrator: ...
+    pattern = r"(?im)^[\[\* ]*(Narrator|বর্ণনাকারী)[\:\*\] ]+\s*(.*?)(?=\s*\]?\n\s*(?:\[|\*\*|Narrator|বর্ণনাকারী|Scene|দৃশ্য|Music|সঙ্গীত|={5,})|\Z)"
+
+    matches = list(re.finditer(pattern, script_content, re.DOTALL))
 
     if not matches:
         print("⚠️ No Narrator blocks found to translate.")
-        browser_ai.close()
         return script_content
 
-    print(f"✍️ [BROWSER] Found {len(matches)} narrator blocks. Translating...")
+    print(f"✍️ [BROWSER] Found {len(matches)} narrator blocks. Starting browser...")
+
+    # Initialize browser
+    browser_ai = BrowserAI(headless=True)
+    browser_ai.start()
 
     updated_script = script_content
 
-    narrator_texts = [m.group(2) for m in matches]
+    narrator_texts = [m.group(2).strip() for m in matches]
     combined_prompt = """You are a master documentary scriptwriter and translator.
     Your task is to translate the following English narrator segments into high-end, extremely engaging, and hooky Bengali (Bangla).
 
@@ -70,24 +72,42 @@ def translate_narrator_blocks_browser(script_content):
         translated_segments = [s.strip() for s in translated_segments if s.strip()]
 
         if len(translated_segments) != len(narrator_texts):
-             print(f"⚠️ Segment count mismatch (Got {len(translated_segments)}, expected {len(narrator_texts)}). Attempting to clean response...")
-             # Attempt to clean if AI included "Segment X:"
+             print(f"⚠️ Segment count mismatch (Got {len(translated_segments)}, expected {len(narrator_texts)}). Cleaning response...")
              cleaned = []
              for s in translated_segments:
-                 cleaned.append(re.sub(r"^Segment \d+:\s*", "", s, flags=re.IGNORECASE).strip())
+                 # Remove "Segment X:" or similar noise
+                 s_clean = re.sub(r"^(?i)Segment \d+:\s*", "", s).strip()
+                 if s_clean:
+                     cleaned.append(s_clean)
              translated_segments = cleaned
 
         # Perform replacement in reverse order to preserve indices
         for i in range(len(matches) - 1, -1, -1):
             match = matches[i]
             label = match.group(1)
-            trans = translated_segments[i] if i < len(translated_segments) else match.group(2)
 
-            # Final cleaning of any residual segment labels
-            trans = re.sub(r"^Segment \d+:\s*", "", trans, flags=re.IGNORECASE).strip()
+            # Find the full block to replace (including markers)
+            start_idx = match.start()
+            end_idx = match.end()
+            # Check if there was a trailing bracket
+            if end_idx < len(script_content) and script_content[end_idx] == ']':
+                end_idx += 1
 
-            replacement = f"[{label}: {trans}]"
-            updated_script = updated_script[:match.start()] + replacement + updated_script[match.end():]
+            trans = translated_segments[i] if i < len(translated_segments) else match.group(2).strip()
+
+            # Reconstruct the block with its original markers
+            original_full_block = script_content[start_idx:end_idx]
+
+            # Find what the prefix was (e.g. "**Narrator:** " or "[Narrator: ")
+            # We'll just use the match group 1 and some logic
+            if original_full_block.startswith("**"):
+                replacement = f"**{label}:** {trans}"
+            elif original_full_block.startswith("["):
+                replacement = f"[{label}: {trans}]"
+            else:
+                replacement = f"{label}: {trans}"
+
+            updated_script = updated_script[:start_idx] + replacement + updated_script[end_idx:]
 
     except Exception as e:
         print(f"❌ High-end translation failed: {e}. Keeping original text.")
@@ -117,7 +137,7 @@ def validate_content(content):
     return topic, script_content, script_match
 
 def main():
-    print("🎬 SCENE SPLITER ENGINE (V2.0) - HIGH-END BROWSER EDITION")
+    print("🎬 SCENE SPLITER ENGINE (V2.1) - HIGH-END BROWSER EDITION")
     print("==========================================================")
 
     content = read_script()
@@ -146,6 +166,8 @@ def main():
 
     except Exception as e:
         print(f"❌ An error occurred: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 if __name__ == "__main__":
