@@ -1,4 +1,4 @@
-# 🎬 Scene Spliter AI - High-End Setup & Run
+# 🎬 Scene Spliter AI - Professional Setup & Run
 
 Paste and run this cell in Google Colab. It will set up the engine and process your script automatically.
 
@@ -29,10 +29,8 @@ if os.path.exists(target_dir):
     os.chdir(target_dir)
 
     # 4. Install Dependencies
-    print("\n📦 Installing system dependencies and browser...")
-    !pip install -r requirements.txt --quiet
-    !playwright install chromium
-    !python3 -m playwright install-deps
+    print("\n📦 Installing dependencies...")
+    !pip install google-generativeai --quiet
 
     # 5. Run
     print("\n" + "="*40)
