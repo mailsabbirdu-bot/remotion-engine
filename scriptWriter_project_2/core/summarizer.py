@@ -7,8 +7,8 @@ class BrowserSummarizer:
     def __init__(self, browser_ai):
         self.browser_ai = browser_ai
         self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=4000, # Smaller chunks for browser interface stability
-            chunk_overlap=400
+            chunk_size=CHUNK_SIZE,
+            chunk_overlap=CHUNK_OVERLAP
         )
 
     def summarize_text(self, text, source_type="article"):
@@ -27,6 +27,8 @@ class BrowserSummarizer:
             Analyze and summarize the following {source_type} content concisely.
             Extract key facts, insights, and dramatic turning points.
 
+            IMPORTANT: Provide ONLY the raw summary text. Do not include conversational fillers like "Here is a summary" or "Sure, I can help with that".
+
             Content:
             {chunk}
             """
@@ -41,7 +43,7 @@ class BrowserSummarizer:
 
         if len(summaries) > 1:
             print("   ✍️ [BROWSER] Combining multiple summaries...")
-            final_prompt = "Combine these summaries into one comprehensive analysis:\n\n" + "\n\n".join(summaries)
+            final_prompt = "Combine these summaries into one comprehensive analysis. Provide only the combined summary text, no extra commentary:\n\n" + "\n\n".join(summaries)
             return self.browser_ai.send_prompt(final_prompt)
 
         return summaries[0] if summaries else "Summary failed."
@@ -60,7 +62,7 @@ class BrowserSummarizer:
             print(f"   🧠 [BROWSER] Analysis material too large, processing in {len(text_chunks)} chunks...")
             partial_analyses = []
             for i, chunk in enumerate(text_chunks):
-                prompt = f"Analyze this part of the research material ({i+1}/{len(text_chunks)}):\n\n{chunk}"
+                prompt = f"Analyze this part of the research material ({i+1}/{len(text_chunks)}). Provide raw analysis only:\n\n{chunk}"
                 partial_analyses.append(self.browser_ai.send_prompt(prompt))
 
             combined_text = "\n\n".join([p for p in partial_analyses if p])
@@ -75,9 +77,11 @@ class BrowserSummarizer:
         4. Organize key events chronologically.
         5. Extract compelling hooks.
 
+        IMPORTANT: Start directly with the report. Do not include any introductory remarks.
+
         Source Material:
         {combined_text}
 
         Deep Analysis Report (In {lang_instruction}):
         """
-        return self.browser_ai.send_prompt(prompt, wait_time=25)
+        return self.browser_ai.send_prompt(prompt, wait_time=10)

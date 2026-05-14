@@ -1,4 +1,5 @@
 playwright
+playwright-stealth
 duckduckgo-search
 requests==2.32.4
 youtube-transcript-api
@@ -8,5 +9,3 @@ langchain-text-splitters
 yt-dlp
 pydantic
 googlesearch-python
-# youtube-search-python removed in favor of yt-dlp native search
-# httpx pinning removed; compatibility handled via monkeypatch in main.py

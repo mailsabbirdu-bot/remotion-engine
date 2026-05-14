@@ -1,52 +1,5 @@
 import os
 import sys
-import warnings
-
-# Suppress deprecation warnings for a cleaner output
-warnings.filterwarnings("ignore", category=FutureWarning, module="google.generativeai")
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-warnings.filterwarnings("ignore", category=RuntimeWarning)
-
-# Monkeypatch for youtube-search-python + httpx 0.28+ compatibility
-# This fixes the "unexpected keyword argument 'proxies'" error by redirecting it to 'proxy'
-try:
-    import httpx
-    def _fix_proxy_kwargs(kwargs):
-        if "proxies" in kwargs:
-            proxies = kwargs.pop("proxies")
-            if isinstance(proxies, dict):
-                # httpx 0.28+ expects 'proxy' as a single URL string or a Proxy object
-                # youtube-search-python passes a dict like {'http://': ..., 'https://': ...}
-                proxy_url = proxies.get("https://") or proxies.get("http://")
-                if proxy_url:
-                    kwargs["proxy"] = proxy_url
-            else:
-                kwargs["proxy"] = proxies
-
-    # 1. Patch top-level functions (get, post, etc.)
-    _original_methods = {}
-    for method_name in ["get", "post", "put", "patch", "delete", "head", "options", "request"]:
-        if hasattr(httpx, method_name):
-            _original_methods[method_name] = getattr(httpx, method_name)
-            def make_patch(name):
-                orig = _original_methods[name]
-                def patched(*args, **kwargs):
-                    _fix_proxy_kwargs(kwargs)
-                    return orig(*args, **kwargs)
-                return patched
-            setattr(httpx, method_name, make_patch(method_name))
-
-    # 2. Patch Client and AsyncClient classes
-    for class_name in ["Client", "AsyncClient"]:
-        if hasattr(httpx, class_name):
-            original_class = getattr(httpx, class_name)
-            class PatchedClass(original_class):
-                def __init__(self, *args, **kwargs):
-                    _fix_proxy_kwargs(kwargs)
-                    super().__init__(*args, **kwargs)
-            setattr(httpx, class_name, PatchedClass)
-except Exception:
-    pass
 
 from core.pipeline import ResearchPipeline
 
@@ -67,7 +20,7 @@ def main():
         return
 
     print("====================================================")
-    print("🎬 SCRIPT WRITER AI (V1.0) - DEEP RESEARCH")
+    print("🎬 BROWSER SCRIPT WRITER AI (V1.1) - DEEP RESEARCH")
     print("====================================================\n")
 
     # User Input
