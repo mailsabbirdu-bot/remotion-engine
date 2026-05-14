@@ -2,8 +2,6 @@ import os
 import sys
 import re
 import time
-import google.generativeai as genai
-from core.config import GEMINI_API_KEY
 from core.browser_automator import BrowserAI
 
 # Path discovery for Colab vs Local
@@ -15,9 +13,6 @@ AUDIO_DIR = os.path.join(BASE, "audio")
 SCRIPT_FILE = os.path.join(AUDIO_DIR, "script.txt")
 UPDATED_SCRIPT_FILE = os.path.join(AUDIO_DIR, "script_updated.txt")
 STORY_FILE = os.path.join(AUDIO_DIR, "story.txt")
-
-# Configure Gemini API
-genai.configure(api_key=GEMINI_API_KEY)
 
 def read_script():
     if not os.path.exists(SCRIPT_FILE):
@@ -31,10 +26,11 @@ def is_bangla(text):
     """Detects if a string contains Bangla characters."""
     return bool(re.search(r'[\u0980-\u09ff]', text))
 
-def translate_narrator_blocks_api(script_content):
-    """Translates Narrator blocks to ultra-modern Bangla using Gemini API with retries and fallback."""
-    print("🧠 [AI] Translating to ultra-modern Bangla via API...")
+def translate_narrator_blocks_browser(browser_ai, script_content):
+    """Translates Narrator blocks to ultra-modern Bangla using Browser-based Gemini."""
+    print("✍️ [BROWSER] Translating Narrator blocks to ultra-modern Bangla...")
 
+    # Flexible pattern for Narrator blocks
     pattern = r"(?im)^[\[\* ]*(Narrator|বর্ণনাকারী)[\:\*\] ]+\s*(.*?)(?=\s*\]?\n\s*(?:\[|\*\*|Narrator|বর্ণনাকারী|Scene|দৃশ্য|Music|সঙ্গীত|={5,})|\Z)"
     matches = list(re.finditer(pattern, script_content, re.DOTALL))
 
@@ -42,97 +38,70 @@ def translate_narrator_blocks_api(script_content):
         print("⚠️ No Narrator blocks found to translate.")
         return script_content
 
-    print(f"✍️ [AI] Found {len(matches)} narrator blocks. Translating...")
-
-    # Models to try in order
-    models_to_try = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
-    updated_script = script_content
+    print(f"✍️ [BROWSER] Found {len(matches)} narrator blocks. Processing...")
 
     narrator_texts = [m.group(2).strip() for m in matches]
-    combined_prompt = """You are a master documentary scriptwriter specializing in viral content.
-    Translate or rewrite the following narrator segments into ultra-modern, extremely hooky, and "Gen-Z/Millennial" trendy Bengali (Bangla).
+    combined_prompt = """You are a master documentary scriptwriter and translator specializing in viral social media content.
+    Your task is to translate or rewrite the following narrator segments into ultra-modern, extremely hooky, and "Gen-Z/Millennial" trendy Bengali (Bangla).
 
     GUIDELINES:
-    1. STYLE: Punchy, cinematic, and viral-ready. ABSOLUTELY NO formal "Sadhubhasha".
-    2. VOCABULARY: Use fresh, trendy words that resonate with today's generation.
-    3. HOOK: Every single sentence should feel like a hook.
-    4. MANDATORY: Return the translations as a list matching the order provided, separated by exactly '---SEG---'.
-    5. DO NOT include any introductory text, segment numbers, or commentary. Just the translations.
+    1. STYLE: Ultra-modern, punchy, and cinematic. ABSOLUTELY AVOID "textbook" or formal "Sadhubhasha". No "Kothito" or "Suddho" formal words that sound like a news broadcast. Use the language of the internet, the youth, and viral YouTube storytellers.
+    2. VOCABULARY: Use trendy, fresh, and powerful Bengali words. If a modern English term is commonly used by the generation (like 'Hub', 'Startup', 'Tech', 'Vibe'), feel free to keep it or use the Bengali phonetic version if it sounds cooler.
+    3. HOOK: Every single sentence must be a "hook". It should create a "WOW" factor. The narration should be addictive.
+    4. TONE: High-energy, professional yet "cool" and "edgy". Think of high-end Netflix tech-documentaries or viral international storytellers.
+    5. FLOW: Short, rhythmic, and emotionally charged sentences.
+    6. MANDATORY: Return the translations as a list matching the order provided, separated by exactly '---SEG---'.
+    7. DO NOT include any introductory text, segment numbers, or commentary. Just the translations.
 
     Segments to translate:
     """
     for i, text in enumerate(narrator_texts):
         combined_prompt += f"\nSegment {i+1}:\n{text}\n"
 
-    translated_segments = []
-    success = False
+    updated_script = script_content
+    try:
+        response = browser_ai.send_prompt(combined_prompt, wait_time=15)
+        if not response:
+            raise Exception("No response from Browser AI")
 
-    for model_name in models_to_try:
-        if success: break
-        print(f"🔄 Attempting translation with model: {model_name}...")
-        try:
-            model = genai.GenerativeModel(model_name)
-            # Add exponential backoff retry for 429
-            max_retries = 3
-            for attempt in range(max_retries):
-                try:
-                    response = model.generate_content(combined_prompt)
-                    if response and response.text:
-                        translated_segments = response.text.split("---SEG---")
-                        translated_segments = [s.strip() for s in translated_segments if s.strip()]
-                        if len(translated_segments) >= len(narrator_texts):
-                            success = True
-                            print(f"✅ Successfully translated using {model_name}")
-                            break
-                        else:
-                            print(f"⚠️ Mismatch in segments (Got {len(translated_segments)}, expected {len(narrator_texts)}). Retrying...")
-                except Exception as e:
-                    if "429" in str(e):
-                        wait = (2 ** attempt) * 5
-                        print(f"⏳ Rate limited (429). Waiting {wait}s before retry...")
-                        time.sleep(wait)
-                    else:
-                        raise e
-            if success: break
-        except Exception as e:
-            print(f"❌ Failed with {model_name}: {e}")
+        translated_segments = response.split("---SEG---")
+        translated_segments = [s.strip() for s in translated_segments if s.strip()]
 
-    if not success:
-        print("❌ All API translation attempts failed. Keeping original text.")
-        return script_content
+        if len(translated_segments) < len(narrator_texts):
+             print(f"⚠️ Segment count mismatch (Got {len(translated_segments)}, expected {len(narrator_texts)}).")
 
-    # Clean up labels if AI added them
-    cleaned_segments = []
-    for s in translated_segments:
-        s_clean = re.sub(r"^(?i)Segment \d+:\s*", "", s).strip()
-        cleaned_segments.append(s_clean)
+        # Perform replacement in reverse order to preserve indices
+        for i in range(len(matches) - 1, -1, -1):
+            match = matches[i]
+            label = match.group(1)
 
-    # Perform replacement in reverse order
-    for i in range(len(matches) - 1, -1, -1):
-        match = matches[i]
-        label = match.group(1)
-        start_idx = match.start()
-        end_idx = match.end()
-        if end_idx < len(script_content) and script_content[end_idx] == ']':
-            end_idx += 1
+            start_idx = match.start()
+            end_idx = match.end()
+            if end_idx < len(script_content) and script_content[end_idx] == ']':
+                end_idx += 1
 
-        trans = cleaned_segments[i] if i < len(cleaned_segments) else match.group(2).strip()
+            trans = translated_segments[i] if i < len(translated_segments) else match.group(2).strip()
+            trans = re.sub(r"^(?i)Segment \d+:\s*", "", trans).strip()
 
-        original_full_block = script_content[start_idx:end_idx]
-        if original_full_block.startswith("**"):
-            replacement = f"**{label}:** {trans}"
-        elif original_full_block.startswith("["):
-            replacement = f"[{label}: {trans}]"
-        else:
-            replacement = f"{label}: {trans}"
+            original_full_block = script_content[start_idx:end_idx]
+            if original_full_block.startswith("**"):
+                replacement = f"**{label}:** {trans}"
+            elif original_full_block.startswith("["):
+                replacement = f"[{label}: {trans}]"
+            else:
+                replacement = f"{label}: {trans}"
 
-        updated_script = updated_script[:start_idx] + replacement + updated_script[end_idx:]
+            updated_script = updated_script[:start_idx] + replacement + updated_script[end_idx:]
+
+        print("✅ Translation complete.")
+    except Exception as e:
+        print(f"❌ Translation failed: {e}. Keeping original text.")
 
     return updated_script
 
-def split_scenes_browser(updated_script, language="en"):
+def split_scenes_browser(browser_ai, updated_script, language="en"):
     """Splits narrations into scenes with ONLY VO text using Browser-based Gemini."""
-    print("🎬 [BROWSER] Generating high-end story VO segments...")
+    print("\n🎬 [BROWSER] Dividing narrations into scenes (Voice Over text focus)...")
 
     # Extract only narrator parts
     pattern = r"(?im)^[\[\* ]*(Narrator|বর্ণনাকারী)[\:\*\] ]+\s*(.*?)(?=\s*\]?\n\s*(?:\[|\*\*|Narrator|বর্ণনাকারী|Scene|দৃশ্য|Music|সঙ্গীত|={5,})|\Z)"
@@ -143,12 +112,13 @@ def split_scenes_browser(updated_script, language="en"):
         return ""
 
     narrator_content = "\n\n".join([f"{m.group(2).strip()}" for m in matches])
-    is_bn = (language == "bn")
-    scene_word = "দৃশ্য" if is_bn else "Scene"
-    lang_label = "Bengali (Bangla)" if is_bn else "English"
 
-    prompt = f"""You are a professional documentary editor and storyboard director.
-    Take the following Voice Over (VO) text and divide it into logical, engaging cinematic scenes.
+    is_bn = (language == "bn")
+    lang_label = "Bengali (Bangla)" if is_bn else "English"
+    scene_word = "দৃশ্য" if is_bn else "Scene"
+
+    prompt = f"""You are a professional documentary editor.
+    Take the following Voice Over (VO) text and divide it into logical, engaging cinematic scenes in {lang_label}.
 
     VO TEXT CONTENT:
     {narrator_content}
@@ -171,46 +141,15 @@ def split_scenes_browser(updated_script, language="en"):
 
     story_content = ""
     try:
-        browser_ai = BrowserAI(headless=True)
-        browser_ai.start()
         story_content = browser_ai.send_prompt(prompt, wait_time=15)
-        browser_ai.close()
         if not story_content:
-            raise Exception("No response from browser AI")
+            raise Exception("No response from browser AI for story generation")
+
         print(f"✅ Story generation complete ({len(story_content)} chars).")
     except Exception as e:
-        print(f"⚠️ Browser automation failed: {e}. Falling back to API...")
-        story_content = split_scenes_api_fallback(narrator_content, language)
+        print(f"❌ Story generation failed: {e}")
 
     return story_content.strip()
-
-def split_scenes_api_fallback(narrator_content, language="en"):
-    """Fallback story generator using API."""
-    print("🧠 [AI] Falling back to API for story generation...")
-    is_bn = (language == "bn")
-    scene_word = "দৃশ্য" if is_bn else "Scene"
-    lang_label = "Bengali (Bangla)" if is_bn else "English"
-
-    prompt = f"""You are a professional documentary editor. Divide this Voice Over text into scenes in {lang_label}.
-    Provide ONLY the spoken text for each scene. NO visual descriptions.
-    FORMAT:
-    {scene_word} 1
-    [Spoken text]
-
-    Text:
-    {narrator_content}
-    """
-    # Try models in order
-    models = ['gemini-2.0-flash', 'gemini-1.5-flash']
-    for model_name in models:
-        try:
-            model = genai.GenerativeModel(model_name)
-            res = model.generate_content(prompt)
-            if res and res.text:
-                return res.text
-        except:
-            continue
-    return ""
 
 def validate_content(content):
     topic_match = re.search(r"TOPIC:\s*(.*)", content)
@@ -230,8 +169,8 @@ def validate_content(content):
     return topic, script_content, script_match
 
 def main():
-    print("🎬 SCENE SPLITER ENGINE (V4.6) - HYBRID ROBUST")
-    print("==============================================")
+    print("🎬 SCENE SPLITER ENGINE (V5.0) - FULL BROWSER AUTOMATION")
+    print("==========================================================")
 
     content = read_script()
     print(f"✅ Successfully read {SCRIPT_FILE}")
@@ -242,10 +181,15 @@ def main():
 
         target_language = "bn" if is_bangla(topic) else "en"
 
+        # Initialize Browser AI once
+        browser_ai = BrowserAI(headless=True)
+        print("🌐 [BROWSER] Initializing engine...")
+        browser_ai.start()
+
         updated_script = script
         if target_language == "bn":
-            updated_script = translate_narrator_blocks_api(script)
-            print("✅ Translation process finished.")
+            print("🌏 Bangla detected in topic. Starting translation...")
+            updated_script = translate_narrator_blocks_browser(browser_ai, script)
         else:
             print("🌏 Topic is in English. Skipping translation.")
 
@@ -257,8 +201,8 @@ def main():
             f.write(new_content)
         print(f"✨ Updated script saved to: {UPDATED_SCRIPT_FILE}")
 
-        print("\n🔍 Generating story.txt (Divided Voice Overs)...")
-        story_content = split_scenes_browser(updated_script, language=target_language)
+        # Generate story.txt
+        story_content = split_scenes_browser(browser_ai, updated_script, language=target_language)
 
         if story_content:
             with open(STORY_FILE, "w", encoding="utf-8") as f:
@@ -267,6 +211,7 @@ def main():
         else:
             print("⚠️ Failed to generate story.txt")
 
+        browser_ai.close()
         print("\n🎉 ALL TASKS COMPLETED SUCCESSFULLY!")
 
     except Exception as e:
