@@ -48,7 +48,7 @@ def translate_narrator_blocks_browser(browser_ai, script_content):
     1. STYLE: Ultra-modern, punchy, and cinematic. ABSOLUTELY AVOID "textbook" or formal "Sadhubhasha". No "Kothito" or "Suddho" formal words that sound like a news broadcast. Use the language of the internet, the youth, and viral YouTube storytellers.
     2. VOCABULARY: Use trendy, fresh, and powerful Bengali words. If a modern English term is commonly used by the generation (like 'Hub', 'Startup', 'Tech', 'Vibe'), feel free to keep it or use the Bengali phonetic version if it sounds cooler.
     3. HOOK: Every single sentence must be a "hook". It should create a "WOW" factor. The narration should be addictive.
-    4. TONE: High-energy, professional yet "cool" and "edgy". Think of high-end Netflix tech-documentaries (like 'The Social Dilemma') or viral international storytellers.
+    4. TONE: High-energy, professional yet "cool" and "edgy". Think of high-end Netflix tech-documentaries or viral international storytellers.
     5. FLOW: Short, rhythmic, and emotionally charged sentences.
     6. MANDATORY: Return the translations as a list matching the order provided, separated by exactly '---SEG---'.
     7. DO NOT include any introductory text, segment numbers, or commentary. Just the translations.
@@ -78,7 +78,7 @@ def translate_narrator_blocks_browser(browser_ai, script_content):
             end_idx = match.end()
 
             trans = translated_segments[i] if i < len(translated_segments) else match.group(2).strip()
-            # Clean up AI noise - Fixed regex flag position
+            # Clean up AI noise
             trans = re.sub(r"^Segment \d+:\s*", "", trans, flags=re.IGNORECASE).strip()
 
             # Reconstruct with original header formatting
@@ -94,33 +94,21 @@ def translate_narrator_blocks_browser(browser_ai, script_content):
     return updated_script
 
 def split_scenes_browser(browser_ai, updated_script, language="en"):
-    """Splits narrations into scenes with ONLY VO text using Browser-based Gemini."""
-    print("\n🎬 [BROWSER] Dividing narrations into scenes (Voice Over text focus)...")
-
-    # Extract only narrator parts
-    pattern = r"(?:\*\*|\[)?\s*(Narrator|বর্ণনাকারী)\s*[\:\*\] ]+\s*(.*?)(?=\s*(?:\*\*|\[|Narrator|বর্ণনাকারী|Scene|দৃশ্য|Music|সঙ্গীত|={5,})|\Z)"
-    matches = list(re.finditer(pattern, updated_script, re.DOTALL | re.IGNORECASE))
-
-    if not matches:
-        print("⚠️ No narrator blocks found for scene analysis.")
-        return ""
-
-    narrator_content = "\n\n".join([f"{m.group(2).strip()}" for m in matches])
+    """Splits narrations into scenes based on footage blocks in the script."""
+    print("\n🎬 [BROWSER] Dividing narrations into scenes (Footage-based division)...")
 
     is_bn = (language == "bn")
     lang_label = "Bengali (Bangla)" if is_bn else "English"
     scene_word = "দৃশ্য" if is_bn else "Scene"
 
-    prompt = f"""You are a professional documentary editor.
-    Take the following Voice Over (VO) text and divide it into logical, engaging cinematic scenes in {lang_label}.
+    prompt = f"""You are a professional documentary film editor.
+    I will provide you with a cinematic script that contains [Visual: ...] blocks and Narrator text.
+    Your task is to divide the narration into logical scenes based on the Visual/Footage descriptions provided.
 
-    VO TEXT CONTENT:
-    {narrator_content}
-
-    REQUIREMENTS:
-    1. Break the text into several scenes. Each scene must contain a specific part of the spoken narration.
-    2. THE OUTPUT MUST CONTAIN ONLY THE SPOKEN TEXT (Voice Over) FOR EACH SCENE.
-    3. ABSOLUTELY NO camera directions, visual descriptions, or bracketed instructions. Just the lines to be spoken.
+    RULES:
+    1. Each "Scene" (দৃশ্য) must correspond to a visual segment or a logical grouping of visual segments.
+    2. A new scene starts when a new footage/visual block occurs that requires its own narration segment.
+    3. THE OUTPUT MUST CONTAIN ONLY THE SPOKEN TEXT (VO) FOR EACH SCENE.
     4. LANGUAGE: The entire output MUST be in {lang_label}.
     5. FORMAT:
        {scene_word} 1
@@ -131,11 +119,14 @@ def split_scenes_browser(browser_ai, updated_script, language="en"):
 
     6. NUMERALS: {"Use Bangla numerals (e.g., দৃশ্য ১, দৃশ্য ২)" if is_bn else "Use standard numerals (e.g., Scene 1, Scene 2)"}.
     7. Start directly with the first scene.
+
+    CINEMATIC SCRIPT:
+    {updated_script}
     """
 
     story_content = ""
     try:
-        story_content = browser_ai.send_prompt(prompt, wait_time=15)
+        story_content = browser_ai.send_prompt(prompt, wait_time=20)
         if not story_content:
             raise Exception("No response from browser AI for story generation")
 
@@ -163,7 +154,7 @@ def validate_content(content):
     return topic, script_content, script_match
 
 def main():
-    print("🎬 SCENE SPLITER ENGINE (V5.3) - FULL BROWSER STABLE")
+    print("🎬 SCENE SPLITER ENGINE (V6.0) - FOOTAGE-BASED DIVISION")
     print("==========================================================")
 
     content = read_script()
@@ -195,7 +186,7 @@ def main():
             f.write(new_content)
         print(f"✨ Updated script saved to: {UPDATED_SCRIPT_FILE}")
 
-        # Generate story.txt
+        # Generate story.txt using the full updated script for context
         story_content = split_scenes_browser(browser_ai, updated_script, language=target_language)
 
         if story_content:
