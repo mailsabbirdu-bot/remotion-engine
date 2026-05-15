@@ -1,0 +1,153 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "banglaFont": "FN Mahin Dui Dashok Italic",
+  "englishFont": "Audiowide-Regular",
+  "scenes": [
+    {
+      "id": "scene_1",
+      "duration": 281,
+      "background": {
+        "type": "video",
+        "src": "scene_1.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "layers": [
+        {
+          "id": "l1",
+          "type": "text",
+          "content": "Tiger beneath the deep blue ocean | গভীর সমুদ্রের নিচে বাঘ",
+          "start": 15,
+          "duration": 220,
+          "style": {
+            "fontSize": 60,
+            "color": "#ffffff",
+            "x": 540,
+            "y": 1580
+          },
+          "animationIn": {
+            "type": "fade-up",
+            "duration": 20,
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "animationOut": {
+            "type": "fade-down",
+            "duration": 20,
+            "easing": "ease-in"
+          },
+          "textAnimation": {
+            "mode": "character",
+            "duration": 60
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rounded-rect",
+            "padding": 28,
+            "fill": "rgba(0,0,0,0.55)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "scene_2",
+      "duration": 301,
+      "background": {
+        "type": "video",
+        "src": "scene_2.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "layers": [
+        {
+          "id": "l2",
+          "type": "text",
+          "content": "Dark waves rise through the storm | ঝড়ের মধ্য দিয়ে কালো ঢেউ জেগে ওঠে",
+          "start": 15,
+          "duration": 240,
+          "style": {
+            "fontSize": 60,
+            "color": "#ffcc00",
+            "x": 540,
+            "y": 1550
+          },
+          "animationIn": {
+            "type": "fade-in",
+            "duration": 18,
+            "easing": "ease-out"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "duration": 18,
+            "easing": "ease-in"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rounded-rect",
+            "padding": 30,
+            "fill": "rgba(0,0,0,0.60)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "scene_3",
+      "duration": 299,
+      "background": {
+        "type": "video",
+        "src": "scene_3.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "layers": [
+        {
+          "id": "l3",
+          "type": "text",
+          "content": "Sunlight pierces the silent ocean | সূর্যালোক শান্ত সমুদ্র ভেদ করে",
+          "start": 15,
+          "duration": 235,
+          "style": {
+            "fontSize": 60,
+            "color": "#ffffff",
+            "x": 540,
+            "y": 1560
+          },
+          "animationIn": {
+            "type": "fade-up",
+            "duration": 20,
+            "easing": "ease-out"
+          },
+          "animationOut": {
+            "type": "fade-down",
+            "duration": 20,
+            "easing": "ease-in"
+          },
+          "textAnimation": {
+            "mode": "sentence",
+            "duration": 30
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rounded-rect",
+            "padding": 26,
+            "fill": "rgba(0,0,0,0.45)"
+          }
+        }
+      ]
+    }
+  ]
+}
