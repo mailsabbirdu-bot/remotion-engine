@@ -142,11 +142,10 @@ def split_scenes_browser(browser_ai, updated_script, language="en"):
     return story_content.strip()
 
 def generate_json_prep(browser_ai, story_content, language="en"):
-    """Generates visual suggestions and text layers for each scene."""
+    """Generates visual suggestions and text layers for each scene in English always."""
     print("\n🎬 [BROWSER] Generating visual preparation guide (jsonPrep)...")
 
     is_bn = (language == "bn")
-    lang_label = "Bengali (Bangla)" if is_bn else "English"
     scene_word = "দৃশ্য" if is_bn else "Scene"
 
     prompt = f"""You are a professional visual director for a top-tier YouTube channel.
@@ -159,16 +158,16 @@ def generate_json_prep(browser_ai, story_content, language="en"):
     1. STOCK FOOTAGE: Suggest specific, cinematic stock footage (Pixabay/Pexels style) that matches the mood and narration.
     2. OVERLAYS: If a scene is better suited for a background with text, suggest a cinematic overlay/background.
     3. TEXT LAYERS: Suggest short, hooky, and emotional cinematic text to be displayed as a layer/textbox on screen. These should NOT be news-style titles, but punchy story-based hooks that evoke emotion.
-    4. LANGUAGE: Provide the descriptions and text layer suggestions in {lang_label}.
+    4. MANDATORY LANGUAGE: Write EVERYTHING in English. Even if the narration is in Bangla, the Visual descriptions and Text Layer suggestions MUST be in English.
 
-    FORMAT (Strictly follow this):
+    FORMAT (Strictly follow this style):
     {scene_word} 1
-    Visual: [Description of stock footage or overlay]
-    Text Layer: [The hooky, cinematic text to show on screen]
+    Visual: [Description in English]
+    Text Layer: [Cinematic text in English]
 
     {scene_word} 2
-    Visual: [Description of stock footage or overlay]
-    Text Layer: [The hooky, cinematic text to show on screen]
+    Visual: [Description in English]
+    Text Layer: [Cinematic text in English]
 
     Start directly with the first scene.
     """
