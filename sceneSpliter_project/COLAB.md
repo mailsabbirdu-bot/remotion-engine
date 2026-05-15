@@ -30,7 +30,7 @@ if os.path.exists(target_dir):
 
     # 4. Install Dependencies
     print("\n📦 Installing system dependencies and browser...")
-    !pip install google-generativeai playwright playwright-stealth --quiet
+    !pip install playwright playwright-stealth --quiet
     !playwright install chromium
     !python3 -m playwright install-deps
 
