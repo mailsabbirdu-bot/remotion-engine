@@ -94,31 +94,34 @@ def translate_narrator_blocks_browser(browser_ai, script_content):
     return updated_script
 
 def split_scenes_browser(browser_ai, updated_script, language="en"):
-    """Splits narrations into scenes based on footage blocks in the script."""
-    print("\n🎬 [BROWSER] Dividing narrations into scenes (Footage-based division)...")
+    """Splits narrations into short 6-8s scenes based on footage blocks using Browser Gemini."""
+    print("\n🎬 [BROWSER] Dividing narrations into ultra-short cinematic scenes (6-8s focus)...")
 
     is_bn = (language == "bn")
     lang_label = "Bengali (Bangla)" if is_bn else "English"
     scene_word = "দৃশ্য" if is_bn else "Scene"
 
-    prompt = f"""You are a professional documentary film editor.
+    prompt = f"""You are a professional documentary film editor specializing in fast-paced, viral social media content.
     I will provide you with a cinematic script that contains [Visual: ...] blocks and Narrator text.
-    Your task is to divide the narration into logical scenes based on the Visual/Footage descriptions provided.
+
+    YOUR GOAL:
+    Divide the narration into logical, short scenes where NO SINGLE SCENE lasts longer than 6 to 8 seconds on screen.
 
     RULES:
-    1. Each "Scene" (দৃশ্য) must correspond to a visual segment or a logical grouping of visual segments.
-    2. A new scene starts when a new footage/visual block occurs that requires its own narration segment.
+    1. A scene typically averages 15-20 words to fit the 6-8 second window. If a block of narration is longer, you MUST break it into multiple scenes (Scene 1, Scene 2, etc.) even if the visual description doesn't change.
+    2. Synchronize the scene breaks with the [Visual: ...] blocks provided in the script.
     3. THE OUTPUT MUST CONTAIN ONLY THE SPOKEN TEXT (VO) FOR EACH SCENE.
-    4. LANGUAGE: The entire output MUST be in {lang_label}.
-    5. FORMAT:
+    4. ABSOLUTELY NO camera directions, visual descriptions, or bracketed instructions in the final output.
+    5. LANGUAGE: The entire output MUST be in {lang_label}.
+    6. FORMAT:
        {scene_word} 1
        [The spoken text for this scene]
 
        {scene_word} 2
        [The spoken text for this scene]
 
-    6. NUMERALS: {"Use Bangla numerals (e.g., দৃশ্য ১, দৃশ্য ২)" if is_bn else "Use standard numerals (e.g., Scene 1, Scene 2)"}.
-    7. Start directly with the first scene.
+    7. NUMERALS: {"Use Bangla numerals (e.g., দৃশ্য ১, দৃশ্য ২)" if is_bn else "Use standard numerals (e.g., Scene 1, Scene 2)"}.
+    8. Start directly with the first scene.
 
     CINEMATIC SCRIPT:
     {updated_script}
@@ -154,8 +157,8 @@ def validate_content(content):
     return topic, script_content, script_match
 
 def main():
-    print("🎬 SCENE SPLITER ENGINE (V6.0) - FOOTAGE-BASED DIVISION")
-    print("==========================================================")
+    print("🎬 SCENE SPLITER ENGINE (V6.1) - FAST-PACED SOCIAL MEDIA EDITION")
+    print("================================================================")
 
     content = read_script()
     print(f"✅ Successfully read {SCRIPT_FILE}")
