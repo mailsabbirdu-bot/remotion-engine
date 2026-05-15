@@ -50,52 +50,46 @@ def parse_scenes(content):
     return [p.strip() for p in parts if p.strip()]
 
 def extract_json(response):
-    """Extracts a JSON object from AI response strings with enhanced robustness."""
+    """Extracts a JSON object from AI response strings with extreme robustness."""
     if not response: return None
 
-    # Remove markdown code blocks if present
+    # Pre-cleaning
     json_str = response.strip()
-    if "```json" in json_str:
-        json_str = json_str.split("```json")[1].split("```")[0].strip()
-    elif "```" in json_str:
-        json_str = json_str.split("```")[1].strip()
+    # Remove markdown code blocks
+    json_str = re.sub(r'^```json\s*', '', json_str, flags=re.MULTILINE)
+    json_str = re.sub(r'^```\s*', '', json_str, flags=re.MULTILINE)
+    json_str = re.sub(r'\s*```$', '', json_str, flags=re.MULTILINE)
 
-    # Find the first '{' and the last '}'
+    # Find boundaries
     start_idx = json_str.find('{')
     end_idx = json_str.rfind('}')
+    if start_idx == -1: return None
+    json_str = json_str[start_idx : (end_idx+1 if end_idx != -1 else len(json_str))]
 
-    if start_idx == -1:
-        return None
+    # Fix common AI JSON errors
+    # 1. Missing commas between properties/items
+    json_str = re.sub(r'\}\s*\{', '}, {', json_str)
+    json_str = re.sub(r'\]\s*\{', '], {', json_str)
+    json_str = re.sub(r'\"\s*\"', '", "', json_str)
 
-    if end_idx == -1:
-        # Handle truncation by finding the last complete-looking object
-        json_str = json_str[start_idx:]
-    else:
-        json_str = json_str[start_idx:end_idx+1]
-
-    # Attempt to fix trailing commas before closing braces/brackets
+    # 2. Trailing commas
     json_str = re.sub(r',\s*([\]}])', r'\1', json_str)
 
-    # Recursive brace balancing for truncation
     def balance_braces(s):
-        open_b = s.count('{')
-        close_b = s.count('}')
-        open_s = s.count('[')
-        close_s = s.count(']')
-
-        if open_s > close_s: s += ']' * (open_s - close_s)
-        if open_b > close_b: s += '}' * (open_b - close_b)
+        diff_b = s.count('{') - s.count('}')
+        diff_s = s.count('[') - s.count(']')
+        if diff_s > 0: s += ']' * diff_s
+        if diff_b > 0: s += '}' * diff_b
         return s
 
     try:
         return json.loads(json_str)
-    except Exception as e:
-        # Try balanced version
+    except:
         try:
-            fixed_json = balance_braces(json_str)
-            return json.loads(fixed_json)
-        except:
-            print(f"   ❌ JSON Parse Error: {str(e)[:100]}")
+            # Attempt brace balancing
+            return json.loads(balance_braces(json_str))
+        except Exception as e:
+            print(f"   ❌ Final Parse Error: {str(e)[:50]}")
             return None
 
 def main():
@@ -160,10 +154,10 @@ def main():
 
         batch_input_str = ""
         for j, (s, p) in enumerate(zip(batch_story, batch_prep)):
-            batch_input_str += f"S{i+j+1}: N:{s} P:{p}\n"
+            batch_input_str += f"S{i+j+1}: N: {s} | P: {p}\n"
 
         prompt = f"""Expert Video Producer. Generate JSON for scenes {i+1}-{batch_end} of "{project_topic}". Lang: {target_lang}.
-Output MUST be raw JSON matching this structure perfectly.
+Output MUST be raw JSON matching this structure perfectly. Use double quotes for all strings. Ensure all commas are correct.
 
 {{
   "scenes": [
