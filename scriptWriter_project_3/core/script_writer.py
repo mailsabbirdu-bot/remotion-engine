@@ -8,8 +8,6 @@ class BrowserScriptWriter:
         """
         Generate a professional YouTube documentary script using browser-based AI.
         """
-        lang_instruction = "English" if language == "en" else "Bengali (Bangla / বাংলা)"
-
         duration_instruction = ""
         if duration:
             duration_instruction = f"\nTARGET DURATION: The script should be approximately {duration} minutes long when narrated.\n"
@@ -17,8 +15,7 @@ class BrowserScriptWriter:
         prompt = f"""
         You are a master documentary scriptwriter. Write a highly engaging, cinematic, and professional documentary script about: "{topic}".
         {duration_instruction}
-        CRITICAL REQUIREMENT: The entire script (including visual descriptions and narration) MUST be written entirely in {lang_instruction}.
-        MANDATORY: DO NOT USE ENGLISH. Translate everything to {lang_instruction}.
+        CRITICAL REQUIREMENT: The entire script (including visual descriptions and narration) MUST be written entirely in English.
 
         Use the following Deep Research Analysis as your source material:
         ---
@@ -34,12 +31,12 @@ class BrowserScriptWriter:
         6. **Conclusion**: A powerful final thought.
 
         FORMAT:
-        - [দৃশ্য: বর্ণনা ({lang_instruction})]
-        - [বর্ণনাকারী: কথা ({lang_instruction})]
-        - [সঙ্গীত: মেজাজ ({lang_instruction})]
+        - [Scene: Description]
+        - [Narrator: Dialogue]
+        - [Music: Mood]
 
-        IMPORTANT: Write the FULL script now in {lang_instruction}. Make it very detailed and long. Start directly with the script, no conversational intro or English.
+        IMPORTANT: Write the FULL script now in English. Make it very detailed and long. Start directly with the script, no conversational intro.
         """
 
-        print(f"✍️ [BROWSER] Generating cinematic script for: {topic} in {lang_instruction}...")
+        print(f"✍️ [BROWSER] Generating cinematic script for: {topic} in English...")
         return self.browser_ai.send_prompt(prompt, wait_time=10)

@@ -13,10 +13,6 @@ BASE = DRIVE_BASE if os.path.exists("/content/drive") else LOCAL_BASE
 OUTPUT_DIR = os.path.join(BASE, "audio")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-def is_bangla(text):
-    """Detects if a string contains Bangla characters."""
-    return bool(re.search(r'[\u0980-\u09ff]', text))
-
 def main():
     # Ensure we are in the project directory
     if not os.path.exists("core/pipeline.py"):
@@ -36,13 +32,8 @@ def main():
         print("❌ No topic entered. Exiting.")
         sys.exit(1)
 
-    # Auto-detect language
-    if is_bangla(topic):
-        language = "bn"
-        print("🌏 Detected Language: Bangla")
-    else:
-        language = "en"
-        print("🌏 Detected Language: English")
+    # Force English language as per requirement
+    language = "en"
 
     max_retries = 3
     attempt = 1
