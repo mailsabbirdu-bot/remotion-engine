@@ -122,6 +122,10 @@ def main():
         scene_id = f"scene_{i+1}"
         print(f"🎬 Processing {scene_id}/{num_scenes}...")
 
+        # Refresh chat every 5 scenes to keep it fast
+        if i > 0 and i % 5 == 0:
+            browser_ai.new_chat()
+
         story_text = story_scenes[i] if i < len(story_scenes) else "..."
         prep_text = prep_scenes[i] if i < len(prep_scenes) else "..."
 
