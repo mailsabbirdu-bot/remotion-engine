@@ -50,28 +50,53 @@ def parse_scenes(content):
     return [p.strip() for p in parts if p.strip()]
 
 def extract_json(response):
-    """Extracts a JSON object from AI response strings."""
-    json_str = response.strip()
-    match = re.search(r'(\{.*\})', json_str, re.DOTALL)
-    if match:
-        json_str = match.group(1)
-    else:
-        if "```json" in json_str:
-            json_str = json_str.split("```json")[1].split("```")[0].strip()
-        elif "```" in json_str:
-            json_str = json_str.split("```")[1].strip()
+    """Extracts a JSON object from AI response strings with enhanced robustness."""
+    if not response: return None
 
-    # Basic truncation fix
-    if not json_str.endswith("}"):
-        open_braces = json_str.count("{")
-        close_braces = json_str.count("}")
-        if open_braces > close_braces:
-            json_str += "}" * (open_braces - close_braces)
+    # Remove markdown code blocks if present
+    json_str = response.strip()
+    if "```json" in json_str:
+        json_str = json_str.split("```json")[1].split("```")[0].strip()
+    elif "```" in json_str:
+        json_str = json_str.split("```")[1].strip()
+
+    # Find the first '{' and the last '}'
+    start_idx = json_str.find('{')
+    end_idx = json_str.rfind('}')
+
+    if start_idx == -1:
+        return None
+
+    if end_idx == -1:
+        # Handle truncation by finding the last complete-looking object
+        json_str = json_str[start_idx:]
+    else:
+        json_str = json_str[start_idx:end_idx+1]
+
+    # Attempt to fix trailing commas before closing braces/brackets
+    json_str = re.sub(r',\s*([\]}])', r'\1', json_str)
+
+    # Recursive brace balancing for truncation
+    def balance_braces(s):
+        open_b = s.count('{')
+        close_b = s.count('}')
+        open_s = s.count('[')
+        close_s = s.count(']')
+
+        if open_s > close_s: s += ']' * (open_s - close_s)
+        if open_b > close_b: s += '}' * (open_b - close_b)
+        return s
 
     try:
         return json.loads(json_str)
-    except:
-        return None
+    except Exception as e:
+        # Try balanced version
+        try:
+            fixed_json = balance_braces(json_str)
+            return json.loads(fixed_json)
+        except:
+            print(f"   ❌ JSON Parse Error: {str(e)[:100]}")
+            return None
 
 def main():
     print("🚀 [JSON_MAKER] Starting Engine (SCENE-BY-SCENE MODE)...")
@@ -90,11 +115,18 @@ def main():
         print(f"❌ Error: Missing input files in {AUDIO_DIR}")
         sys.exit(1)
 
-    # Read existing JSON templates
-    with open(SCOUT_PLAN_PATH, "r", encoding="utf-8") as f:
-        scout_template = json.load(f)
-    with open(REMOTION_PLAN_PATH, "r", encoding="utf-8") as f:
-        remotion_template = json.load(f)
+    # Read existing JSON templates with safety defaults
+    try:
+        with open(SCOUT_PLAN_PATH, "r", encoding="utf-8") as f:
+            scout_template = json.load(f)
+    except Exception:
+        scout_template = {"project_name": "Dynamic_Project", "scenes": []}
+
+    try:
+        with open(REMOTION_PLAN_PATH, "r", encoding="utf-8") as f:
+            remotion_template = json.load(f)
+    except Exception:
+        remotion_template = {"width": 1080, "height": 1920, "fps": 30, "scenes": []}
 
     # Detect language
     is_bn = bool(re.search(r'[\u0980-\u09ff]', story_content))
@@ -118,88 +150,71 @@ def main():
     final_scout_scenes = []
     final_remotion_scenes = []
 
-    batch_size = 8
+    batch_size = 6
     for i in range(0, num_scenes, batch_size):
         batch_end = min(i + batch_size, num_scenes)
-        print(f"🎬 Processing scenes {i+1} to {batch_end} of {num_scenes}...")
+        print(f"🎬 Processing scenes {i+1}-{batch_end}/{num_scenes}...")
 
         batch_story = story_scenes[i:batch_end]
         batch_prep = prep_scenes[i:batch_end]
 
         batch_input_str = ""
         for j, (s, p) in enumerate(zip(batch_story, batch_prep)):
-            batch_input_str += f"SCENE {i+j+1}:\n- Narration: {s}\n- Prep: {p}\n\n"
+            batch_input_str += f"S{i+j+1}: N:{s} P:{p}\n"
 
-        prompt = f"""You are an expert video producer. Generate JSON fragments for scenes {i+1} to {batch_end} of a documentary: "{project_topic}".
+        prompt = f"""Expert Video Producer. Generate JSON for scenes {i+1}-{batch_end} of "{project_topic}". Lang: {target_lang}.
+Output MUST be raw JSON matching this structure perfectly.
 
-TARGET LANGUAGE: {target_lang}
-
-INPUT BATCH:
-{batch_input_str}
-
-OUTPUT FORMAT (MANDATORY):
-Return a JSON object with this structure:
 {{
   "scenes": [
     {{
       "scout": {{
-        "scene_id": "scene_X",
-        "text": "Detailed visual description",
+        "scene_id": "scene_{i+1}",
+        "text": "Detailed cinematic visual description",
         "duration": [audio_duration + 1.0],
-        "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_XX.wav",
+        "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_{str(i+1).zfill(2)}.wav",
         "audio_duration": [narration duration in seconds],
         "audio_start_in_scene": 0.5,
-        "negative_prompts": ["low quality", "blurry", "text"],
+        "negative_prompts": ["text", "watermark", "blurry"],
         "asset_preferences": {{"allow_video": true, "allow_image": true, "preferred_type": "video"}},
-        "scout_config": {{
-          "keywords": ["search term 1", "search term 2"],
-          "must_have_required": ["subject"],
-          "must_have_optional": []
-        }}
+        "scout_config": {{"keywords": ["keyword 1", "keyword 2"], "must_have_required": ["subject"], "must_have_optional": []}}
       }},
       "remotion": {{
-        "id": "scene_X",
-        "duration": [duration in frames, 30fps],
-        "background": {{"type": "video", "src": "scene_X.mp4", "audio": ""}},
+        "id": "scene_{i+1}",
+        "duration": [Float: duration_in_seconds * 30],
+        "background": {{"type": "video", "src": "scene_{i+1}.mp4", "audio": ""}},
         "transition": {{"type": "fade", "duration": 15}},
-        "layers": [
-          {{
-            "id": "lX",
-            "type": "text",
-            "content": "[Hooky text]",
-            "start": 15,
-            "duration": [frames],
+        "layers": [{{
+            "id": "l{i+1}", "type": "text", "content": "[Short hook from VISUAL PREP]", "start": 15, "duration": [frames],
             "style": {{"fontSize": 60, "color": "#ffffff", "x": 540, "y": 1550}},
-            "animationIn": {{"type": "fade-up", "duration": 20, "easing": "cubic-bezier(0.33, 1, 0.68, 1)"}},
-            "animationOut": {{"type": "fade-down", "duration": 20, "easing": "ease-in"}},
+            "animationIn": {{"type": "fade-up", "duration": 20}},
+            "animationOut": {{"type": "fade-down", "duration": 20}},
             "textAnimation": {{"mode": "word", "duration": 40}},
             "textbox": {{"enabled": true, "type": "rounded-rect", "padding": 30, "fill": "rgba(0,0,0,0.60)"}},
             "keyframes": [{{"frame": 0, "scale": 1, "opacity": 0}}, {{"frame": 30, "scale": 1.05, "opacity": 1}}]
-          }}
-        ]
+        }}]
       }}
-    }},
-    ... (one for each scene in batch)
+    }}
   ]
 }}
 
-REQUIREMENTS:
-1. SEARCH: Keywords must be perfect for Pixabay/Pexels.
-2. ANIMATION: Use "fade-up", "fade-in", "fade-down", "fade-out".
-3. MOTION: Use "keyframes" for subtle zoom (scale 1.0 to 1.05).
-4. JSON: Return ONLY the raw JSON object.
+INPUT:
+{batch_input_str}
+
+STRICT: Return raw JSON only. Keywords must be excellent for Pixabay/Pexels search.
 """
 
         # Retry logic for individual batches
         data = None
         for attempt in range(2):
-            response = browser_ai.send_prompt(prompt, wait_time=5, timeout=120)
+            # Speed optimization: smaller wait_time, sufficient timeout
+            response = browser_ai.send_prompt(prompt, wait_time=3, timeout=150)
             data = extract_json(response) if response else None
             if data and "scenes" in data and len(data["scenes"]) > 0:
                 break
             print(f"   ⚠️ Batch attempt {attempt+1} failed. Retrying...")
             browser_ai.new_chat() # Fresh start on failure
-            time.sleep(2)
+            time.sleep(1)
 
         if data and "scenes" in data:
             for scene_data in data["scenes"]:
