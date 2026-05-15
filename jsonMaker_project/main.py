@@ -55,41 +55,62 @@ def extract_json(response):
 
     # Pre-cleaning
     json_str = response.strip()
-    # Remove markdown code blocks
-    json_str = re.sub(r'^```json\s*', '', json_str, flags=re.MULTILINE)
-    json_str = re.sub(r'^```\s*', '', json_str, flags=re.MULTILINE)
-    json_str = re.sub(r'\s*```$', '', json_str, flags=re.MULTILINE)
+    # Remove markdown code blocks and conversational fluff
+    json_str = re.sub(r'```json\s*', '', json_str, flags=re.IGNORECASE)
+    json_str = re.sub(r'```\s*', '', json_str)
 
-    # Find boundaries
+    # Find the FIRST occurrence of '{' and LAST occurrence of '}'
     start_idx = json_str.find('{')
     end_idx = json_str.rfind('}')
+
     if start_idx == -1: return None
-    json_str = json_str[start_idx : (end_idx+1 if end_idx != -1 else len(json_str))]
+
+    # If no closing brace, take everything from the start brace
+    if end_idx == -1 or end_idx < start_idx:
+        json_str = json_str[start_idx:]
+    else:
+        json_str = json_str[start_idx : end_idx + 1]
 
     # Fix common AI JSON errors
-    # 1. Missing commas between properties/items
+    # 1. Missing commas between objects or properties
     json_str = re.sub(r'\}\s*\{', '}, {', json_str)
     json_str = re.sub(r'\]\s*\{', '], {', json_str)
-    json_str = re.sub(r'\"\s*\"', '", "', json_str)
 
-    # 2. Trailing commas
+    # 2. Trailing commas before closing symbols
     json_str = re.sub(r',\s*([\]}])', r'\1', json_str)
 
+    # 3. Double-double quotes from lazy AI escaping
+    json_str = json_str.replace('""', '"')
+
     def balance_braces(s):
-        diff_b = s.count('{') - s.count('}')
-        diff_s = s.count('[') - s.count(']')
-        if diff_s > 0: s += ']' * diff_s
-        if diff_b > 0: s += '}' * diff_b
-        return s
+        """Force balance braces and brackets to fix truncation."""
+        open_b = s.count('{')
+        close_b = s.count('}')
+        open_s = s.count('[')
+        close_s = s.count(']')
+
+        fixed = s
+        if open_s > close_s: fixed += ']' * (open_s - close_s)
+        if open_b > close_b: fixed += '}' * (open_b - close_b)
+        return fixed
 
     try:
         return json.loads(json_str)
     except:
         try:
-            # Attempt brace balancing
-            return json.loads(balance_braces(json_str))
+            # Attempt repair
+            repaired = balance_braces(json_str)
+            return json.loads(repaired)
         except Exception as e:
-            print(f"   ❌ Final Parse Error: {str(e)[:50]}")
+            # Last ditch effort: try to find the last valid scene if it's a list
+            print(f"   ⚠️ Initial Parse failed. Attempting partial recovery...")
+            try:
+                # If we can at least find the start of the scenes array
+                if '"scenes":' in json_str:
+                    # Very crude attempt to close the current scene and the array
+                    return json.loads(balance_braces(json_str + '}'))
+            except: pass
+            print(f"   ❌ Final Parse Error: {str(e)[:60]}")
             return None
 
 def main():
@@ -144,58 +165,35 @@ def main():
     final_scout_scenes = []
     final_remotion_scenes = []
 
-    batch_size = 6
+    # Speed Optimization: Batch size 3-4 is optimal for Gemini consistency
+    batch_size = 4
     for i in range(0, num_scenes, batch_size):
         batch_end = min(i + batch_size, num_scenes)
-        print(f"🎬 Processing scenes {i+1}-{batch_end}/{num_scenes}...")
-
-        batch_story = story_scenes[i:batch_end]
-        batch_prep = prep_scenes[i:batch_end]
+        print(f"🎬 Processing batch {i//batch_size + 1} (Scenes {i+1}-{batch_end})...")
 
         batch_input_str = ""
-        for j, (s, p) in enumerate(zip(batch_story, batch_prep)):
-            batch_input_str += f"S{i+j+1}: N: {s} | P: {p}\n"
+        for j in range(i, batch_end):
+            s = story_scenes[j] if j < len(story_scenes) else "..."
+            p = prep_scenes[j] if j < len(prep_scenes) else "..."
+            batch_input_str += f"SCENE {j+1}:\n- Narration: {s}\n- Visuals: {p}\n\n"
 
-        prompt = f"""Expert Video Producer. Generate JSON for scenes {i+1}-{batch_end} of "{project_topic}". Lang: {target_lang}.
-Output MUST be raw JSON matching this structure perfectly. Use double quotes for all strings. Ensure all commas are correct.
+        prompt = f"""Expert Video Producer & JSON Engineer. Generate JSON for scenes {i+1} to {batch_end} of project: "{project_topic}". Language: {target_lang}.
 
-{{
-  "scenes": [
-    {{
-      "scout": {{
-        "scene_id": "scene_{i+1}",
-        "text": "Detailed cinematic visual description",
-        "duration": [audio_duration + 1.0],
-        "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_{str(i+1).zfill(2)}.wav",
-        "audio_duration": [narration duration in seconds],
-        "audio_start_in_scene": 0.5,
-        "negative_prompts": ["text", "watermark", "blurry"],
-        "asset_preferences": {{"allow_video": true, "allow_image": true, "preferred_type": "video"}},
-        "scout_config": {{"keywords": ["keyword 1", "keyword 2"], "must_have_required": ["subject"], "must_have_optional": []}}
-      }},
-      "remotion": {{
-        "id": "scene_{i+1}",
-        "duration": [Float: duration_in_seconds * 30],
-        "background": {{"type": "video", "src": "scene_{i+1}.mp4", "audio": ""}},
-        "transition": {{"type": "fade", "duration": 15}},
-        "layers": [{{
-            "id": "l{i+1}", "type": "text", "content": "[Short hook from VISUAL PREP]", "start": 15, "duration": [frames],
-            "style": {{"fontSize": 60, "color": "#ffffff", "x": 540, "y": 1550}},
-            "animationIn": {{"type": "fade-up", "duration": 20}},
-            "animationOut": {{"type": "fade-down", "duration": 20}},
-            "textAnimation": {{"mode": "word", "duration": 40}},
-            "textbox": {{"enabled": true, "type": "rounded-rect", "padding": 30, "fill": "rgba(0,0,0,0.60)"}},
-            "keyframes": [{{"frame": 0, "scale": 1, "opacity": 0}}, {{"frame": 30, "scale": 1.05, "opacity": 1}}]
-        }}]
-      }}
-    }}
-  ]
-}}
+FORMAT TEMPLATE:
+{{"scenes": [
+  {{"scout": {{"scene_id": "scene_X", "text": "cinematic description", "duration": [float, audio+1], "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_XX.wav", "audio_duration": [float], "audio_start_in_scene": 0.5, "negative_prompts": ["text", "watermark"], "asset_preferences": {{"allow_video": true, "allow_image": true, "preferred_type": "video"}}, "scout_config": {{"keywords": ["keyword 1", "keyword 2"], "must_have_required": ["subject"], "must_have_optional": []}}}},
+   "remotion": {{"id": "scene_X", "duration": [int, seconds*30], "background": {{"type": "video", "src": "scene_X.mp4", "audio": ""}}, "transition": {{"type": "fade", "duration": 15}}, "layers": [{{"id": "lX", "type": "text", "content": "[Short hook]", "start": 15, "duration": [int], "style": {{"fontSize": 60, "color": "#ffffff", "x": 540, "y": 1550}}, "animationIn": {{"type": "fade-up", "duration": 20}}, "animationOut": {{"type": "fade-down", "duration": 20}}, "textAnimation": {{"mode": "word", "duration": 40}}, "textbox": {{"enabled": true, "type": "rounded-rect", "padding": 30, "fill": "rgba(0,0,0,0.60)"}}, "keyframes": [{{"frame": 0, "scale": 1, "opacity": 0}}, {{"frame": 30, "scale": 1.05, "opacity": 1}}]}}]}}
+  }}
+]}}
 
-INPUT:
+BATCH INPUT:
 {batch_input_str}
 
-STRICT: Return raw JSON only. Keywords must be excellent for Pixabay/Pexels search.
+STRICT:
+1. Return raw MINIFIED JSON only.
+2. Ensure all scene IDs (scene_1, scene_2...) are correct.
+3. Keywords must be perfect for Pixabay/Pexels searches.
+4. No conversational filler or markdown.
 """
 
         # Retry logic for individual batches

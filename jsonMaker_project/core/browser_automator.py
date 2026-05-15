@@ -32,10 +32,22 @@ class BrowserAI:
             user_data_dir=self.session_path,
             headless=self.headless,
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-            viewport={'width': 1280, 'height': 720}
+            viewport={'width': 1280, 'height': 720},
+            # Speed optimization: disable unneeded features
+            args=[
+                "--disable-extensions",
+                "--disable-component-extensions",
+                "--disable-default-apps",
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage"
+            ]
         )
 
         self.page = self.context.pages[0] if self.context.pages else self.context.new_page()
+
+        # Disable images for speed
+        self.page.route("**/*.{png,jpg,jpeg,gif,webp,svg}", lambda route: route.abort())
 
         if stealth_sync:
             stealth_sync(self.page)
