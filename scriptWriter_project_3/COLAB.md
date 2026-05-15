@@ -42,6 +42,8 @@ if os.path.exists(target_dir):
     # 4. Install Dependencies
     print("\n📦 Installing dependencies...")
     !pip install -r requirements.txt --quiet
+    !playwright install chromium
+    !python3 -m playwright install-deps
     print("✅ Ready.")
 
     # 5. Run
