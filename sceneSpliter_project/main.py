@@ -13,6 +13,8 @@ AUDIO_DIR = os.path.join(BASE, "audio")
 SCRIPT_FILE = os.path.join(AUDIO_DIR, "script.txt")
 UPDATED_SCRIPT_FILE = os.path.join(AUDIO_DIR, "script_updated.txt")
 STORY_FILE = os.path.join(AUDIO_DIR, "story.txt")
+VOICEOVER_FILE = os.path.join(AUDIO_DIR, "voiceOver.txt")
+JSONPREP_FILE = os.path.join(AUDIO_DIR, "jsonPrep.txt")
 
 def read_script():
     if not os.path.exists(SCRIPT_FILE):
@@ -139,6 +141,58 @@ def split_scenes_browser(browser_ai, updated_script, language="en"):
 
     return story_content.strip()
 
+def generate_json_prep(browser_ai, story_content, language="en"):
+    """Generates visual suggestions and text layers for each scene."""
+    print("\n🎬 [BROWSER] Generating visual preparation guide (jsonPrep)...")
+
+    is_bn = (language == "bn")
+    lang_label = "Bengali (Bangla)" if is_bn else "English"
+    scene_word = "দৃশ্য" if is_bn else "Scene"
+
+    prompt = f"""You are a professional visual director for a top-tier YouTube channel.
+    Analyze the following storyboard (Scene-by-scene Voice Over) and suggest high-end visual assets for every single scene.
+
+    STORYBOARD CONTENT:
+    {story_content}
+
+    REQUIREMENTS FOR EACH SCENE:
+    1. STOCK FOOTAGE: Suggest specific, cinematic stock footage (Pixabay/Pexels style) that matches the mood and narration.
+    2. OVERLAYS: If a scene is better suited for a background with text, suggest a cinematic overlay/background.
+    3. TEXT LAYERS: Suggest short, hooky, and emotional cinematic text to be displayed as a layer/textbox on screen. These should NOT be news-style titles, but punchy story-based hooks that evoke emotion.
+    4. LANGUAGE: Provide the descriptions and text layer suggestions in {lang_label}.
+
+    FORMAT (Strictly follow this):
+    {scene_word} 1
+    Visual: [Description of stock footage or overlay]
+    Text Layer: [The hooky, cinematic text to show on screen]
+
+    {scene_word} 2
+    Visual: [Description of stock footage or overlay]
+    Text Layer: [The hooky, cinematic text to show on screen]
+
+    Start directly with the first scene.
+    """
+
+    prep_content = ""
+    try:
+        prep_content = browser_ai.send_prompt(prompt, wait_time=20)
+        if not prep_content:
+            raise Exception("No response from browser AI for visual prep")
+
+        print(f"✅ Visual prep complete ({len(prep_content)} chars).")
+    except Exception as e:
+        print(f"❌ Visual prep generation failed: {e}")
+
+    return prep_content.strip()
+
+def generate_voiceover_text(story_content):
+    """Strips scene headers to create a pure VO text file."""
+    # Pattern to match "Scene X" or "दृश्य X" at the start of a line
+    pattern = r"^(?:Scene|দৃশ্য)\s*[\d০-৯]+\s*$"
+    lines = story_content.splitlines()
+    vo_lines = [line for line in lines if not re.match(pattern, line.strip(), re.IGNORECASE)]
+    return "\n".join(vo_lines).strip()
+
 def validate_content(content):
     topic_match = re.search(r"TOPIC:\s*(.*)", content)
     topic = topic_match.group(1).strip() if topic_match else ""
@@ -189,15 +243,28 @@ def main():
             f.write(new_content)
         print(f"✨ Updated script saved to: {UPDATED_SCRIPT_FILE}")
 
-        # Generate story.txt using the full updated script for context
+        # 2. Generate story.txt using the full updated script for context
         story_content = split_scenes_browser(browser_ai, updated_script, language=target_language)
 
         if story_content:
             with open(STORY_FILE, "w", encoding="utf-8") as f:
                 f.write(story_content)
             print(f"✨ story.txt saved to: {STORY_FILE}")
+
+            # 3. Generate voiceOver.txt
+            vo_text = generate_voiceover_text(story_content)
+            with open(VOICEOVER_FILE, "w", encoding="utf-8") as f:
+                f.write(vo_text)
+            print(f"✨ voiceOver.txt saved to: {VOICEOVER_FILE}")
+
+            # 4. Generate jsonPrep.txt
+            prep_content = generate_json_prep(browser_ai, story_content, language=target_language)
+            if prep_content:
+                with open(JSONPREP_FILE, "w", encoding="utf-8") as f:
+                    f.write(prep_content)
+                print(f"✨ jsonPrep.txt saved to: {JSONPREP_FILE}")
         else:
-            print("⚠️ Failed to generate story.txt")
+            print("⚠️ Failed to generate story.txt, skipping VO and Prep.")
 
         browser_ai.close()
         print("\n🎉 ALL TASKS COMPLETED SUCCESSFULLY!")
