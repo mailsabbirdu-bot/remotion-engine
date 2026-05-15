@@ -118,122 +118,125 @@ def main():
     final_scout_scenes = []
     final_remotion_scenes = []
 
-    for i in range(num_scenes):
-        scene_id = f"scene_{i+1}"
-        print(f"🎬 Processing {scene_id}/{num_scenes}...")
+    batch_size = 8
+    for i in range(0, num_scenes, batch_size):
+        batch_end = min(i + batch_size, num_scenes)
+        print(f"🎬 Processing scenes {i+1} to {batch_end} of {num_scenes}...")
 
-        # Refresh chat every 5 scenes to keep it fast
-        if i > 0 and i % 5 == 0:
-            browser_ai.new_chat()
+        batch_story = story_scenes[i:batch_end]
+        batch_prep = prep_scenes[i:batch_end]
 
-        story_text = story_scenes[i] if i < len(story_scenes) else "..."
-        prep_text = prep_scenes[i] if i < len(prep_scenes) else "..."
+        batch_input_str = ""
+        for j, (s, p) in enumerate(zip(batch_story, batch_prep)):
+            batch_input_str += f"SCENE {i+j+1}:\n- Narration: {s}\n- Prep: {p}\n\n"
 
-        prompt = f"""You are an expert video producer and JSON engineer. Generate two high-quality JSON fragments for Scene {i+1} of a documentary about: "{project_topic}".
+        prompt = f"""You are an expert video producer. Generate JSON fragments for scenes {i+1} to {batch_end} of a documentary: "{project_topic}".
 
 TARGET LANGUAGE: {target_lang}
 
-INPUT:
-1. SCENE NARRATION:
-{story_text}
-
-2. VISUAL PREPARATION GUIDE:
-{prep_text}
+INPUT BATCH:
+{batch_input_str}
 
 OUTPUT FORMAT (MANDATORY):
+Return a JSON object with this structure:
 {{
-  "scout_scene": {{
-    "scene_id": "{scene_id}",
-    "text": "Detailed visual description for stock footage search",
-    "duration": [Float: audio_duration + 1.0],
-    "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_{str(i+1).zfill(2)}.wav",
-    "audio_duration": [Float: narration duration in seconds],
-    "audio_start_in_scene": 0.5,
-    "negative_prompts": ["low quality", "blurry", "text", "watermark", "ugly"],
-    "asset_preferences": {{"allow_video": true, "allow_image": true, "preferred_type": "video"}},
-    "scout_config": {{
-      "keywords": ["pixabay search term 1", "pexels search term 2"],
-      "must_have_required": ["core subject"],
-      "must_have_optional": []
-    }}
-  }},
-  "remotion_scene": {{
-    "id": "{scene_id}",
-    "duration": [Int: total duration in frames at 30fps. 1s=30frames],
-    "background": {{"type": "video", "src": "{scene_id}.mp4", "audio": ""}},
-    "transition": {{"type": "fade", "duration": 15}},
-    "layers": [
-      {{
-        "id": "l{i+1}",
-        "type": "text",
-        "content": "[Hooky text from VISUAL PREP]",
-        "start": 15,
-        "duration": [Int: scene duration - 30],
-        "style": {{"fontSize": 60, "color": "#ffffff", "x": 540, "y": 1550}},
-        "animationIn": {{"type": "fade-up", "duration": 20, "easing": "cubic-bezier(0.33, 1, 0.68, 1)"}},
-        "animationOut": {{"type": "fade-down", "duration": 20, "easing": "ease-in"}},
-        "textAnimation": {{"mode": "word", "duration": 40}},
-        "textbox": {{"enabled": true, "type": "rounded-rect", "padding": 30, "fill": "rgba(0,0,0,0.60)"}},
-        "keyframes": [
-           {{"frame": 0, "scale": 1, "opacity": 0}},
-           {{"frame": 30, "scale": 1.05, "opacity": 1}}
+  "scenes": [
+    {{
+      "scout": {{
+        "scene_id": "scene_X",
+        "text": "Detailed visual description",
+        "duration": [audio_duration + 1.0],
+        "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_XX.wav",
+        "audio_duration": [narration duration in seconds],
+        "audio_start_in_scene": 0.5,
+        "negative_prompts": ["low quality", "blurry", "text"],
+        "asset_preferences": {{"allow_video": true, "allow_image": true, "preferred_type": "video"}},
+        "scout_config": {{
+          "keywords": ["search term 1", "search term 2"],
+          "must_have_required": ["subject"],
+          "must_have_optional": []
+        }}
+      }},
+      "remotion": {{
+        "id": "scene_X",
+        "duration": [duration in frames, 30fps],
+        "background": {{"type": "video", "src": "scene_X.mp4", "audio": ""}},
+        "transition": {{"type": "fade", "duration": 15}},
+        "layers": [
+          {{
+            "id": "lX",
+            "type": "text",
+            "content": "[Hooky text]",
+            "start": 15,
+            "duration": [frames],
+            "style": {{"fontSize": 60, "color": "#ffffff", "x": 540, "y": 1550}},
+            "animationIn": {{"type": "fade-up", "duration": 20, "easing": "cubic-bezier(0.33, 1, 0.68, 1)"}},
+            "animationOut": {{"type": "fade-down", "duration": 20, "easing": "ease-in"}},
+            "textAnimation": {{"mode": "word", "duration": 40}},
+            "textbox": {{"enabled": true, "type": "rounded-rect", "padding": 30, "fill": "rgba(0,0,0,0.60)"}},
+            "keyframes": [{{"frame": 0, "scale": 1, "opacity": 0}}, {{"frame": 30, "scale": 1.05, "opacity": 1}}]
+          }}
         ]
       }}
-    ]
-  }}
+    }},
+    ... (one for each scene in batch)
+  ]
 }}
 
-CRITICAL REQUIREMENTS:
-1. SEARCH OPTIMIZATION: Keywords must be perfect for Pixabay and Pexels searches.
-2. ANIMATION QUALITY: Use presets: "fade-up", "fade-in", "fade-down", "fade-out".
-3. MOTION: Use "keyframes" to add subtle, professional motion (scale/opacity). E.g. scale 1.0 to 1.05.
-4. QUALITY: No low-graded animation. Match the "feel and motive" of the script.
-5. JSON: Return ONLY the JSON object. No conversational filler.
+REQUIREMENTS:
+1. SEARCH: Keywords must be perfect for Pixabay/Pexels.
+2. ANIMATION: Use "fade-up", "fade-in", "fade-down", "fade-out".
+3. MOTION: Use "keyframes" for subtle zoom (scale 1.0 to 1.05).
+4. JSON: Return ONLY the raw JSON object.
 """
 
-        # Retry logic for individual scenes
+        # Retry logic for individual batches
         data = None
         for attempt in range(2):
-            response = browser_ai.send_prompt(prompt, wait_time=5, timeout=90)
+            response = browser_ai.send_prompt(prompt, wait_time=5, timeout=120)
             data = extract_json(response) if response else None
-            if data and "scout_scene" in data and "remotion_scene" in data:
+            if data and "scenes" in data and len(data["scenes"]) > 0:
                 break
-            print(f"   ⚠️ Attempt {attempt+1} failed for {scene_id}. Retrying...")
+            print(f"   ⚠️ Batch attempt {attempt+1} failed. Retrying...")
+            browser_ai.new_chat() # Fresh start on failure
             time.sleep(2)
 
-        if data and "scout_scene" in data and "remotion_scene" in data:
-            final_scout_scenes.append(data["scout_scene"])
-            final_remotion_scenes.append(data["remotion_scene"])
-            print(f"   ✅ {scene_id} successful.")
+        if data and "scenes" in data:
+            for scene_data in data["scenes"]:
+                final_scout_scenes.append(scene_data["scout"])
+                final_remotion_scenes.append(scene_data["remotion"])
+            print(f"   ✅ Batch processed ({len(data['scenes'])} scenes).")
         else:
-            print(f"   ❌ {scene_id} failed after retries. Using safety fallback.")
-            # Safety fallback to prevent breaking the final JSON structure
-            fallback_duration_s = 7.0
-            fallback_duration_f = 210
-            final_scout_scenes.append({
-                "scene_id": scene_id,
-                "text": "cinematic atmosphere",
-                "duration": fallback_duration_s,
-                "audio_path": f"/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_{str(i+1).zfill(2)}.wav",
-                "audio_duration": fallback_duration_s - 1.0,
-                "audio_start_in_scene": 0.5,
-                "negative_prompts": ["low quality"],
-                "asset_preferences": {"allow_video": True, "allow_image": True, "preferred_type": "video"},
-                "scout_config": {"keywords": ["cinematic"], "must_have_required": [], "must_have_optional": []}
-            })
-            final_remotion_scenes.append({
-                "id": scene_id,
-                "duration": fallback_duration_f,
-                "background": {"type": "video", "src": f"{scene_id}.mp4", "audio": ""},
-                "transition": {"type": "fade", "duration": 15},
-                "layers": [{
-                    "id": f"l{i+1}", "type": "text", "content": "...", "start": 15, "duration": fallback_duration_f - 30,
-                    "style": {"fontSize": 60, "color": "#ffffff", "x": 540, "y": 1550},
-                    "animationIn": {"type": "fade-up", "duration": 20}, "animationOut": {"type": "fade-down", "duration": 20},
-                    "textAnimation": {"mode": "word", "duration": 40},
-                    "textbox": {"enabled": True, "type": "rounded-rect", "padding": 30, "fill": "rgba(0,0,0,0.60)"}
-                }]
-            })
+            print(f"   ❌ Batch {i//batch_size + 1} failed after retries. Using safety fallbacks for batch.")
+            # Safety fallback for the entire batch
+            for k in range(i, batch_end):
+                scene_id = f"scene_{k+1}"
+                fallback_duration_s = 7.0
+                fallback_duration_f = 210
+                final_scout_scenes.append({
+                    "scene_id": scene_id,
+                    "text": "cinematic atmosphere",
+                    "duration": fallback_duration_s,
+                    "audio_path": f"/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_{str(k+1).zfill(2)}.wav",
+                    "audio_duration": fallback_duration_s - 1.0,
+                    "audio_start_in_scene": 0.5,
+                    "negative_prompts": ["low quality"],
+                    "asset_preferences": {"allow_video": True, "allow_image": True, "preferred_type": "video"},
+                    "scout_config": {"keywords": ["cinematic"], "must_have_required": [], "must_have_optional": []}
+                })
+                final_remotion_scenes.append({
+                    "id": scene_id,
+                    "duration": fallback_duration_f,
+                    "background": {"type": "video", "src": f"{scene_id}.mp4", "audio": ""},
+                    "transition": {"type": "fade", "duration": 15},
+                    "layers": [{
+                        "id": f"l{k+1}", "type": "text", "content": "...", "start": 15, "duration": fallback_duration_f - 30,
+                        "style": {"fontSize": 60, "color": "#ffffff", "x": 540, "y": 1550},
+                        "animationIn": {"type": "fade-up", "duration": 20}, "animationOut": {"type": "fade-down", "duration": 20},
+                        "textAnimation": {"mode": "word", "duration": 40},
+                        "textbox": {"enabled": True, "type": "rounded-rect", "padding": 30, "fill": "rgba(0,0,0,0.60)"}
+                    }]
+                })
 
     # Reconstruct final JSONs
     scout_final = {
@@ -251,13 +254,28 @@ CRITICAL REQUIREMENTS:
         "scenes": final_remotion_scenes
     }
 
+    # Save to Repository
     with open(SCOUT_PLAN_PATH, "w", encoding="utf-8") as f:
         json.dump(scout_final, f, indent=2, ensure_ascii=False)
-    print(f"✨ Updated {SCOUT_PLAN_PATH}")
+    print(f"✨ Updated Repository: {SCOUT_PLAN_PATH}")
 
     with open(REMOTION_PLAN_PATH, "w", encoding="utf-8") as f:
         json.dump(remotion_final, f, indent=2, ensure_ascii=False)
-    print(f"✨ Updated {REMOTION_PLAN_PATH}")
+    print(f"✨ Updated Repository: {REMOTION_PLAN_PATH}")
+
+    # Save to Google Drive (Execution Base) for immediate production use
+    DRIVE_SCOUT = os.path.join(BASE, "manifests", "production_plan.json")
+    DRIVE_REMOTION = os.path.join(BASE, "master_remotion.json")
+
+    os.makedirs(os.path.dirname(DRIVE_SCOUT), exist_ok=True)
+
+    with open(DRIVE_SCOUT, "w", encoding="utf-8") as f:
+        json.dump(scout_final, f, indent=2, ensure_ascii=False)
+    print(f"📂 Sync'd to Drive: {DRIVE_SCOUT}")
+
+    with open(DRIVE_REMOTION, "w", encoding="utf-8") as f:
+        json.dump(remotion_final, f, indent=2, ensure_ascii=False)
+    print(f"📂 Sync'd to Drive: {DRIVE_REMOTION}")
 
     browser_ai.close()
     print("🎉 ALL SCENES PROCESSED SUCCESSFULLY!")
