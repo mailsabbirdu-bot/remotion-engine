@@ -74,6 +74,22 @@ class BrowserAI:
             print(f"⚠️ [BROWSER] Could not fully initialize Gemini: {e}")
             self.initialized = True # Proceed anyway
 
+    def new_chat(self):
+        """Starts a fresh conversation to avoid UI lag."""
+        try:
+            print("🆕 [BROWSER] Starting new chat...")
+            new_chat_selectors = ["a[href='/app']", "button:has-text('New chat')", "[data-test-id='new-chat-button']"]
+            for s in new_chat_selectors:
+                if self.page.is_visible(s, timeout=2000):
+                    self.page.click(s)
+                    time.sleep(2)
+                    return True
+            self.page.goto("https://gemini.google.com/app", timeout=30000)
+            time.sleep(3)
+            return True
+        except:
+            return False
+
     def send_prompt(self, prompt, wait_time=5, timeout=180):
         """
         Send a prompt to Gemini and extract the response with dynamic waiting.
@@ -82,23 +98,47 @@ class BrowserAI:
             self.start()
 
         try:
+            # Handle potential overlays
+            try:
+                for selector in ["button:has-text('Got it')", "button:has-text('Dismiss')", "button:has-text('Close')"]:
+                    if self.page.is_visible(selector, timeout=1000):
+                        self.page.click(selector)
+            except: pass
+
             print(f"💬 [BROWSER] Sending prompt ({len(prompt)} chars)...")
 
             input_selector = "div[contenteditable='true']"
-            self.page.wait_for_selector(input_selector, timeout=10000)
+            self.page.wait_for_selector(input_selector, timeout=15000)
 
             # Focus and clear input
             self.page.click(input_selector)
+            time.sleep(0.5)
             self.page.keyboard.press("Control+A")
             self.page.keyboard.press("Backspace")
 
             # Fill the prompt
             self.page.fill(input_selector, prompt)
+            time.sleep(0.5)
 
             # Press Send button
-            send_button_selector = "button[aria-label='Send message']"
-            self.page.wait_for_selector(send_button_selector, state="visible")
-            self.page.click(send_button_selector)
+            send_button_selectors = [
+                "button[aria-label='Send message']",
+                "button:has(mat-icon[fonticon='send'])",
+                ".send-button-container button"
+            ]
+
+            sent = False
+            for selector in send_button_selectors:
+                try:
+                    if self.page.is_visible(selector, timeout=3000):
+                        self.page.click(selector)
+                        sent = True
+                        break
+                except: continue
+
+            if not sent:
+                print("⌨️ [BROWSER] Button click failed, using Enter key...")
+                self.page.keyboard.press("Enter")
 
             print(f"⏳ [BROWSER] Waiting for AI response (up to {timeout}s)...")
 
