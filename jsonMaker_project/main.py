@@ -70,6 +70,8 @@ def main():
 
     prompt = f"""You are an expert video producer and JSON engineer. Your task is to populate two JSON files based on the provided cinematic script, story segments, and visual preparation guide.
 
+IMPORTANT: The response MUST be a single, valid JSON object. Do not truncate the JSON. If there are many scenes, ensure every single one is included and all braces are closed correctly.
+
 TARGET LANGUAGE: {target_lang}
 
 INPUT DATA:
@@ -111,33 +113,48 @@ INSTRUCTIONS:
    - CUSTOM MOTION: If a scene needs dynamic feel, add a `keyframes` array to the layer. Example: `[{{"frame": 0, "scale": 0.8, "opacity": 0}}, {{"frame": 30, "scale": 1, "opacity": 1}}]`.
 4. COORDINATION: Ensure the scene IDs match across both files (scene_1, scene_2, etc.).
 5. QUALITY: Animations must match the "feel and motive" of the script. No low-grade animations.
-6. MANDATORY: Return ONLY a valid JSON object containing both results in this format:
+6. MANDATORY: Return ONLY a valid, MINIFIED JSON object (to save space) containing both results in this format:
 {{
   "production_plan": {{ ... }},
   "master_remotion": {{ ... }}
 }}
-7. DO NOT include any conversational filler.
+7. DO NOT include any conversational filler, introductory remarks, or markdown formatting (no ```json). Just the raw JSON.
 """
 
     print("💬 [JSON_MAKER] Sending data to Gemini...")
-    response = browser_ai.send_prompt(prompt, wait_time=25)
+    # Increase timeout for potentially long generation
+    response = browser_ai.send_prompt(prompt, wait_time=15, timeout=300)
 
     if not response:
         print("❌ Error: No response from Gemini.")
         browser_ai.close()
         sys.exit(1)
 
-    # Clean response (sometimes AI adds markdown code blocks)
+    # Robust JSON extraction
     json_str = response.strip()
-    if json_str.startswith("```json"):
-        json_str = json_str[7:]
-    if json_str.startswith("```"):
-        json_str = json_str[3:]
-    if json_str.endswith("```"):
-        json_str = json_str[:-3]
-    json_str = json_str.strip()
+
+    # Use regex to find the outermost JSON object
+    match = re.search(r'(\{.*\})', json_str, re.DOTALL)
+    if match:
+        json_str = match.group(1)
+    else:
+        # Fallback to cleaning markdown
+        if "```json" in json_str:
+            json_str = json_str.split("```json")[1].split("```")[0].strip()
+        elif "```" in json_str:
+            json_str = json_str.split("```")[1].strip()
 
     try:
+        # Check for truncation
+        if not json_str.endswith("}"):
+            print("⚠️ [JSON_MAKER] JSON appears truncated. Attempting to fix...")
+            # Simple heuristic: add closing braces if they are missing
+            open_braces = json_str.count("{")
+            close_braces = json_str.count("}")
+            if open_braces > close_braces:
+                json_str += "}" * (open_braces - close_braces)
+                print(f"🔧 [JSON_MAKER] Added {open_braces - close_braces} closing braces.")
+
         data = json.loads(json_str)
 
         # Save production_plan.json
