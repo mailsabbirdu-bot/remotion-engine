@@ -108,7 +108,7 @@ INSTRUCTIONS:
    - `transition.type`: Use "fade".
    - `textbox.type`: Use "rounded-rect", "rect", or "none".
    - `textAnimation.mode`: Use "word", "character", or "sentence".
-   - CUSTOM MOTION: If a scene needs dynamic feel, add a `keyframes` array to the layer. Example: `[{"frame": 0, "scale": 0.8, "opacity": 0}, {"frame": 30, "scale": 1, "opacity": 1}]`.
+   - CUSTOM MOTION: If a scene needs dynamic feel, add a `keyframes` array to the layer. Example: `[{{"frame": 0, "scale": 0.8, "opacity": 0}}, {{"frame": 30, "scale": 1, "opacity": 1}}]`.
 4. COORDINATION: Ensure the scene IDs match across both files (scene_1, scene_2, etc.).
 5. QUALITY: Animations must match the "feel and motive" of the script. No low-grade animations.
 6. MANDATORY: Return ONLY a valid JSON object containing both results in this format:
