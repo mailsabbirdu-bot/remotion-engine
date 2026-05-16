@@ -142,32 +142,50 @@ def split_scenes_browser(browser_ai, updated_script, language="en"):
     return story_content.strip()
 
 def generate_json_prep(browser_ai, story_content, language="en"):
-    """Generates visual suggestions and text layers for each scene in English always."""
-    print("\n🎬 [BROWSER] Generating visual preparation guide (jsonPrep)...")
+    """Generates advanced visual preparation guide (jsonPrep) with specific fields."""
+    print("\n🎬 [BROWSER] Generating advanced visual preparation guide (jsonPrep)...")
 
     is_bn = (language == "bn")
     scene_word = "দৃশ্য" if is_bn else "Scene"
+    text_lang = "Bengali (Bangla)" if is_bn else "English"
 
-    prompt = f"""You are a professional visual director for a top-tier YouTube channel.
-    Analyze the following storyboard (Scene-by-scene Voice Over) and suggest high-end visual assets for every single scene.
+    prompt = f"""You are a professional visual director and motion graphics designer for a top-tier YouTube channel.
+    Analyze the following storyboard (Scene-by-scene Voice Over) and provide detailed visual and motion design instructions for every scene.
 
     STORYBOARD CONTENT:
     {story_content}
 
+    PRESET OPTIONS (Use ONLY these values where applicable):
+    - Textbox Shapes: 'rounded-rect', 'rect', 'none'
+    - Animations (In): 'fade-up', 'fade-in'
+    - Animations (Out): 'fade-down', 'fade-out'
+    - Transitions: 'fade'
+    - Easing: 'cubic-bezier(0.33, 1, 0.68, 1)', 'ease-in-out', 'ease-in', 'ease-out', 'linear'
+
     REQUIREMENTS FOR EACH SCENE:
-    1. STOCK FOOTAGE: Suggest specific, cinematic stock footage (Pixabay/Pexels style) that matches the mood and narration.
-    2. OVERLAYS: If a scene is better suited for a background with text, suggest a cinematic overlay/background.
-    3. TEXT LAYERS: Suggest short, hooky, and emotional cinematic text to be displayed as a layer/textbox on screen. These should NOT be news-style titles, but punchy story-based hooks that evoke emotion.
-    4. MANDATORY LANGUAGE: Write EVERYTHING in English. Even if the narration is in Bangla, the Visual descriptions and Text Layer suggestions MUST be in English.
+    1. scout: Suggest specific, cinematic stock footage keywords (for Pixabay/Pexels) in English.
+    2. Text: Short, hooky text layer content. Use {text_lang}.
+    3. Textbox: Shape of the textbox (choose from presets).
+    4. Animation: Animation for the text and textbox (In and Out from presets).
+    5. Color: Suggest a Hex color for text and a complementary RGBA color for the textbox (e.g., #ffffff, rgba(0,0,0,0.6)).
+    6. Transition: Transition from this scene to the next (choose from presets).
 
     FORMAT (Strictly follow this style):
     {scene_word} 1
-    Visual: [Description in English]
-    Text Layer: [Cinematic text in English]
+    scout: [Keywords in English]
+    Text: [Content in {text_lang}]
+    Textbox: [Shape preset]
+    Animation: [In preset] / [Out preset] / [Easing preset]
+    Color: [Text Hex] / [Textbox RGBA]
+    Transition: [Transition preset]
 
     {scene_word} 2
-    Visual: [Description in English]
-    Text Layer: [Cinematic text in English]
+    scout: [Keywords in English]
+    Text: [Content in {text_lang}]
+    Textbox: [Shape preset]
+    Animation: [In preset] / [Out preset] / [Easing preset]
+    Color: [Text Hex] / [Textbox RGBA]
+    Transition: [Transition preset]
 
     Start directly with the first scene.
     """
