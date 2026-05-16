@@ -74,6 +74,13 @@ class BrowserAI:
             print(f"⚠️ [BROWSER] Could not fully initialize Gemini: {e}")
             self.initialized = True # Proceed anyway
 
+    def is_logged_in(self):
+        """Checks if the user is logged in and the chat interface is ready."""
+        try:
+            return self.page.is_visible("div[contenteditable='true']", timeout=5000)
+        except:
+            return False
+
     def new_chat(self):
         """Starts a fresh conversation to avoid UI lag."""
         try:
@@ -144,32 +151,33 @@ class BrowserAI:
 
             # Generation indicators
             stop_button_selector = "button[aria-label='Stop generating']"
+            send_button_selector = "button[aria-label='Send message']"
 
-            # Wait for stop button to appear (indicates generation started)
+            # 1. Wait for stop button to appear (indicates generation started)
             try:
-                self.page.wait_for_selector(stop_button_selector, state="visible", timeout=5000)
+                self.page.wait_for_selector(stop_button_selector, state="visible", timeout=10000)
             except:
                 pass
 
-            # Wait for stop button to disappear (indicates generation finished)
+            # 2. Wait for stop button to disappear (indicates generation finished)
             try:
                 self.page.wait_for_selector(stop_button_selector, state="hidden", timeout=timeout*1000)
             except:
-                print("⚠️ [BROWSER] Timeout waiting for generation to finish. Attempting extraction anyway.")
+                print("⚠️ [BROWSER] Timeout waiting for 'Stop generating' to disappear.")
 
-            # Ensure send button is back to enabled state
+            # 3. Wait for send button to be enabled (final confirmation)
             try:
-                self.page.wait_for_selector(send_button_selector, state="visible", timeout=10000)
+                self.page.wait_for_selector(f"{send_button_selector}:not([disabled])", state="visible", timeout=15000)
             except:
-                pass
+                print("⚠️ [BROWSER] Send button did not re-enable in time.")
 
             # Brief pause for DOM to settle
             time.sleep(wait_time)
 
             # Extraction selectors
             extract_selectors = [
-                ".model-response-text",
                 "message-content",
+                ".model-response-text",
                 ".markdown",
                 "div[data-message-author-role='assistant']"
             ]
