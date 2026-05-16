@@ -43,13 +43,17 @@ if os.path.exists(target_dir):
         !sudo apt-get install python3.10 python3.10-dev python3.10-distutils espeak-ng -y --quiet
         !curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10
         py_cmd = "python3.10"
+
+        print(f"📦 Installing Torch for {py_cmd}...")
+        !{py_cmd} -m pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu121 --quiet
     else:
         print(f"✅ Python {py_version.major}.{py_version.minor} is compatible.")
         !apt-get install -y espeak-ng --quiet
 
     # 4. Install Python Dependencies
     print(f"\n📦 Installing Python dependencies using {py_cmd} (this may take a minute)...")
-    !{py_cmd} -m pip install TTS pydub --quiet
+    # Using --ignore-installed to avoid distutils/blinker errors in Colab
+    !{py_cmd} -m pip install "numpy<2" TTS pydub --ignore-installed --quiet
 
     # 5. Run
     print("\n" + "="*40)
