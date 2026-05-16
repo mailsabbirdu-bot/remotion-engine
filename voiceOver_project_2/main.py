@@ -16,12 +16,14 @@ def print_ultra_debug():
 
     try:
         import torch
+        import torchaudio
         print(f"🔥 Torch Version: {torch.__version__}")
+        print(f"🔊 Torchaudio Version: {torchaudio.__version__}")
         print(f"🎮 CUDA Available: {torch.cuda.is_available()}")
         if torch.cuda.is_available():
             print(f"📼 GPU Name: {torch.cuda.get_device_name(0)}")
     except ImportError:
-        print("❌ Torch not installed.")
+        print("❌ Torch or Torchaudio not installed.")
 
     print("\n📦 Environment Variables:")
     print(f"   COQUI_TOS_AGREED: {os.environ.get('COQUI_TOS_AGREED')}")
