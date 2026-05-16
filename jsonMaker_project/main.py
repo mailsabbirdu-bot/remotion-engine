@@ -220,15 +220,18 @@ PRIMARY LANGUAGE: {target_lang}
 
 STRICT INSTRUCTIONS FOR FIELDS:
 1. SCOUT ENGINE (B-Roll Data):
-   - `scout.text` and `scout.scout_config.keywords`: ALWAYS USE ENGLISH.
+   - `scout.text` and `scout.scout_config.keywords`: Use the `scout` field from `VISUAL_PREP`. ALWAYS USE ENGLISH.
    - Quality: Descriptions must be professional cinematographic prompts. Keywords must be excellent for stock footage search.
    - `duration`: audio_duration + 1.0.
 
 2. REMOTION ENGINE (Overlay Data):
-   - `remotion.layers[0].content`: USE {target_lang} ONLY. If topic is Bangla, this field MUST be in Bengali script.
+   - Use the specific values provided in `VISUAL_PREP` for `scout`, `Text`, `Textbox`, `Animation`, `Color`, and `Transition`.
+   - `remotion.layers[0].content`: Use the `Text` field from `VISUAL_PREP`.
+   - `remotion.layers[0].textbox.type`: Use the `Textbox` field from `VISUAL_PREP`.
+   - `remotion.layers[0].animationIn.type` and `animationOut.type`: Extract from the `Animation` field in `VISUAL_PREP`.
+   - `remotion.layers[0].style.color` and `remotion.layers[0].textbox.fill`: Extract from the `Color` field in `VISUAL_PREP`.
+   - `remotion.transition.type`: Use the `Transition` field from `VISUAL_PREP`.
    - `duration`: total_duration * 30 (integer frames).
-   - Presets: 'fade-up', 'fade-in', 'fade-down', 'fade-out'.
-   - Easing: 'cubic-bezier(0.33, 1, 0.68, 1)', 'ease-in-out', 'ease-in', 'ease-out', 'linear'.
 
 3. MATCH IDS & FILENAMES EXACTLY:
    - Follow the `REQUIRED_ID` and `AUDIO_FILE` provided for each scene.
