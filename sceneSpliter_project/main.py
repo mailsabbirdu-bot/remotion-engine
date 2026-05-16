@@ -176,7 +176,7 @@ def generate_json_prep(browser_ai, story_content, language="en"):
     Text: [Content in {text_lang}]
     Textbox: [Shape preset]
     Animation: [In preset] / [Out preset] / [Easing preset]
-    Color: [Text Hex] / [Textbox RGBA]
+    Color: Text: [Hex], Textbox: [RGBA]
     Transition: [Transition preset]
 
     {scene_word} 2
@@ -184,7 +184,7 @@ def generate_json_prep(browser_ai, story_content, language="en"):
     Text: [Content in {text_lang}]
     Textbox: [Shape preset]
     Animation: [In preset] / [Out preset] / [Easing preset]
-    Color: [Text Hex] / [Textbox RGBA]
+    Color: Text: [Hex], Textbox: [RGBA]
     Transition: [Transition preset]
 
     Start directly with the first scene.
