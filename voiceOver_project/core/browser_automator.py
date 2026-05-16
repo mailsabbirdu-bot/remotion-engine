@@ -9,9 +9,17 @@ except ImportError:
     stealth_sync = None
 
 class BrowserAI:
-    def __init__(self, headless=True, session_path="gemini_session"):
+    def __init__(self, headless=True, session_path=None):
         self.headless = headless
-        self.session_path = session_path
+        # Use Drive-based session by default in Colab if path not provided
+        if session_path is None:
+            if os.path.exists("/content/drive/MyDrive"):
+                self.session_path = "/content/drive/MyDrive/Counterism_Studio_V4/voiceover_session"
+            else:
+                self.session_path = "voiceover_session"
+        else:
+            self.session_path = session_path
+
         self.playwright = None
         self.browser = None
         self.context = None
@@ -25,8 +33,11 @@ class BrowserAI:
         if self.initialized:
             return
 
-        print("🌐 [BROWSER] Starting browser...")
+        print(f"🌐 [BROWSER] Starting browser with session at: {self.session_path}")
         self.playwright = sync_playwright().start()
+
+        # Ensure session directory exists
+        os.makedirs(self.session_path, exist_ok=True)
 
         # Use persistent context to save login state
         self.context = self.playwright.chromium.launch_persistent_context(
@@ -43,36 +54,53 @@ class BrowserAI:
 
         print("🌐 [BROWSER] Navigating to Google AI Studio (Generate Speech)...")
         try:
-            self.page.goto("https://aistudio.google.com/generate-speech", timeout=60000)
+            self.page.goto("https://aistudio.google.com/generate-speech", timeout=90000)
 
             # Check if login is required
             if "signin" in self.page.url or "accounts.google.com" in self.page.url:
-                print("🔑 [BROWSER] Login required!")
+                print("\n" + "!"*50)
+                print("🔑 [BROWSER] LOGIN REQUIRED!")
+                print("Since you are a novice, follow these steps exactly:")
+                print("1. The script will try to wait for you.")
+                print("2. If you are in Colab and this is headless, IT WILL FAIL.")
+                print("3. Solution: You must ensure the 'voiceover_session' folder in your Drive has valid login data.")
+                print("!"*50 + "\n")
+
                 if self.headless:
-                    print("❌ ERROR: Cannot login in headless mode. Please run once in non-headless mode to login.")
-                else:
-                    print("👉 Please log in to your Google account in the browser window.")
-                    # Wait for the interface to load after login
+                    print("❌ ERROR: Cannot login in headless mode.")
+                    # We'll try to wait anyway in case the user has a way to interact
+
+                print("👉 Waiting for you to log in or for the interface to appear...")
+                try:
                     self.page.wait_for_selector("textarea", timeout=300000)
-                    print("✅ [BROWSER] Login successful.")
+                    print("✅ [BROWSER] Interface detected! Proceeding...")
+                except:
+                    print("❌ [BROWSER] Timeout waiting for login/interface.")
+                    raise Exception("Login required but not completed.")
 
             # Basic cookie/consent handling if it appears
             try:
                 consent_selectors = ["button:has-text('I agree')", "button:has-text('Accept all')", "button:has-text('Accept')"]
                 for selector in consent_selectors:
-                    if self.page.is_visible(selector, timeout=2000):
+                    if self.page.is_visible(selector, timeout=5000):
                         self.page.click(selector)
                         break
             except:
                 pass
 
             # Wait for the textarea to be available
-            self.page.wait_for_selector("textarea", timeout=30000)
+            self.page.wait_for_selector("textarea", timeout=60000)
             print("✅ [BROWSER] AI Studio Generate Speech interface loaded.")
             self.initialized = True
         except Exception as e:
-            print(f"⚠️ [BROWSER] Could not fully initialize AI Studio: {e}")
-            self.initialized = True
+            print(f"⚠️ [BROWSER] Initialization failed: {e}")
+            # Save screenshot for ultra debugging
+            try:
+                self.page.screenshot(path="init_error.png")
+                print("📸 Screenshot saved to init_error.png")
+            except:
+                pass
+            raise
 
     def paste_text(self, text):
         """
@@ -86,7 +114,7 @@ class BrowserAI:
 
             # Selector for the main input field in Generate Speech
             input_selector = "textarea"
-            self.page.wait_for_selector(input_selector, timeout=10000)
+            self.page.wait_for_selector(input_selector, timeout=15000)
 
             # Focus and clear input
             self.page.click(input_selector)
@@ -129,51 +157,51 @@ class BrowserAI:
 
             if not button_found:
                 print("⚠️ [BROWSER] Generate button not found by common selectors. Trying to find any primary button...")
-                # Fallback: try to find a button with 'Generate' in it
-                self.page.click("button:visible:has-text('Generate')")
+                try:
+                    self.page.click("button:visible:has-text('Generate')")
+                    button_found = True
+                except:
+                    pass
 
-            print("⏳ [BROWSER] Waiting for generation to complete and download to start...")
+            if not button_found:
+                print("❌ [BROWSER] Generate button NOT found.")
+                return False
+
+            print("⏳ [BROWSER] Waiting for download to start (checking for Download button or auto-download)...")
 
             # Setup download listener
-            with self.page.expect_download(timeout=120000) as download_info:
-                # Some sites might need a click on a Download button AFTER generation
-                # If generation is automatic download, this will catch it.
-                # If not, we might need to find a download button.
+            try:
+                with self.page.expect_download(timeout=120000) as download_info:
+                    # Check if a download button appears
+                    download_button_selectors = [
+                        "button:has-text('Download')",
+                        "a:has-text('Download')",
+                        "button[aria-label='Download audio']",
+                        ".download-button"
+                    ]
 
-                # Check if a download button appears
-                download_button_selectors = [
-                    "button:has-text('Download')",
-                    "a:has-text('Download')",
-                    "button[aria-label='Download audio']"
-                ]
+                    # Polling for download button or auto-trigger
+                    for _ in range(30):
+                        for selector in download_button_selectors:
+                            if self.page.is_visible(selector):
+                                print(f"🖱️ [BROWSER] Clicking download button: {selector}")
+                                self.page.click(selector)
+                                break
+                        else:
+                            time.sleep(2)
+                            continue
+                        break
 
-                # We wait a bit for generation
-                time.sleep(5)
-
-                for _ in range(20): # Polling for download button
-                    for selector in download_button_selectors:
-                        if self.page.is_visible(selector):
-                            print(f"🖱️ [BROWSER] Clicking download button: {selector}")
-                            self.page.click(selector)
-                            break
-                    else:
-                        time.sleep(2)
-                        continue
-                    break
-
-            download = download_info.value
-            download.save_as(output_path)
-            print(f"✅ [BROWSER] Audio downloaded successfully to: {output_path}")
-            return True
+                download = download_info.value
+                download.save_as(output_path)
+                print(f"✅ [BROWSER] Audio downloaded successfully to: {output_path}")
+                return True
+            except Exception as e:
+                print(f"⚠️ [BROWSER] Download failed or timed out: {e}")
+                return False
 
         except Exception as e:
             print(f"❌ [BROWSER] Error during generation/download: {e}")
-            # Screenshot for debugging
-            try:
-                self.page.screenshot(path="error_debug.png")
-                print("📸 [BROWSER] Error screenshot saved to error_debug.png")
-            except:
-                pass
             return False
 
     def close(self):
@@ -184,11 +212,3 @@ class BrowserAI:
             except:
                 pass
             self.initialized = False
-
-if __name__ == "__main__":
-    # Test
-    ai = BrowserAI(headless=False)
-    ai.start()
-    # ai.paste_text("This is a test of the emergency broadcast system.")
-    # ai.generate_and_download("test.wav")
-    ai.close()
