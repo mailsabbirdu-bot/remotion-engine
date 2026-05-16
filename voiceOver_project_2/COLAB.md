@@ -2,7 +2,7 @@
 
 Paste and run this cell in Google Colab. It will use Coqui XTTS v2 to generate natural-sounding voiceovers with voice cloning.
 
-> **Note:** This script automatically handles Python version compatibility for Coqui TTS (it will use Python 3.10 if 3.12 is detected).
+> **Note:** This script automatically creates a compatible Python 3.10 virtual environment to run Coqui TTS (fixing issues with Colab's default Python 3.12).
 
 ```python
 import os
@@ -31,42 +31,36 @@ if os.path.exists(target_dir):
     print(f"✅ Project active at: {target_dir}")
     os.chdir(target_dir)
 
-    # 3. Handle Python Version Compatibility
-    print("\n🔍 Checking Python version...")
-    py_version = sys.version_info
-    py_cmd = "python3"
+    # 3. Handle Python Version Compatibility via Venv
+    print("\n🔍 Setting up compatible Python 3.10 environment...")
+    !sudo apt-get update -y --quiet
+    !sudo apt-get install python3.10 python3.10-dev python3.10-venv espeak-ng -y --quiet
 
-    if py_version.major == 3 and py_version.minor >= 12:
-        print("⚠️ Python 3.12+ detected. Coqui TTS requires Python < 3.12.")
-        print("🛠️ Installing Python 3.10 and dependencies...")
-        !sudo apt-get update -y --quiet
-        !sudo apt-get install python3.10 python3.10-dev python3.10-distutils espeak-ng -y --quiet
-        !curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10
-        py_cmd = "python3.10"
+    # Create Virtual Environment
+    print("🛠️ Creating virtual environment (this avoids package conflicts)...")
+    !python3.10 -m venv /content/tts_venv
+    venv_py = "/content/tts_venv/bin/python"
+    venv_pip = "/content/tts_venv/bin/pip"
 
-        print(f"📦 Installing Torch for {py_cmd}...")
-        !{py_cmd} -m pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu121 --quiet
-    else:
-        print(f"✅ Python {py_version.major}.{py_version.minor} is compatible.")
-        !apt-get install -y espeak-ng --quiet
-
-    # 4. Install Python Dependencies
-    print(f"\n📦 Installing Python dependencies using {py_cmd} (this may take a minute)...")
-    # Using --ignore-installed to avoid distutils/blinker errors in Colab
-    !{py_cmd} -m pip install "numpy<2" TTS pydub --ignore-installed --quiet
+    # 4. Install Python Dependencies in Venv
+    print(f"\n📦 Installing dependencies in venv (this may take 2-3 minutes)...")
+    # Install Torch first
+    !{venv_pip} install torch torchaudio --index-url https://download.pytorch.org/whl/cu121 --quiet
+    # Install TTS and other requirements
+    !{venv_pip} install "numpy<2" TTS pydub --quiet
 
     # 5. Run
     print("\n" + "="*40)
-    print(f"🎙️ VOICEOVER ENGINE STARTING ({py_cmd} mode)")
+    print("🎙️ VOICEOVER ENGINE STARTING (VENV MODE)")
     print("="*40 + "\n")
 
-    !{py_cmd} main.py
+    !{venv_py} main.py
 else:
     print("\n❌ Setup failed. Please ensure the project folder is uploaded correctly.")
 ```
 
 ## 🎙️ Note for Users:
-- This version uses **Coqui XTTS v2**, which runs locally in Colab (on GPU if available).
+- This version uses **Coqui XTTS v2** inside a dedicated **Python 3.10 virtual environment**.
 - It will automatically use the `clone.wav` file in your `Google Drive > Counterism_Studio_V4 > audio` folder to clone the voice.
 - The generated audio files will be saved in the same folder as `SC_01.wav`, `SC_02.wav`, etc.
 - Bangla text is supported via a natural Indic accent fallback.
