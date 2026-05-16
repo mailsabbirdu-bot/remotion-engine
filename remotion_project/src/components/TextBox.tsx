@@ -8,17 +8,19 @@ interface TextBoxProps {
   style?: React.CSSProperties;
 }
 
-export const TextBox: React.FC<TextBoxProps> = ({
+export const TextBox: React.FC<TextBoxProps & { color?: string }> = ({
   type,
   fill = 'rgba(0,0,0,0.5)',
+  color, // Support 'color' key from JSON
   padding = 20,
   children,
   style,
 }) => {
+  const finalFill = color || fill;
   if (type === 'none') return <>{children}</>;
 
   const boxStyle: React.CSSProperties = {
-    backgroundColor: fill,
+    backgroundColor: finalFill,
     padding: `${padding}px`,
     borderRadius: type === 'rounded-rect' ? '20px' : '0px',
     display: 'inline-block',
