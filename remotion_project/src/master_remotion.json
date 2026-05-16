@@ -6,11 +6,11 @@
   "englishFont": "Audiowide-Regular",
   "scenes": [
     {
-      "id": "scene_SC_01",
-      "duration": 270,
+      "id": "scene_1",
+      "duration": 281,
       "background": {
         "type": "video",
-        "src": "scene_SC_01.mp4",
+        "src": "scene_1.mp4",
         "audio": ""
       },
       "transition": {
@@ -21,14 +21,14 @@
         {
           "id": "l1",
           "type": "text",
-          "content": "মিশরের বিশাল পিরামিডগুলো হাজার বছর ধরে দাঁড়িয়ে আছে।",
+          "content": "Tiger beneath the deep blue ocean | গভীর সমুদ্রের নিচে বাঘ",
           "start": 15,
-          "duration": 240,
+          "duration": 220,
           "style": {
-            "fontSize": 65,
+            "fontSize": 60,
             "color": "#ffffff",
             "x": 540,
-            "y": 1550
+            "y": 1580
           },
           "animationIn": {
             "type": "fade-up",
@@ -37,39 +37,28 @@
           },
           "animationOut": {
             "type": "fade-down",
-            "duration": 20
+            "duration": 20,
+            "easing": "ease-in"
           },
           "textAnimation": {
-            "mode": "word",
-            "duration": 40
+            "mode": "character",
+            "duration": 60
           },
           "textbox": {
             "enabled": true,
             "type": "rounded-rect",
-            "padding": 35,
-            "fill": "rgba(0,0,0,0.65)"
-          },
-          "keyframes": [
-            {
-              "frame": 0,
-              "scale": 1,
-              "opacity": 0
-            },
-            {
-              "frame": 25,
-              "scale": 1.02,
-              "opacity": 1
-            }
-          ]
+            "padding": 28,
+            "fill": "rgba(0,0,0,0.55)"
+          }
         }
       ]
     },
     {
-      "id": "scene_SC_02",
-      "duration": 270,
+      "id": "scene_2",
+      "duration": 301,
       "background": {
         "type": "video",
-        "src": "scene_SC_02.mp4",
+        "src": "scene_2.mp4",
         "audio": ""
       },
       "transition": {
@@ -78,25 +67,26 @@
       },
       "layers": [
         {
-          "id": "l1",
+          "id": "l2",
           "type": "text",
-          "content": "এগুলোর ভেতরে লুকিয়ে আছে প্রাচীন রাজাদের গোপন তথ্য।",
+          "content": "Dark waves rise through the storm | ঝড়ের মধ্য দিয়ে কালো ঢেউ জেগে ওঠে",
           "start": 15,
           "duration": 240,
           "style": {
-            "fontSize": 65,
-            "color": "#ffffff",
+            "fontSize": 60,
+            "color": "#ffcc00",
             "x": 540,
             "y": 1550
           },
           "animationIn": {
-            "type": "fade-up",
-            "duration": 20,
-            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+            "type": "fade-in",
+            "duration": 18,
+            "easing": "ease-out"
           },
           "animationOut": {
-            "type": "fade-down",
-            "duration": 20
+            "type": "fade-out",
+            "duration": 18,
+            "easing": "ease-in"
           },
           "textAnimation": {
             "mode": "word",
@@ -105,30 +95,18 @@
           "textbox": {
             "enabled": true,
             "type": "rounded-rect",
-            "padding": 35,
-            "fill": "rgba(0,0,0,0.65)"
-          },
-          "keyframes": [
-            {
-              "frame": 0,
-              "scale": 1,
-              "opacity": 0
-            },
-            {
-              "frame": 25,
-              "scale": 1.02,
-              "opacity": 1
-            }
-          ]
+            "padding": 30,
+            "fill": "rgba(0,0,0,0.60)"
+          }
         }
       ]
     },
     {
-      "id": "scene_SC_03",
-      "duration": 270,
+      "id": "scene_3",
+      "duration": 299,
       "background": {
         "type": "video",
-        "src": "scene_SC_03.mp4",
+        "src": "scene_3.mp4",
         "audio": ""
       },
       "transition": {
@@ -137,48 +115,37 @@
       },
       "layers": [
         {
-          "id": "l1",
+          "id": "l3",
           "type": "text",
-          "content": "এখনও অনেক রহস্য উন্মোচিত হওয়া বাকি।",
+          "content": "Sunlight pierces the silent ocean | সূর্যালোক শান্ত সমুদ্র ভেদ করে",
           "start": 15,
-          "duration": 240,
+          "duration": 235,
           "style": {
-            "fontSize": 65,
+            "fontSize": 60,
             "color": "#ffffff",
             "x": 540,
-            "y": 1550
+            "y": 1560
           },
           "animationIn": {
             "type": "fade-up",
             "duration": 20,
-            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+            "easing": "ease-out"
           },
           "animationOut": {
             "type": "fade-down",
-            "duration": 20
+            "duration": 20,
+            "easing": "ease-in"
           },
           "textAnimation": {
-            "mode": "word",
-            "duration": 40
+            "mode": "sentence",
+            "duration": 30
           },
           "textbox": {
             "enabled": true,
             "type": "rounded-rect",
-            "padding": 35,
-            "fill": "rgba(0,0,0,0.65)"
-          },
-          "keyframes": [
-            {
-              "frame": 0,
-              "scale": 1,
-              "opacity": 0
-            },
-            {
-              "frame": 25,
-              "scale": 1.02,
-              "opacity": 1
-            }
-          ]
+            "padding": 26,
+            "fill": "rgba(0,0,0,0.45)"
+          }
         }
       ]
     }
