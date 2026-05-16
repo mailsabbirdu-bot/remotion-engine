@@ -3,10 +3,10 @@
   "version": "PRO_V1",
   "scenes": [
     {
-      "scene_id": "scene_1",
-      "text": "A lone, mysterious island shrouded in thick, rolling fog and heavy mist, dark moody lighting, cinematic drone shot.",
+      "scene_id": "scene_SC_01",
+      "text": "Cinematic wide shot of the great Pyramids of Giza rising above a thick layer of desert fog during sunrise, golden hour lighting, epic historical atmosphere, high-end documentary style.",
       "duration": 9.0,
-      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_1.wav",
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_01.wav",
       "audio_duration": 8.0,
       "audio_start_in_scene": 0.5,
       "negative_prompts": [
@@ -21,19 +21,20 @@
       },
       "scout_config": {
         "keywords": [
-          "mysterious dark mountain fog",
-          "island in mist",
-          "cinematic fog ocean"
+          "egypt pyramids",
+          "giza fog sunrise",
+          "ancient monument cinematic",
+          "desert mist landscape"
         ],
         "must_have_required": [],
         "must_have_optional": []
       }
     },
     {
-      "scene_id": "scene_2",
-      "text": "19th century treasure hunters digging deep inside a dark mud pit, dimly lit by old flickering lanterns, cinematic atmosphere.",
+      "scene_id": "scene_SC_02",
+      "text": "Intimate cinematic shot inside a dark ancient tomb chamber, explorers digging carefully into the ground, holding vintage oil lanterns casting flickering shadows on hieroglyphic walls.",
       "duration": 9.0,
-      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_2.wav",
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_02.wav",
       "audio_duration": 8.0,
       "audio_start_in_scene": 0.5,
       "negative_prompts": [
@@ -48,9 +49,38 @@
       },
       "scout_config": {
         "keywords": [
-          "digging in dark pit",
-          "historical treasure hunt lantern",
-          "mysterious underground excavation"
+          "archaeologists tomb digging",
+          "ancient Egyptian chamber lantern",
+          "pharaoh secret passage",
+          "excavation historic mystery"
+        ],
+        "must_have_required": [],
+        "must_have_optional": []
+      }
+    },
+    {
+      "scene_id": "scene_SC_03",
+      "text": "Mysterious slow tracking shot moving closer to an intricate stone carving of the Eye of Horus inside a pyramid tunnel, dynamic low-key lighting revealing ancient secrets.",
+      "duration": 9.0,
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_03.wav",
+      "audio_duration": 8.0,
+      "audio_start_in_scene": 0.5,
+      "negative_prompts": [
+        "text",
+        "watermark",
+        "blurry"
+      ],
+      "asset_preferences": {
+        "allow_video": true,
+        "allow_image": true,
+        "preferred_type": "video"
+      },
+      "scout_config": {
+        "keywords": [
+          "pyramid secrets hieroglyphs",
+          "egyptian mystery tracking shot",
+          "ancient ruins macro texture",
+          "unsolved historical mystery"
         ],
         "must_have_required": [],
         "must_have_optional": []
