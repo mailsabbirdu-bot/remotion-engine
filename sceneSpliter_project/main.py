@@ -149,11 +149,17 @@ def generate_json_prep(browser_ai, story_content, language="en"):
     scene_word = "দৃশ্য" if is_bn else "Scene"
     text_lang = "Bengali (Bangla)" if is_bn else "English"
 
-    prompt = f"""You are a professional visual director and motion graphics designer for a top-tier YouTube channel.
-    Analyze the following storyboard (Scene-by-scene Voice Over) and provide detailed visual and motion design instructions for every scene.
+    prompt = f"""You are a world-class documentary visual director and cinematic storyteller.
+    Analyze the following storyboard (Scene-by-scene Voice Over) and provide high-end visual and motion design instructions that elevate the narrative beyond a standard news package into an emotional "experience".
 
     STORYBOARD CONTENT:
     {story_content}
+
+    CINEMATIC DIRECTIVES:
+    1. HUMAN MICRO-MOMENTS: Do not just focus on the macro scale (disasters, crowds). Interconnect them with "human micro-moments" — close-ups of meaningful objects (e.g., a wet school notebook, a child's toy in water, a gesture, an old photo). Use these as emotional anchors.
+    2. CONTRAST & PACING: Balance high-intensity cinematic shots with observational, slower, and realistic moments. Not every scene needs to be high-drama; use silence and visual breathing space effectively.
+    3. VISUAL VARIETY: Avoid repetitive patterns. Vary the Textbox shapes, Animations, and Easing to match the specific mood of the scene.
+    4. RESTRAINT: While maintaining a hooky vibe, avoid over-dramatization in the text layers. Aim for grounded, impactful realism.
 
     PRESET OPTIONS (Use ONLY these values where applicable):
     - Textbox Shapes: 'rounded-rect', 'rect', 'none'
@@ -163,9 +169,9 @@ def generate_json_prep(browser_ai, story_content, language="en"):
     - Easing: 'cubic-bezier(0.33, 1, 0.68, 1)', 'ease-in-out', 'ease-in', 'ease-out', 'linear'
 
     REQUIREMENTS FOR EACH SCENE:
-    1. scout: Suggest specific, cinematic stock footage keywords (for Pixabay/Pexels) in English.
-    2. Text: Short, hooky text layer content. Use {text_lang}.
-    3. Textbox: Shape of the textbox (choose from presets).
+    1. scout: Suggest specific, cinematic stock footage keywords (for Pixabay/Pexels) in English. Prioritize visual metaphors and human elements.
+    2. Text: Short, impactful text layer content. Use {text_lang}.
+    3. Textbox: Shape of the textbox (choose from presets). Use 'none' for observational scenes.
     4. Animation: Animation for the text and textbox (In and Out from presets).
     5. Color: Suggest a Hex color for text and a complementary RGBA color for the textbox (e.g., #ffffff, rgba(0,0,0,0.6)).
     6. Transition: Transition from this scene to the next (choose from presets).
