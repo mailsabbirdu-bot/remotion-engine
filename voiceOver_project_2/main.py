@@ -86,7 +86,9 @@ def main():
 
     if not os.path.exists(CLONE_WAV):
         print(f"⚠️ Warning: {CLONE_WAV} not found. Voice cloning might fail or use default.")
-        # We'll let the engine handle the missing file error for better debug info
+    else:
+        file_size = os.path.getsize(CLONE_WAV) / 1024
+        print(f"✅ [INIT] Reference audio found: {CLONE_WAV} ({file_size:.1f} KB)")
 
     with open(STORY_FILE, "r", encoding="utf-8") as f:
         story_content = f.read()

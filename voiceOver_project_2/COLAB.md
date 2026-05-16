@@ -46,7 +46,8 @@ if os.path.exists(target_dir):
     print(f"\n📦 Installing dependencies (this may take 2-3 minutes)...")
     # Install specific versions of Torch and Transformers to avoid breaking changes
     !{venv_pip} install torch torchaudio --index-url https://download.pytorch.org/whl/cu121 --quiet
-    !{venv_pip} install "numpy<2" "transformers<4.45.0" "setuptools<71.0.0" TTS pydub --quiet
+    # transformers 4.40.0 is the last known stable version before breaking changes for Coqui
+    !{venv_pip} install "numpy<2" "transformers==4.40.0" "setuptools<71.0.0" TTS pydub --quiet
 
     # 5. Run
     print("\n" + "="*40)
@@ -62,4 +63,4 @@ else:
 - This version uses **Coqui XTTS v2** inside a dedicated **Python 3.10 virtual environment**.
 - It will automatically use the `clone.wav` file in your `Google Drive > Counterism_Studio_V4 > audio` folder to clone the voice.
 - The generated audio files will be saved in the same folder as `SC_01.wav`, `SC_02.wav`, etc.
-- Bangla text is supported via a natural Indic accent fallback.
+- **Bangla Support:** This engine uses a custom script transliteration technique (Bangla -> Devanagari) paired with the Hindi model. This provides a significantly more natural Indic accent and prosody for Bangladeshi users than standard fallback methods.
