@@ -2,7 +2,7 @@
 
 Paste and run this cell in Google Colab. It will use Coqui XTTS v2 to generate natural-sounding voiceovers with voice cloning.
 
-> **Note:** This script automatically creates a compatible Python 3.10 virtual environment to run Coqui TTS (fixing issues with Colab's default Python 3.12).
+> **Note:** This script automatically creates a compatible Python 3.10 virtual environment to run Coqui TTS (fixing issues with Colab's default Python 3.12 and recent breaking changes in `transformers`).
 
 ```python
 import os
@@ -37,17 +37,16 @@ if os.path.exists(target_dir):
     !sudo apt-get install python3.10 python3.10-dev python3.10-venv espeak-ng -y --quiet
 
     # Create Virtual Environment
-    print("🛠️ Creating virtual environment (this avoids package conflicts)...")
+    print("🛠️ Creating virtual environment...")
     !python3.10 -m venv /content/tts_venv
     venv_py = "/content/tts_venv/bin/python"
     venv_pip = "/content/tts_venv/bin/pip"
 
     # 4. Install Python Dependencies in Venv
-    print(f"\n📦 Installing dependencies in venv (this may take 2-3 minutes)...")
-    # Install Torch first
+    print(f"\n📦 Installing dependencies (this may take 2-3 minutes)...")
+    # Install specific versions of Torch and Transformers to avoid breaking changes
     !{venv_pip} install torch torchaudio --index-url https://download.pytorch.org/whl/cu121 --quiet
-    # Install TTS and other requirements
-    !{venv_pip} install "numpy<2" TTS pydub --quiet
+    !{venv_pip} install "numpy<2" "transformers<4.45.0" "setuptools<71.0.0" TTS pydub --quiet
 
     # 5. Run
     print("\n" + "="*40)
