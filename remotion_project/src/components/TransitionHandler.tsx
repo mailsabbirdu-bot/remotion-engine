@@ -20,7 +20,7 @@ export const TransitionHandler: React.FC<TransitionHandlerProps> = ({
         const transitionDuration = scene.transition?.duration || 0;
 
         return (
-          <React.Fragment key={scene.id}>
+          <React.Fragment key={scene.Id || scene.id || `scene-${index}`}>
             <TransitionSeries.Sequence durationInFrames={scene.duration}>
               <Scene
                 scene={scene}

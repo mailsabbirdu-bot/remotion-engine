@@ -177,33 +177,46 @@ def main():
             dur = get_audio_duration(idx)
             batch_input += f"### SCENE {idx} ###\nAUDIO_DUR: {dur:.2f}\nSTORY: {s}\nPREP: {p}\n\n"
 
-        prompt = f"""Generate JSON for {batch_end - i} scenes.
-Follow these mapping rules strictly:
+        prompt = f"""Generate Production JSON for {batch_end - i} scenes.
+STRICT MAPPING RULES:
 
-For each scene:
-1. Production Plan (Scout):
-   - scene_id: "scene_{{idx}}"
-   - text: Extract cinematic search description from PREP 'scout' field.
-   - negative_prompts: ["low quality", "blurry", "text", "watermark", "people"] + any specific negatives from PREP.
-   - asset_preferences: {{"allow_video": true, "allow_image": true, "preferred_type": "video"}}.
-   - audio_path: "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_{{idx_padded}}.wav" (e.g. SC_01.wav for scene 1).
-   - scout_config: Extract keywords, must_have_required, must_have_optional from PREP 'scout' and 'keywords'.
+1. Production Plan (Scout Engine):
+   - scene_id: "scene_{idx}"
+   - text: Comprehensive cinematic search prompt.
+   - negative_prompts: ["low quality", "blurry", "text", "watermark", "people"]
+   - audio_path: "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_{str(idx).zfill(2)}.wav"
+   - scout_config:
+     - keywords: MUST be descriptive phrases of 3-5 words (e.g., "blue whale swimming in deep ocean", "cinematic drone shot of dhaka city").
+     - DO NOT provide single words like "blue", "whale", "dhaka". We need full phrases for accurate stock footage search.
+     - must_have_required: The primary subject (e.g. ["blue whale"]).
    - audio_start_in_scene: 0.5
-   - duration: "" (EMPTY STRING)
-   - audio_duration: "" (EMPTY STRING)
+   - duration: "" (Exactly empty string)
+   - audio_duration: "" (Exactly empty string)
 
-2. Master Remotion:
-   - Id: "scene_{{idx}}"
-   - duration: (AUDIO_DUR + 1.0) * 30 (as integer frames)
-   - src: "scene_{{idx}}.mp4"
-   - background: {{"type": "video", "src": "scene_{{idx}}.mp4", "audio": ""}}
-   - transition: Extract type (e.g. fade) and duration (e.g. 15) from PREP.
-   - Layers: [] (Fill this array with layer objects).
-   - Each Layer object must have: id, type, content, start, duration, style, animationIn, animationOut, textAnimation, textbox.
-     - content: Use 'Text' from PREP.
-     - textbox: Use 'Textbox' from PREP. If 'none', enabled: false.
-     - animation: Use 'Animation' (In / Out / Easing) from PREP.
-     - color: Use 'Color' (Text / Textbox) from PREP.
+2. Master Remotion / Render:
+   - Id: "scene_{idx}"
+   - duration: (AUDIO_DUR + 1.0) * 30 (rounded to integer frames)
+   - src: "scene_{idx}.mp4"
+   - background: {{"type": "video", "src": "scene_{idx}.mp4", "audio": ""}}
+   - transition: {{"type": "fade", "duration": 15}}
+   - Layers: [
+       {{
+         "id": "text_layer_{idx}",
+         "type": "text",
+         "content": "[Text from PREP]",
+         "start": 0,
+         "duration": [scene.duration],
+         "style": {{ "color": "[Text Color from PREP]", "fontSize": 60 }},
+         "animationIn": {{ "type": "fade-up", "easing": "cubic-bezier(0.33, 1, 0.68, 1)" }},
+         "animationOut": {{ "type": "fade-out", "easing": "cubic-bezier(0.33, 1, 0.68, 1)" }},
+         "textAnimation": {{ "mode": "word", "duration": 40 }},
+         "textbox": {{
+            "enabled": [true/false],
+            "type": "[rect/rounded-rect/none]",
+            "color": "[Textbox Color from PREP]"
+         }}
+       }}
+     ]
 
 OUTPUT FORMAT:
 {{
@@ -228,10 +241,16 @@ INPUT DATA:
             for scene_data in data["scenes"]:
                 final_scout_scenes.append(scene_data["scout"])
 
-                # Fix casing for Remotion if AI didn't follow prompt perfectly
+                # Clean up Remotion scene keys
                 rem = scene_data["remotion"]
-                if "Id" not in rem and "id" in rem: rem["Id"] = rem.pop("id")
-                if "Layers" not in rem and "layers" in rem: rem["Layers"] = rem.pop("layers")
+                # Ensure we only use 'Id' and 'Layers' (capitalized) as requested
+                # Use pop to move the value to the new key and remove the old one
+                if "id" in rem: rem["Id"] = rem.pop("id")
+                if "layers" in rem: rem["Layers"] = rem.pop("layers")
+
+                # Double check no lowercase duplicates exist
+                rem.pop("id", None)
+                rem.pop("layers", None)
 
                 final_remotion_scenes.append(rem)
         else:
@@ -260,11 +279,8 @@ INPUT DATA:
     remotion_final = remotion_template.copy()
     remotion_final["scenes"] = final_remotion_scenes
 
-    # User requested capitalized 'Layers' but backup shows 'layers'.
-    # We provide both to be safe or map it correctly if engine produced lowercase
-    for scene in remotion_final["scenes"]:
-        if "Layers" in scene:
-            scene["layers"] = scene["Layers"]
+    # The React components handle both casing, but we'll export strictly as 'Layers' and 'Id'
+    # for the JSON files to match user preference.
 
     print(f"💾 [DEBUG] Writing Scout Plan to: {SCOUT_PLAN_PATH}")
     with open(SCOUT_PLAN_PATH, "w", encoding="utf-8") as f:

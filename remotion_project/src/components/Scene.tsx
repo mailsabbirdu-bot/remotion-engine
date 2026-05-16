@@ -4,14 +4,16 @@ import { Layer, LayerData } from './Layer';
 import { resolveAsset } from '../utils/path-utils';
 
 export interface SceneData {
-  id: string;
+  id?: string;
+  Id?: string; // Support for capitalized Id
   duration: number;
   background: {
     type: 'video' | 'image' | 'color';
     src: string;
     audio?: string;
   };
-  layers: LayerData[];
+  layers?: LayerData[];
+  Layers?: LayerData[]; // Support for capitalized Layers
   transition?: {
     type: string;
     duration: number;
@@ -25,6 +27,9 @@ interface SceneProps {
 }
 
 export const Scene: React.FC<SceneProps> = ({ scene, banglaFontFamily, englishFontFamily }) => {
+  const layers = scene.Layers || scene.layers || [];
+  const id = scene.Id || scene.id || 'scene';
+
   return (
     <AbsoluteFill>
       {scene.background.type === 'video' && (
@@ -46,9 +51,9 @@ export const Scene: React.FC<SceneProps> = ({ scene, banglaFontFamily, englishFo
 
       {scene.background.audio && <Audio src={resolveAsset(scene.background.audio)} />}
 
-      {scene.layers.map((layer) => (
+      {layers.map((layer, index) => (
         <Layer
-          key={layer.id}
+          key={`${id}-layer-${index}`}
           layer={layer}
           banglaFontFamily={banglaFontFamily}
           englishFontFamily={englishFontFamily}

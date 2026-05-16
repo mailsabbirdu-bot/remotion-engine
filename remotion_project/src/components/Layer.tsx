@@ -104,6 +104,7 @@ export const Layer: React.FC<LayerProps> = ({ layer, banglaFontFamily, englishFo
         <TextBox
           type={layer.textbox?.enabled ? (layer.textbox.type || 'rounded-rect') : 'none'}
           fill={layer.textbox?.fill}
+          color={(layer.textbox as any)?.color}
           padding={layer.textbox?.padding}
         >
           <WordByWordText
