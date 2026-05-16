@@ -227,8 +227,8 @@ STRICT INSTRUCTIONS FOR FIELDS:
 2. REMOTION ENGINE (Overlay Data):
    - Use the specific values provided in `VISUAL_PREP` for `scout`, `Text`, `Textbox`, `Animation`, `Color`, and `Transition`.
    - `remotion.layers[0].content`: Use the `Text` field from `VISUAL_PREP`.
-   - `remotion.layers[0].textbox.type`: Use the `Textbox` field from `VISUAL_PREP`.
-   - `remotion.layers[0].animationIn.type` and `animationOut.type`: Extract from the `Animation` field in `VISUAL_PREP`.
+   - `remotion.layers[0].textbox.type`: Use the `Textbox` field from `VISUAL_PREP`. If it is 'none', set `enabled: false`.
+   - `remotion.layers[0].animationIn.type`, `animationOut.type`, and `animationIn.easing`: Extract from the `Animation` field in `VISUAL_PREP` (Format: In / Out / Easing).
    - `remotion.layers[0].style.color`: Use the `Text` color from the `Color` field in `VISUAL_PREP`.
    - `remotion.layers[0].textbox.fill`: Use the `Textbox` color from the `Color` field in `VISUAL_PREP`.
    - `remotion.transition.type`: Use the `Transition` field from `VISUAL_PREP`.
