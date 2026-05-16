@@ -1,15 +1,19 @@
 {
   "project_name": "Dynamic_Project",
-  "version": "COLAB_AUTO_V1",
+  "version": "PRO_V1",
   "scenes": [
     {
       "scene_id": "scene_1",
-      "text": "cinematic nature ocean atmosphere",
-      "duration": 9.36,
-      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_01.wav",
-      "audio_duration": 8.36,
+      "text": "A lone, mysterious island shrouded in thick, rolling fog and heavy mist, dark moody lighting, cinematic drone shot.",
+      "duration": 9.0,
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_1.wav",
+      "audio_duration": 8.0,
       "audio_start_in_scene": 0.5,
-      "negative_prompts": ["low quality", "blurry", "text", "watermark", "people"],
+      "negative_prompts": [
+        "text",
+        "watermark",
+        "blurry"
+      ],
       "asset_preferences": {
         "allow_video": true,
         "allow_image": true,
@@ -17,21 +21,26 @@
       },
       "scout_config": {
         "keywords": [
-          "cinematic ocean",
-          "4k ocean"
+          "mysterious dark mountain fog",
+          "island in mist",
+          "cinematic fog ocean"
         ],
-        "must_have_required": ["ocean", "sea"],
+        "must_have_required": [],
         "must_have_optional": []
       }
     },
     {
       "scene_id": "scene_2",
-      "text": "cinematic nature sky atmosphere",
-      "duration": 10.04,
-      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_02.wav",
-      "audio_duration": 9.04,
+      "text": "19th century treasure hunters digging deep inside a dark mud pit, dimly lit by old flickering lanterns, cinematic atmosphere.",
+      "duration": 9.0,
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_2.wav",
+      "audio_duration": 8.0,
       "audio_start_in_scene": 0.5,
-      "negative_prompts": ["low quality", "blurry", "text", "watermark", "people"],
+      "negative_prompts": [
+        "text",
+        "watermark",
+        "blurry"
+      ],
       "asset_preferences": {
         "allow_video": true,
         "allow_image": true,
@@ -39,76 +48,11 @@
       },
       "scout_config": {
         "keywords": [
-          "cinematic sky",
-          "4k sky background"
+          "digging in dark pit",
+          "historical treasure hunt lantern",
+          "mysterious underground excavation"
         ],
-        "must_have_required": ["sky"],
-        "must_have_optional": []
-      }
-    },
-    {
-      "scene_id": "scene_3",
-      "text": "cinematic forest atmosphere",
-      "duration": 9.96,
-      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_03.wav",
-      "audio_duration": 8.96,
-      "audio_start_in_scene": 0.5,
-      "negative_prompts": ["low quality", "blurry", "text", "watermark", "people"],
-      "asset_preferences": {
-        "allow_video": true,
-        "allow_image": true,
-        "preferred_type": "video"
-      },
-      "scout_config": {
-        "keywords": [
-          "cinematic forest",
-          "4k forest"
-        ],
-        "must_have_required": ["forest"],
-        "must_have_optional": []
-      }
-    },
-    {
-      "scene_id": "scene_4",
-      "text": "cinematic spaceship",
-      "duration": 9.28,
-      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_04.wav",
-      "audio_duration": 8.28,
-      "audio_start_in_scene": 0.5,
-      "negative_prompts": ["low quality", "blurry", "text", "watermark", "people"],
-      "asset_preferences": {
-        "allow_video": true,
-        "allow_image": true,
-        "preferred_type": "video"
-      },
-      "scout_config": {
-        "keywords": [
-          "cinematic spaceship",
-          "4k spaceship"
-        ],
-        "must_have_required": ["spaceship"],
-        "must_have_optional": []
-      }
-    },
-    {
-      "scene_id": "scene_5",
-      "text": "cinematic science",
-      "duration": 8.87,
-      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_05.wav",
-      "audio_duration": 7.87,
-      "audio_start_in_scene": 0.5,
-      "negative_prompts": ["low quality", "blurry", "text", "watermark", "people"],
-      "asset_preferences": {
-        "allow_video": true,
-        "allow_image": true,
-        "preferred_type": "video"
-      },
-      "scout_config": {
-        "keywords": [
-          "cinematic computer science",
-          "4k computer background"
-        ],
-        "must_have_required": ["computer"],
+        "must_have_required": [],
         "must_have_optional": []
       }
     }

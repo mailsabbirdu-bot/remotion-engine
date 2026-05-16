@@ -20,9 +20,16 @@ STORY_TXT = os.path.join(AUDIO_DIR, "story.txt")
 JSON_PREP = os.path.join(AUDIO_DIR, "jsonPrallowed") # As specified by user
 JSON_PREP_ALT = os.path.join(AUDIO_DIR, "jsonPrep.txt") # Fallback
 
-# Target files in Repository (to be updated) - Using parent directory since we run from within jsonMaker_project
-SCOUT_PLAN_PATH = "../scout_project/manifests/production_plan.json"
-REMOTION_PLAN_PATH = "../remotion_project/src/master_remotion.json"
+# Target files in Repository (to be updated)
+# Determine if we are running from inside jsonMaker_project or from project root
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT = os.path.dirname(SCRIPT_DIR)
+
+SCOUT_PLAN_PATH = os.path.join(REPO_ROOT, "scout_project", "manifests", "production_plan.json")
+REMOTION_PLAN_PATH = os.path.join(REPO_ROOT, "remotion_project", "src", "master_remotion.json")
+
+# Adjust BASE for LOCAL_BASE to be relative to REPO_ROOT
+LOCAL_BASE = os.path.join(REPO_ROOT, "Counterism_Studio_V4")
 
 def read_file_content(filepath):
     if not os.path.exists(filepath):
@@ -31,14 +38,29 @@ def read_file_content(filepath):
         return f.read()
 
 def get_audio_duration(scene_idx):
-    """Fallback duration estimation if audio files aren't physically present yet."""
+    """Calculates audio duration using pydub or wave."""
     audio_path = os.path.join(AUDIO_DIR, f"SC_{str(scene_idx).zfill(2)}.wav")
+
+    # Try pydub first (handles more formats)
+    try:
+        from pydub import AudioSegment
+        if os.path.exists(audio_path):
+            audio = AudioSegment.from_file(audio_path)
+            return len(audio) / 1000.0
+    except:
+        pass
+
+    # Fallback to wave
     if os.path.exists(audio_path):
-        with wave.open(audio_path, 'rb') as f:
-            frames = f.getnframes()
-            rate = f.getframerate()
-            return frames / float(rate)
-    return 8.0 # Default fallback
+        try:
+            with wave.open(audio_path, 'rb') as f:
+                frames = f.getnframes()
+                rate = f.getframerate()
+                return frames / float(rate)
+        except:
+            pass
+
+    return 8.0 # Default fallback if file missing or unreadable
 
 def parse_scenes(content):
     """Splits content into scenes, returning a list of scene blocks."""
@@ -53,42 +75,65 @@ def extract_json(response):
     """Extracts a JSON object from AI response strings with extreme robustness."""
     if not response: return None
 
-    # Pre-cleaning
-    json_str = response.strip()
-    # Remove markdown code blocks
-    json_str = re.sub(r'^```json\s*', '', json_str, flags=re.MULTILINE)
-    json_str = re.sub(r'^```\s*', '', json_str, flags=re.MULTILINE)
-    json_str = re.sub(r'\s*```$', '', json_str, flags=re.MULTILINE)
+    # Pre-cleaning: Remove potential non-JSON preamble/epilogue
+    # Find the first '[' or '{' and the last ']' or '}'
+    match = re.search(r'([\[\{].*[\]\}])', response, re.DOTALL)
+    if not match:
+        # Fallback to search for boundaries manually if regex fails on large strings
+        start_idx = response.find('{')
+        if start_idx == -1: start_idx = response.find('[')
+        end_idx = response.rfind('}')
+        if end_idx == -1: end_idx = response.rfind(']')
+        if start_idx == -1 or end_idx == -1: return None
+        json_str = response[start_idx:end_idx+1]
+    else:
+        json_str = match.group(1)
 
-    # Find boundaries
-    start_idx = json_str.find('{')
-    end_idx = json_str.rfind('}')
-    if start_idx == -1: return None
-    json_str = json_str[start_idx : (end_idx+1 if end_idx != -1 else len(json_str))]
+    # Remove markdown code blocks if still present
+    json_str = re.sub(r'```json\s*', '', json_str)
+    json_str = re.sub(r'```', '', json_str)
 
     # Fix common AI JSON errors
-    # 1. Missing commas between properties/items
-    json_str = re.sub(r'\}\s*\{', '}, {', json_str)
-    json_str = re.sub(r'\]\s*\{', '], {', json_str)
-    json_str = re.sub(r'\"\s*\"', '", "', json_str)
-
-    # 2. Trailing commas
+    # 1. Trailing commas before closing braces/brackets
     json_str = re.sub(r',\s*([\]}])', r'\1', json_str)
 
-    def balance_braces(s):
-        diff_b = s.count('{') - s.count('}')
-        diff_s = s.count('[') - s.count(']')
-        if diff_s > 0: s += ']' * diff_s
-        if diff_b > 0: s += '}' * diff_b
+    # 2. Missing commas between objects or arrays
+    json_str = re.sub(r'\}\s*\{', '}, {', json_str)
+    json_str = re.sub(r'\]\s*\[', '], [', json_str)
+    json_str = re.sub(r'\]\s*\{', '], {', json_str)
+
+    # 3. Smart quote replacement
+    json_str = json_str.replace('“', '"').replace('”', '"').replace('‘', "'").replace('’', "'")
+
+    def balance_json(s):
+        """Attempts to balance braces and brackets."""
+        braces = s.count('{') - s.count('}')
+        brackets = s.count('[') - s.count(']')
+        if brackets > 0: s += ']' * brackets
+        if braces > 0: s += '}' * braces
         return s
 
     try:
         return json.loads(json_str)
-    except:
+    except json.JSONDecodeError:
         try:
-            # Attempt brace balancing
-            return json.loads(balance_braces(json_str))
+            return json.loads(balance_json(json_str))
         except Exception as e:
+            # Last ditch effort: try to find the largest valid JSON block
+            print(f"   ⚠️ Initial parse failed, attempting recovery...")
+            try:
+                # Try finding valid scenes array if it's a batch
+                scenes_match = re.search(r'\"scenes\"\s*:\s*\[(.*)\]', json_str, re.DOTALL)
+                if scenes_match:
+                    inner_json = "[" + scenes_match.group(1) + "]"
+                    # Attempt to parse each object in the array individually if the whole array fails
+                    # This is complex, so we'll just try to fix the array string
+                    inner_json = re.sub(r',\s*$', '', inner_json.strip())
+                    if not inner_json.endswith(']'): inner_json += ']'
+                    valid_scenes = json.loads(balance_json(inner_json))
+                    return {"scenes": valid_scenes}
+            except:
+                pass
             print(f"   ❌ Final Parse Error: {str(e)[:50]}")
             return None
 
@@ -144,7 +189,7 @@ def main():
     final_scout_scenes = []
     final_remotion_scenes = []
 
-    batch_size = 6
+    batch_size = 4  # Reduced batch size for higher quality and JSON reliability
     for i in range(0, num_scenes, batch_size):
         batch_end = min(i + batch_size, num_scenes)
         print(f"🎬 Processing scenes {i+1}-{batch_end}/{num_scenes}...")
@@ -154,48 +199,62 @@ def main():
 
         batch_input_str = ""
         for j, (s, p) in enumerate(zip(batch_story, batch_prep)):
-            batch_input_str += f"S{i+j+1}: N: {s} | P: {p}\n"
+            dur = get_audio_duration(i + j + 1)
+            batch_input_str += f"SCENE {i+j+1} (Narration Length: {dur:.2f}s):\n- Narration: {s}\n- Visual Prep: {p}\n\n"
 
-        prompt = f"""Expert Video Producer. Generate JSON for scenes {i+1}-{batch_end} of "{project_topic}". Lang: {target_lang}.
-Output MUST be raw JSON matching this structure perfectly. Use double quotes for all strings. Ensure all commas are correct.
+        prompt = f"""You are the Core AI Engine for Counterism Studio's JSON Maker.
+Your task is to generate high-quality production metadata for a cinematic documentary.
+
+TOPIC: "{project_topic}"
+TARGET LANGUAGE: {target_lang}
+
+PROJECT CAPABILITIES:
+1. SCOUT ENGINE (B-Roll Search):
+   - Generates 'text' visual descriptions and 'keywords' for Pexels/Pixabay.
+   - Keywords MUST be in English, descriptive, and cinematic (e.g., "mysterious dark mountain fog").
+2. REMOTION ENGINE (Rendering):
+   - Animation Presets: 'fade-up', 'fade-in', 'fade-down', 'fade-out'.
+   - Easing: 'cubic-bezier(0.33, 1, 0.68, 1)', 'ease-in-out', 'linear'.
+   - Textbox: 'rounded-rect', 'rect'. Mode: 'word'.
+
+STRICT OUTPUT FORMAT: RETURN RAW JSON ONLY. MATCH SCHEMA PERFECTLY.
 
 {{
   "scenes": [
     {{
       "scout": {{
-        "scene_id": "scene_{i+1}",
-        "text": "Detailed cinematic visual description",
-        "duration": [audio_duration + 1.0],
-        "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_{str(i+1).zfill(2)}.wav",
-        "audio_duration": [narration duration in seconds],
+        "scene_id": "scene_X",
+        "text": "Detailed visual description in English",
+        "duration": [Total duration: audio_duration + 1.0],
+        "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_X.wav",
+        "audio_duration": [Exact narration length provided for scene X],
         "audio_start_in_scene": 0.5,
         "negative_prompts": ["text", "watermark", "blurry"],
         "asset_preferences": {{"allow_video": true, "allow_image": true, "preferred_type": "video"}},
-        "scout_config": {{"keywords": ["keyword 1", "keyword 2"], "must_have_required": ["subject"], "must_have_optional": []}}
+        "scout_config": {{"keywords": ["cinematic keyword1", "keyword2"], "must_have_required": [], "must_have_optional": []}}
       }},
       "remotion": {{
-        "id": "scene_{i+1}",
-        "duration": [Float: duration_in_seconds * 30],
-        "background": {{"type": "video", "src": "scene_{i+1}.mp4", "audio": ""}},
+        "id": "scene_X",
+        "duration": [Total duration in frames (seconds * 30)],
+        "background": {{"type": "video", "src": "scene_X.mp4", "audio": ""}},
         "transition": {{"type": "fade", "duration": 15}},
         "layers": [{{
-            "id": "l{i+1}", "type": "text", "content": "[Short hook from VISUAL PREP]", "start": 15, "duration": [frames],
-            "style": {{"fontSize": 60, "color": "#ffffff", "x": 540, "y": 1550}},
-            "animationIn": {{"type": "fade-up", "duration": 20}},
+            "id": "lX", "type": "text", "content": "[Localised hook from Visual Prep for scene X]",
+            "start": 15, "duration": [Duration in frames - 30],
+            "style": {{"fontSize": 65, "color": "#ffffff", "x": 540, "y": 1550}},
+            "animationIn": {{"type": "fade-up", "duration": 20, "easing": "cubic-bezier(0.33, 1, 0.68, 1)"}},
             "animationOut": {{"type": "fade-down", "duration": 20}},
             "textAnimation": {{"mode": "word", "duration": 40}},
-            "textbox": {{"enabled": true, "type": "rounded-rect", "padding": 30, "fill": "rgba(0,0,0,0.60)"}},
-            "keyframes": [{{"frame": 0, "scale": 1, "opacity": 0}}, {{"frame": 30, "scale": 1.05, "opacity": 1}}]
+            "textbox": {{"enabled": true, "type": "rounded-rect", "padding": 35, "fill": "rgba(0,0,0,0.65)"}},
+            "keyframes": [{{"frame": 0, "scale": 1, "opacity": 0}}, {{"frame": 25, "scale": 1.02, "opacity": 1}}]
         }}]
       }}
     }}
   ]
 }}
 
-INPUT:
+INPUT DATA:
 {batch_input_str}
-
-STRICT: Return raw JSON only. Keywords must be excellent for Pixabay/Pexels search.
 """
 
         # Retry logic for individual batches
