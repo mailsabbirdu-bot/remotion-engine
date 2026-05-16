@@ -2,8 +2,11 @@
 
 Paste and run this cell in Google Colab. It will use Coqui XTTS v2 to generate natural-sounding voiceovers with voice cloning.
 
+> **Note:** This script automatically handles Python version compatibility for Coqui TTS (it will use Python 3.10 if 3.12 is detected).
+
 ```python
 import os
+import sys
 from google.colab import drive
 
 # --- CONFIGURATION ---
@@ -28,20 +31,32 @@ if os.path.exists(target_dir):
     print(f"✅ Project active at: {target_dir}")
     os.chdir(target_dir)
 
-    # 3. Install System Dependencies
-    print("\n📦 Installing system dependencies...")
-    !apt-get install -y espeak-ng --quiet
+    # 3. Handle Python Version Compatibility
+    print("\n🔍 Checking Python version...")
+    py_version = sys.version_info
+    py_cmd = "python3"
+
+    if py_version.major == 3 and py_version.minor >= 12:
+        print("⚠️ Python 3.12+ detected. Coqui TTS requires Python < 3.12.")
+        print("🛠️ Installing Python 3.10 and dependencies...")
+        !sudo apt-get update -y --quiet
+        !sudo apt-get install python3.10 python3.10-dev python3.10-distutils espeak-ng -y --quiet
+        !curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10
+        py_cmd = "python3.10"
+    else:
+        print(f"✅ Python {py_version.major}.{py_version.minor} is compatible.")
+        !apt-get install -y espeak-ng --quiet
 
     # 4. Install Python Dependencies
-    print("\n📦 Installing Python dependencies (this may take a minute)...")
-    !pip install TTS pydub --quiet
+    print(f"\n📦 Installing Python dependencies using {py_cmd} (this may take a minute)...")
+    !{py_cmd} -m pip install TTS pydub --quiet
 
     # 5. Run
     print("\n" + "="*40)
-    print("🎙️ VOICEOVER ENGINE STARTING (XTTS v2 MODE)")
+    print(f"🎙️ VOICEOVER ENGINE STARTING ({py_cmd} mode)")
     print("="*40 + "\n")
 
-    !python main.py
+    !{py_cmd} main.py
 else:
     print("\n❌ Setup failed. Please ensure the project folder is uploaded correctly.")
 ```

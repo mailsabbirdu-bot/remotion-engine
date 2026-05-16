@@ -11,6 +11,7 @@ def print_ultra_debug():
     print("🔬 ULTRA DEBUGGING MODE - SYSTEM REPORT")
     print("="*50)
     print(f"🐍 Python Version: {sys.version}")
+    print(f"🚀 Python Executable: {sys.executable}")
     print(f"📂 Current Working Directory: {os.getcwd()}")
 
     try:
