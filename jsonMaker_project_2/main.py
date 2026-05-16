@@ -51,7 +51,13 @@ def parse_scenes(content):
     if not content: return []
     pattern = r'(?m)^(?:Scene|দৃশ্য)\s*(?:[০-৯\d]+)'
     parts = re.split(pattern, content)
-    return [p.strip() for p in parts if p.strip()]
+    scenes = [p.strip() for p in parts if p.strip()]
+
+    # Fallback: if no scene markers found, treat the whole thing as one scene
+    if not scenes and content.strip():
+        print("⚠️ [DEBUG] No scene markers (Scene X / দৃশ্য X) found. Treating entire file as Scene 1.")
+        return [content.strip()]
+    return scenes
 
 def extract_json(response):
     """Extracts a JSON object from AI response strings with extreme robustness."""
@@ -96,32 +102,61 @@ def extract_json(response):
             return None
 
 def main():
-    print("🚀 [JSON_MAKER_V2] Starting Engine...")
+    print("\n" + "="*50)
+    print("🚀 [ULTRA_DEBUG] JSON MAKER V2 ENGINE STARTING")
+    print("="*50)
+
+    # 1. Path Debugging
+    print(f"📂 [DEBUG] DRIVE_BASE: {DRIVE_BASE}")
+    print(f"📂 [DEBUG] LOCAL_BASE: {LOCAL_BASE}")
+    print(f"📂 [DEBUG] SELECTED BASE: {BASE}")
+    print(f"📂 [DEBUG] AUDIO_DIR: {AUDIO_DIR}")
+    print(f"📂 [DEBUG] REPO_ROOT: {REPO_ROOT}")
+
+    print(f"📄 [DEBUG] Target Scout Path: {SCOUT_PLAN_PATH}")
+    print(f"📄 [DEBUG] Target Remotion Path: {REMOTION_PLAN_PATH}")
+    print(f"📄 [DEBUG] Target Render Path: {MASTER_RENDER_PATH}")
 
     story_content = read_file_content(STORY_TXT)
     prep_content = read_file_content(JSON_PREP)
 
+    print(f"🔍 [DEBUG] STORY_TXT exists: {os.path.exists(STORY_TXT)}")
+    print(f"🔍 [DEBUG] JSON_PREP exists: {os.path.exists(JSON_PREP)}")
+
     if not story_content or not prep_content:
-        print(f"❌ Error: Missing input files in {AUDIO_DIR}")
+        print(f"❌ [CRITICAL] Error: Missing input files in {AUDIO_DIR}")
+        print(f"   Check if story.txt and jsonPrep.txt exist in your Drive folder.")
         sys.exit(1)
+
+    print(f"📖 [DEBUG] Story content length: {len(story_content)}")
+    print(f"📖 [DEBUG] Prep content length: {len(prep_content)}")
 
     try:
         with open(SCOUT_PLAN_PATH, "r", encoding="utf-8") as f:
             scout_template = json.load(f)
-    except:
+            print(f"✅ [DEBUG] Loaded Scout template from {SCOUT_PLAN_PATH}")
+    except Exception as e:
+        print(f"⚠️ [DEBUG] Could not load Scout template: {e}. Using defaults.")
         scout_template = {"project_name": "Dynamic_Project", "scenes": []}
 
     try:
         with open(REMOTION_PLAN_PATH, "r", encoding="utf-8") as f:
             remotion_template = json.load(f)
-    except:
+            print(f"✅ [DEBUG] Loaded Remotion template from {REMOTION_PLAN_PATH}")
+    except Exception as e:
+        print(f"⚠️ [DEBUG] Could not load Remotion template: {e}. Using defaults.")
         remotion_template = {"width": 1080, "height": 1920, "fps": 30, "scenes": []}
 
     story_scenes = parse_scenes(story_content)
     prep_scenes = parse_scenes(prep_content)
     num_scenes = max(len(story_scenes), len(prep_scenes))
 
-    print(f"📋 Processing {num_scenes} scenes...")
+    print(f"📋 [DEBUG] Detected {len(story_scenes)} story scenes and {len(prep_scenes)} prep scenes.")
+    print(f"📋 [DEBUG] Processing total of {num_scenes} scenes...")
+
+    if num_scenes == 0:
+        print("❌ [CRITICAL] No scenes detected to process. Exiting.")
+        sys.exit(0)
 
     browser_ai = BrowserAI(headless=True)
     browser_ai.start()
@@ -184,9 +219,12 @@ INPUT DATA:
 {batch_input}
 """
         response = browser_ai.send_prompt(prompt)
+        print(f"🤖 [DEBUG] AI Response received ({len(response) if response else 0} chars)")
+
         data = extract_json(response)
 
         if data and "scenes" in data:
+            print(f"✅ [DEBUG] Successfully extracted {len(data['scenes'])} scenes from AI response.")
             for scene_data in data["scenes"]:
                 final_scout_scenes.append(scene_data["scout"])
 
@@ -228,16 +266,46 @@ INPUT DATA:
         if "Layers" in scene:
             scene["layers"] = scene["Layers"]
 
+    print(f"💾 [DEBUG] Writing Scout Plan to: {SCOUT_PLAN_PATH}")
     with open(SCOUT_PLAN_PATH, "w", encoding="utf-8") as f:
         json.dump(scout_final, f, indent=2, ensure_ascii=False)
+    print(f"✔️ [DEBUG] Scout File Written. Size: {os.path.getsize(SCOUT_PLAN_PATH)} bytes")
 
+    print(f"💾 [DEBUG] Writing Remotion Plan to: {REMOTION_PLAN_PATH}")
     with open(REMOTION_PLAN_PATH, "w", encoding="utf-8") as f:
         json.dump(remotion_final, f, indent=2, ensure_ascii=False)
+    print(f"✔️ [DEBUG] Remotion File Written. Size: {os.path.getsize(REMOTION_PLAN_PATH)} bytes")
 
+    print(f"💾 [DEBUG] Writing Master Render to: {MASTER_RENDER_PATH}")
     with open(MASTER_RENDER_PATH, "w", encoding="utf-8") as f:
         json.dump(remotion_final, f, indent=2, ensure_ascii=False)
+    print(f"✔️ [DEBUG] Render File Written. Size: {os.path.getsize(MASTER_RENDER_PATH)} bytes")
 
-    print(f"✅ Successfully updated JSON files.")
+    # 5. DRIVE SYNC (Crucial for user visibility in Colab)
+    print(f"🔄 [DEBUG] Syncing to Drive/Local Base: {BASE}")
+    DRIVE_SCOUT = os.path.join(BASE, "manifests", "production_plan.json")
+    DRIVE_REMOTION = os.path.join(BASE, "master_remotion.json")
+    DRIVE_RENDER = os.path.join(BASE, "master_render.json")
+
+    try:
+        os.makedirs(os.path.dirname(DRIVE_SCOUT), exist_ok=True)
+
+        with open(DRIVE_SCOUT, "w", encoding="utf-8") as f:
+            json.dump(scout_final, f, indent=2, ensure_ascii=False)
+        print(f"📡 [DEBUG] Sync'd Scout to Drive: {DRIVE_SCOUT}")
+
+        with open(DRIVE_REMOTION, "w", encoding="utf-8") as f:
+            json.dump(remotion_final, f, indent=2, ensure_ascii=False)
+        print(f"📡 [DEBUG] Sync'd Remotion to Drive: {DRIVE_REMOTION}")
+
+        with open(DRIVE_RENDER, "w", encoding="utf-8") as f:
+            json.dump(remotion_final, f, indent=2, ensure_ascii=False)
+        print(f"📡 [DEBUG] Sync'd Render to Drive: {DRIVE_RENDER}")
+
+    except Exception as e:
+        print(f"⚠️ [DEBUG] Drive Sync failed: {e}")
+
+    print(f"✅ [ULTRA_DEBUG] ALL ACTIONS COMPLETED SUCCESSFULLY.")
     browser_ai.close()
 
 if __name__ == "__main__":
