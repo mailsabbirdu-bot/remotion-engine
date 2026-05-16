@@ -15,6 +15,7 @@ import shutil
 import glob
 import cv2
 import imagehash
+import re
 from PIL import Image
 
 from pydub import AudioSegment
@@ -112,13 +113,27 @@ def generate_production_plan():
         template_scenes = []
         project_name = "Dynamic_Project"
 
-    audio_files = sorted(glob.glob(os.path.join(AUDIO_DIR, "SC_[0-9][0-9].wav")))
+    # Find ALL .wav files in audio folder
+    audio_files = sorted(glob.glob(os.path.join(AUDIO_DIR, "*.wav")))
     if not audio_files:
-        print(f"❌ No audio files found in {AUDIO_DIR} matching SC_XX.wav pattern!")
+        print(f"❌ No audio files found in {AUDIO_DIR}!")
         return []
 
     scenes = []
     for idx, audio_path in enumerate(audio_files):
+        base_name = os.path.splitext(os.path.basename(audio_path))[0]
+        txt_path = os.path.join(AUDIO_DIR, f"{base_name}.txt")
+
+        # Determine Text Prompt
+        story_text = ""
+        if os.path.exists(txt_path):
+            try:
+                with open(txt_path, "r", encoding="utf-8") as f:
+                    story_text = f.read().strip()
+            except:
+                pass
+
+        # Calculate duration
         try:
             audio = AudioSegment.from_wav(audio_path)
             audio_duration = len(audio) / 1000.0
@@ -126,20 +141,40 @@ def generate_production_plan():
             audio_duration = 5.0
         final_duration = START_PADDING + audio_duration + END_PADDING
 
+        # Initialize defaults
+        text = story_text or "cinematic atmosphere"
+        negative_prompts = ["low quality", "blurry", "text", "watermark", "people"]
+        asset_preferences = {"allow_video": True, "allow_image": True, "preferred_type": "video"}
+        scout_config = {"keywords": [], "must_have_required": [], "must_have_optional": []}
+
+        # Apply template if available (matched by index)
         if idx < len(template_scenes):
             scene_template = template_scenes[idx]
-            text = scene_template.get("text", "cinematic atmosphere")
-            negative_prompts = scene_template.get("negative_prompts", ["low quality", "blurry"])
-            asset_preferences = scene_template.get("asset_preferences", {"allow_video": True, "allow_image": True, "preferred_type": "video"})
-            scout_config = scene_template.get("scout_config", {"keywords": ["cinematic"], "must_have_required": [], "must_have_optional": []})
-        else:
-            text = "cinematic atmosphere"
-            negative_prompts = ["low quality", "blurry"]
-            asset_preferences = {"allow_video": True, "allow_image": True, "preferred_type": "video"}
-            scout_config = {"keywords": ["cinematic background"], "must_have_required": [], "must_have_optional": []}
+            text = story_text or scene_template.get("text", text)
+            negative_prompts = scene_template.get("negative_prompts", negative_prompts)
+            asset_preferences = scene_template.get("asset_preferences", asset_preferences)
+            scout_config = scene_template.get("scout_config", scout_config)
+
+        # Dynamic Keyword Extraction from Story
+        if story_text:
+            words = re.findall(r'\w+', story_text.lower())
+            unique_words = []
+            seen = set()
+            for w in words:
+                if w not in seen and len(w) > 4:
+                    unique_words.append(w)
+                    seen.add(w)
+                if len(unique_words) >= 10: break
+
+            # If template keywords are generic or missing, use story keywords
+            if not scout_config.get("keywords") or "ocean" in scout_config.get("keywords", [])[0]:
+                if len(unique_words) >= 3:
+                    scout_config["keywords"] = [" ".join(unique_words[:3]), " ".join(unique_words[3:6])]
+                else:
+                    scout_config["keywords"] = [story_text[:50]]
 
         scene = {
-            "scene_id": f"scene_{idx+1}",
+            "scene_id": f"scene_{base_name}",
             "text": text,
             "duration": round(final_duration, 2),
             "audio_path": audio_path,
@@ -150,11 +185,13 @@ def generate_production_plan():
             "scout_config": scout_config
         }
         scenes.append(scene)
-        print(f"✅ Scene {idx+1}: {os.path.basename(audio_path)} → {round(final_duration, 2)}s")
+        print(f"✅ Scene {idx+1}: {os.path.basename(audio_path)} → {round(final_duration, 2)}s | Keywords: {scene['scout_config']['keywords']}")
 
-    plan_data = {"project_name": project_name, "version": "PRO_V1", "scenes": scenes}
+    plan_data = {"project_name": project_name, "version": "PRO_V3", "scenes": scenes}
     with open(PLAN_PATH, "w", encoding="utf-8") as f:
         json.dump(plan_data, f, indent=2, ensure_ascii=False)
+
+    print(f"📄 Production plan generated at: {PLAN_PATH}")
     return scenes
 
 # =========================================================
@@ -248,10 +285,10 @@ async def process_scene(scene, idx):
         asset_path = f"{TEMP_DIR}/scene_{idx}_final{os.path.splitext(path)[1]}"
         shutil.move(path, asset_path)
 
-    out = f"{RENDER_DIR}/scene_{idx}.mp4"
+    out = f"{RENDER_DIR}/{scene['scene_id']}.mp4"
     try:
         render_scene_video(asset_path, final_selection["type"], scene["audio_path"], out, scene["duration"], scene["audio_start_in_scene"])
-        print(f"✅ [ENGINE] Scene {idx} saved.")
+        print(f"✅ [ENGINE] Scene {idx} saved to: {out}")
         return out
     except Exception as e:
         print(f"❌ [ENGINE] RENDER FAILED: {e}")
