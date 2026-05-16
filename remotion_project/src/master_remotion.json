@@ -6,11 +6,11 @@
   "englishFont": "Audiowide-Regular",
   "scenes": [
     {
-      "id": "scene_1",
+      "id": "scene_SC_01",
       "duration": 270,
       "background": {
         "type": "video",
-        "src": "scene_1.mp4",
+        "src": "scene_SC_01.mp4",
         "audio": ""
       },
       "transition": {
@@ -21,7 +21,7 @@
         {
           "id": "l1",
           "type": "text",
-          "content": "A lone island shrouded in thick fog.",
+          "content": "মিশরের বিশাল পিরামিডগুলো হাজার বছর ধরে দাঁড়িয়ে আছে।",
           "start": 15,
           "duration": 240,
           "style": {
@@ -65,11 +65,11 @@
       ]
     },
     {
-      "id": "scene_2",
+      "id": "scene_SC_02",
       "duration": 270,
       "background": {
         "type": "video",
-        "src": "scene_2.mp4",
+        "src": "scene_SC_02.mp4",
         "audio": ""
       },
       "transition": {
@@ -78,9 +78,68 @@
       },
       "layers": [
         {
-          "id": "l2",
+          "id": "l1",
           "type": "text",
-          "content": "People digging in a dark pit with lanterns.",
+          "content": "এগুলোর ভেতরে লুকিয়ে আছে প্রাচীন রাজাদের গোপন তথ্য।",
+          "start": 15,
+          "duration": 240,
+          "style": {
+            "fontSize": 65,
+            "color": "#ffffff",
+            "x": 540,
+            "y": 1550
+          },
+          "animationIn": {
+            "type": "fade-up",
+            "duration": 20,
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "animationOut": {
+            "type": "fade-down",
+            "duration": 20
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rounded-rect",
+            "padding": 35,
+            "fill": "rgba(0,0,0,0.65)"
+          },
+          "keyframes": [
+            {
+              "frame": 0,
+              "scale": 1,
+              "opacity": 0
+            },
+            {
+              "frame": 25,
+              "scale": 1.02,
+              "opacity": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scene_SC_03",
+      "duration": 270,
+      "background": {
+        "type": "video",
+        "src": "scene_SC_03.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "layers": [
+        {
+          "id": "l1",
+          "type": "text",
+          "content": "এখনও অনেক রহস্য উন্মোচিত হওয়া বাকি।",
           "start": 15,
           "duration": 240,
           "style": {

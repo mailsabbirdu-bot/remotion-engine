@@ -167,10 +167,6 @@ def main():
     except Exception:
         remotion_template = {"width": 1080, "height": 1920, "fps": 30, "scenes": []}
 
-    # Detect language
-    is_bn = bool(re.search(r'[\u0980-\u09ff]', story_content))
-    target_lang = "Bengali (Bangla)" if is_bn else "English"
-
     # Parse into scenes
     story_scenes = parse_scenes(story_content)
     prep_scenes = parse_scenes(prep_content)
@@ -178,18 +174,23 @@ def main():
     num_scenes = max(len(story_scenes), len(prep_scenes))
     print(f"📋 Detected {num_scenes} scenes. Processing...")
 
+    # Detect Topic and Language from script_content
+    topic_match = re.search(r"TOPIC:\s*(.*)", script_content)
+    project_topic = topic_match.group(1).strip() if topic_match else "Cinematic Documentary"
+
+    # User requirement: detect language from TOPIC
+    is_bn = bool(re.search(r'[\u0980-\u09ff]', project_topic))
+    target_lang = "Bengali (Bangla)" if is_bn else "English"
+    print(f"🌍 Detected Language: {target_lang}")
+
     # Initialize Browser AI
     browser_ai = BrowserAI(headless=True)
     browser_ai.start()
 
-    # Detect Topic from script_content
-    topic_match = re.search(r"TOPIC:\s*(.*)", script_content)
-    project_topic = topic_match.group(1).strip() if topic_match else "Cinematic Documentary"
-
     final_scout_scenes = []
     final_remotion_scenes = []
 
-    batch_size = 4  # Reduced batch size for higher quality and JSON reliability
+    batch_size = 3  # Reduced for maximum quality and less truncation
     for i in range(0, num_scenes, batch_size):
         batch_end = min(i + batch_size, num_scenes)
         print(f"🎬 Processing scenes {i+1}-{batch_end}/{num_scenes}...")
@@ -198,49 +199,65 @@ def main():
         batch_prep = prep_scenes[i:batch_end]
 
         batch_input_str = ""
-        for j, (s, p) in enumerate(zip(batch_story, batch_prep)):
-            dur = get_audio_duration(i + j + 1)
-            batch_input_str += f"SCENE {i+j+1} (Narration Length: {dur:.2f}s):\n- Narration: {s}\n- Visual Prep: {p}\n\n"
+        for j in range(batch_end - i):
+            idx = i + j + 1
+            s = batch_story[j] if j < len(batch_story) else ""
+            p = batch_prep[j] if j < len(batch_prep) else ""
+            dur = get_audio_duration(idx)
+            padded_num = str(idx).zfill(2)
+            batch_input_str += f"### SCENE {idx} ###\n"
+            batch_input_str += f"REQUIRED_ID: scene_SC_{padded_num}\n"
+            batch_input_str += f"AUDIO_FILE: SC_{padded_num}.wav\n"
+            batch_input_str += f"NARRATION_LENGTH: {dur:.2f}s\n"
+            batch_input_str += f"NARRATION_TEXT: {s}\n"
+            batch_input_str += f"VISUAL_PREP: {p}\n\n"
 
-        prompt = f"""You are the Core AI Engine for Counterism Studio's JSON Maker.
-Your task is to generate high-quality production metadata for a cinematic documentary.
+        prompt = f"""You are the Lead Video Production AI for Counterism Studio.
+Your mission is to generate high-precision JSON metadata for a cinematic documentary.
 
 TOPIC: "{project_topic}"
-TARGET LANGUAGE: {target_lang}
+PRIMARY LANGUAGE: {target_lang}
 
-PROJECT CAPABILITIES:
-1. SCOUT ENGINE (B-Roll Search):
-   - Generates 'text' visual descriptions and 'keywords' for Pexels/Pixabay.
-   - Keywords MUST be in English, descriptive, and cinematic (e.g., "mysterious dark mountain fog").
-2. REMOTION ENGINE (Rendering):
-   - Animation Presets: 'fade-up', 'fade-in', 'fade-down', 'fade-out'.
-   - Easing: 'cubic-bezier(0.33, 1, 0.68, 1)', 'ease-in-out', 'linear'.
-   - Textbox: 'rounded-rect', 'rect'. Mode: 'word'.
+STRICT INSTRUCTIONS FOR FIELDS:
+1. SCOUT ENGINE (B-Roll Data):
+   - `scout.text` and `scout.scout_config.keywords`: ALWAYS USE ENGLISH.
+   - Quality: Descriptions must be professional cinematographic prompts. Keywords must be excellent for stock footage search.
+   - `duration`: audio_duration + 1.0.
 
-STRICT OUTPUT FORMAT: RETURN RAW JSON ONLY. MATCH SCHEMA PERFECTLY.
+2. REMOTION ENGINE (Overlay Data):
+   - `remotion.layers[0].content`: USE {target_lang} ONLY. If topic is Bangla, this field MUST be in Bengali script.
+   - `duration`: total_duration * 30 (integer frames).
+   - Presets: 'fade-up', 'fade-in', 'fade-down', 'fade-out'.
+   - Easing: 'cubic-bezier(0.33, 1, 0.68, 1)', 'ease-in-out', 'ease-in', 'ease-out', 'linear'.
 
+3. MATCH IDS & FILENAMES EXACTLY:
+   - Follow the `REQUIRED_ID` and `AUDIO_FILE` provided for each scene.
+
+OUTPUT MUST BE RAW JSON ONLY. NO PREAMBLE. NO CONVERSATION.
+
+SCHEMA TEMPLATE (Generate exactly {batch_end - i} scenes):
 {{
   "scenes": [
     {{
       "scout": {{
-        "scene_id": "scene_X",
-        "text": "Detailed visual description in English",
-        "duration": [Total duration: audio_duration + 1.0],
-        "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_X.wav",
-        "audio_duration": [Exact narration length provided for scene X],
+        "scene_id": "scene_SC_XX",
+        "text": "English cinematic description",
+        "duration": [audio_duration + 1.0],
+        "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_XX.wav",
+        "audio_duration": [Exact narration length provided],
         "audio_start_in_scene": 0.5,
         "negative_prompts": ["text", "watermark", "blurry"],
         "asset_preferences": {{"allow_video": true, "allow_image": true, "preferred_type": "video"}},
-        "scout_config": {{"keywords": ["cinematic keyword1", "keyword2"], "must_have_required": [], "must_have_optional": []}}
+        "scout_config": {{"keywords": ["keyword 1", "keyword 2"], "must_have_required": [], "must_have_optional": []}}
       }},
       "remotion": {{
-        "id": "scene_X",
-        "duration": [Total duration in frames (seconds * 30)],
-        "background": {{"type": "video", "src": "scene_X.mp4", "audio": ""}},
+        "id": "scene_SC_XX",
+        "duration": [frames],
+        "background": {{"type": "video", "src": "scene_SC_XX.mp4", "audio": ""}},
         "transition": {{"type": "fade", "duration": 15}},
         "layers": [{{
-            "id": "lX", "type": "text", "content": "[Localised hook from Visual Prep for scene X]",
-            "start": 15, "duration": [Duration in frames - 30],
+            "id": "l1", "type": "text", "content": "[Hook in {target_lang}]",
+            "start": 15, "duration": [frames - 30],
             "style": {{"fontSize": 65, "color": "#ffffff", "x": 540, "y": 1550}},
             "animationIn": {{"type": "fade-up", "duration": 20, "easing": "cubic-bezier(0.33, 1, 0.68, 1)"}},
             "animationOut": {{"type": "fade-down", "duration": 20}},
@@ -259,12 +276,19 @@ INPUT DATA:
 
         # Retry logic for individual batches
         data = None
+        expected_count = batch_end - i
         for attempt in range(2):
             # Speed optimization: smaller wait_time, sufficient timeout
             response = browser_ai.send_prompt(prompt, wait_time=3, timeout=150)
             data = extract_json(response) if response else None
-            if data and "scenes" in data and len(data["scenes"]) > 0:
-                break
+
+            if data and "scenes" in data:
+                received_count = len(data["scenes"])
+                if received_count == expected_count:
+                    break
+                else:
+                    print(f"   ⚠️ Batch scene count mismatch: Expected {expected_count}, got {received_count}.")
+
             print(f"   ⚠️ Batch attempt {attempt+1} failed. Retrying...")
             browser_ai.new_chat() # Fresh start on failure
             time.sleep(1)
