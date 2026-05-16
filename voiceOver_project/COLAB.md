@@ -1,6 +1,6 @@
-# 🎙️ VoiceOver AI - Professional Setup & Run
+# 🎙️ VoiceOver AI - API Setup & Run (No Login Needed)
 
-Paste and run this cell in Google Colab. It will set up the engine and generate your audio scenes automatically.
+Paste and run this cell in Google Colab. It will use the Gemini API to generate your audio scenes automatically.
 
 ```python
 import os
@@ -29,25 +29,22 @@ if os.path.exists(target_dir):
     os.chdir(target_dir)
 
     # 4. Install Dependencies
-    print("\n📦 Installing dependencies and browser...")
-    !pip install playwright playwright-stealth --quiet
-    !playwright install chromium
-    !python3 -m playwright install-deps
+    print("\n📦 Installing dependencies...")
+    !pip install google-genai --quiet
 
     # 5. Run
     print("\n" + "="*40)
-    print("🎙️ VOICEOVER ENGINE STARTING")
+    print("🎙️ VOICEOVER ENGINE STARTING (API MODE)")
     print("="*40 + "\n")
-    # By default, session is stored in Drive/Counterism_Studio_V4/voiceover_session
-    # If you need to login, run it once locally or find a way to interact with the browser
+
+    # It will automatically use the API Key from your config
     !python main.py
 else:
     print("\n❌ Setup failed. Please ensure the project folder is uploaded correctly.")
 ```
 
-## 🎙️ Note for Novices:
-This engine uses your Google AI Studio account.
-To make it work without manual login every time:
-1. The script saves your session in `Google Drive > Counterism_Studio_V4 > voiceover_session`.
-2. Once you are logged in, it will stay logged in as long as the session folder is there.
-3. If it asks for login, it means you need to provide a valid session folder or perform a login once.
+## 🎙️ Note for Users:
+This version uses the **Gemini API** directly, so you **DO NOT NEED TO LOGIN** via a browser!
+It is much faster and more reliable.
+
+The audio files will be saved in your `Google Drive > Counterism_Studio_V4 > audio` folder.

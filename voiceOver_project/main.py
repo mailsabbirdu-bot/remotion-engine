@@ -3,7 +3,7 @@ import sys
 import re
 import time
 import random
-from core.browser_automator import BrowserAI
+from core.voice_ai import VoiceAI
 
 # Path discovery for Colab vs Local
 DRIVE_BASE = "/content/drive/MyDrive/Counterism_Studio_V4"
@@ -28,12 +28,7 @@ def parse_scenes(story_content):
     scenes = []
     # Parts will be [text_before, scene_num, scene_text, scene_num, scene_text, ...]
     for i in range(1, len(parts), 2):
-        scene_num_str = parts[i].strip()
         scene_text = parts[i+1].strip()
-
-        # Convert Bangla numerals to English if necessary for indexing
-        # but the user wants SC_01.wav, so we'll use a counter instead for filenames
-
         if scene_text:
             scenes.append(scene_text)
 
@@ -41,12 +36,21 @@ def parse_scenes(story_content):
     return scenes
 
 def main():
-    print("🎙️ VOICEOVER ENGINE (V1.0) - ULTRA DEBUGGING MODE")
+    print("🎙️ VOICEOVER ENGINE (V2.0) - API EDITION")
     print("==================================================")
 
     if not os.path.exists(STORY_FILE):
         print(f"❌ Error: {STORY_FILE} not found.")
-        sys.exit(1)
+        # Create dummy directory for testing if not exists on local
+        if BASE == LOCAL_BASE:
+            os.makedirs(AUDIO_DIR, exist_ok=True)
+            print(f"🛠️ Created local directory: {AUDIO_DIR}")
+        else:
+            sys.exit(1)
+
+    if not os.path.exists(STORY_FILE):
+        print("⚠️ No story.txt found. Please provide a story.txt in the audio folder.")
+        sys.exit(0)
 
     with open(STORY_FILE, "r", encoding="utf-8") as f:
         story_content = f.read()
@@ -57,10 +61,14 @@ def main():
         print("⚠️ No scenes found in story.txt. Please check the file format.")
         sys.exit(0)
 
-    # Initialize Browser
-    browser_ai = BrowserAI(headless=True)
-    print("🌐 [BROWSER] Initializing engine...")
-    browser_ai.start()
+    # Initialize Voice AI
+    try:
+        voice_ai = VoiceAI()
+    except Exception as e:
+        print(f"❌ Initialization failed: {e}")
+        sys.exit(1)
+
+    print(f"🚀 Starting generation for {len(scenes)} scenes...")
 
     try:
         for i, scene_text in enumerate(scenes):
@@ -68,33 +76,35 @@ def main():
             filename = f"SC_{scene_num:02d}.wav"
             output_path = os.path.join(AUDIO_DIR, filename)
 
-            print(f"\n🎬 [PROCESS] Processing Scene {scene_num}/{len(scenes)}")
-            print(f"📜 Text: {scene_text[:50]}...")
+            # Skip if already exists
+            if os.path.exists(output_path):
+                print(f"⏩ [SKIP] Scene {scene_num} already exists: {filename}")
+                continue
 
-            # Step 1: Paste Text
-            if not browser_ai.paste_text(scene_text):
-                print(f"❌ Failed to paste text for Scene {scene_num}. Retrying...")
+            print(f"\n🎬 [PROCESS] Processing Scene {scene_num}/{len(scenes)}")
+            print(f"📜 Text: {scene_text[:100]}...")
+
+            # Generate and Save
+            success = voice_ai.generate_speech(scene_text, output_path)
+
+            if not success:
+                print(f"❌ Failed to generate Scene {scene_num}. Retrying once...")
                 time.sleep(2)
-                if not browser_ai.paste_text(scene_text):
+                success = voice_ai.generate_speech(scene_text, output_path)
+                if not success:
                     print(f"❌ Persistent failure for Scene {scene_num}. Skipping.")
                     continue
 
-            # Step 2: Generate and Download
-            if not browser_ai.generate_and_download(output_path):
-                print(f"❌ Failed to generate/download Scene {scene_num}. Skipping.")
-                continue
-
             print(f"✅ Scene {scene_num} completed: {filename}")
 
-            # Random delay between scenes to avoid bot detection
-            time.sleep(random.uniform(2, 5))
+            # Brief delay to be polite to the API
+            time.sleep(1)
 
     except Exception as e:
         print(f"❌ An unexpected error occurred: {e}")
         import traceback
         traceback.print_exc()
     finally:
-        browser_ai.close()
         print("\n🎉 TASK COMPLETED!")
 
 if __name__ == "__main__":
