@@ -23,6 +23,7 @@ REPO_ROOT = os.path.dirname(SCRIPT_DIR)
 
 SCOUT_PLAN_PATH = os.path.join(REPO_ROOT, "scout_project", "manifests", "production_plan.json")
 REMOTION_PLAN_PATH = os.path.join(REPO_ROOT, "remotion_project", "src", "master_remotion.json")
+MASTER_RENDER_PATH = os.path.join(REPO_ROOT, "remotion_project", "src", "master_render.json")
 
 def read_file_content(filepath):
     if not os.path.exists(filepath):
@@ -221,10 +222,19 @@ INPUT DATA:
     remotion_final = remotion_template.copy()
     remotion_final["scenes"] = final_remotion_scenes
 
+    # User requested capitalized 'Layers' but backup shows 'layers'.
+    # We provide both to be safe or map it correctly if engine produced lowercase
+    for scene in remotion_final["scenes"]:
+        if "Layers" in scene:
+            scene["layers"] = scene["Layers"]
+
     with open(SCOUT_PLAN_PATH, "w", encoding="utf-8") as f:
         json.dump(scout_final, f, indent=2, ensure_ascii=False)
 
     with open(REMOTION_PLAN_PATH, "w", encoding="utf-8") as f:
+        json.dump(remotion_final, f, indent=2, ensure_ascii=False)
+
+    with open(MASTER_RENDER_PATH, "w", encoding="utf-8") as f:
         json.dump(remotion_final, f, indent=2, ensure_ascii=False)
 
     print(f"✅ Successfully updated JSON files.")
