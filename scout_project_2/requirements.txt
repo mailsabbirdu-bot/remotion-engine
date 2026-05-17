@@ -10,3 +10,4 @@ opencv-python
 moviepy
 imagehash
 PyWavelets
+yt-dlp
