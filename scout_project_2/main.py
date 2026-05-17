@@ -100,13 +100,13 @@ def get_visual_hash(path, is_video=True):
 # DYNAMIC SCENE GENERATION
 # =========================================================
 
-def get_unique_words(story_text, limit=10):
+def get_unique_words(story_text, limit=15):
     if not story_text: return []
     words = re.findall(r'\w+', story_text.lower())
     unique_words = []
     seen = set()
     for w in words:
-        if w not in seen and len(w) > 4:
+        if w not in seen and len(w) > 2:
             unique_words.append(w)
             seen.add(w)
         if len(unique_words) >= limit: break
