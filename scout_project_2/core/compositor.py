@@ -21,7 +21,7 @@ def run_assembly_pipeline(data=None):
 
     for scene in plan:
         sid = scene['scene_id']
-        # আপনার বাকি অ্যাসেম্বলি লজিক এখানে থাকবে...
+        # Remaining assembly logic goes here...
         print(f"🛠 Processing: {sid}")
         # dummy completion for logic flow
         print(f"✅ Finalized: {sid}")
