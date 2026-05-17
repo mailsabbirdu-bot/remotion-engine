@@ -257,10 +257,12 @@ async def process_scene(scene, idx):
     if not all_pool: return None
 
     # Pre-audit with thumbnails to prune pool for speed on CPU
+    # Increase pool size for better accuracy
     async with aiohttp.ClientSession() as session:
         print(f"🔍 [ENGINE] Thumbnail Auditing {len(all_pool)} candidates...")
         all_pool = await auditor.audit_thumbnails(all_pool, session)
 
+    # Technical filter applies AFTER thumbnail rank to keep best candidates
     all_pool = technical_filter(all_pool, scene["duration"])
     all_pool = semantic_filter(scene, all_pool)
 

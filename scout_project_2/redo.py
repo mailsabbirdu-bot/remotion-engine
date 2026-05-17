@@ -105,11 +105,11 @@ async def redo_scene_loop():
             target_scene["use_youtube"] = True
             keywords = []
 
-            # 1. Custom detail priority
+            # 1. Custom detail priority (Aggressive modifiers)
             if custom_detail:
-                keywords.append(f"{custom_detail} cinematic 4k")
-                keywords.append(f"{custom_detail} b-roll")
-                keywords.append(f"{custom_detail} close up 4k")
+                keywords.append(f"{custom_detail} high quality stock footage")
+                keywords.append(f"{custom_detail} b-roll no music")
+                keywords.append(f"{custom_detail} 4k cinematic close up")
 
             # 2. Required items individually
             if required:

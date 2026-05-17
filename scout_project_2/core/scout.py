@@ -161,12 +161,15 @@ async def fetch_pixabay_image(session, query, limit=12):
         return []
 
 async def fetch_youtube_video(query, limit=10):
-    print(f"📡 [SCOUT] Searching YouTube for: '{query}'")
+    # Add stock footage modifiers for better YouTube accuracy
+    yt_query = f"high quality stock footage {query} no music"
+    print(f"📡 [SCOUT] Searching YouTube for: '{yt_query}'")
     try:
-        # Optimized yt-dlp search command
+        # Optimized yt-dlp search command with duration filter for speed
         cmd = [
             "yt-dlp",
-            f"ytsearch{limit}:{query}",
+            f"ytsearch{limit}:{yt_query}",
+            "--match-filter", "duration < 180", # Limit to 3 mins for download speed
             "--dump-json",
             "--flat-playlist",
             "--quiet",
@@ -189,12 +192,17 @@ async def fetch_youtube_video(query, limit=10):
                 v = json.loads(line)
                 if not v.get("url"): continue
 
+                # Robust thumbnail extraction
+                thumb = v.get("thumbnail")
+                if not thumb and v.get("thumbnails"):
+                    thumb = v["thumbnails"][-1].get("url")
+
                 final.append({
                     "type": "video",
                     "source": "youtube",
                     "id": f"youtube_{v['id']}",
-                    "url": v["url"], # This is the video URL, not direct file URL
-                    "thumbnail": v.get("thumbnail"),
+                    "url": v["url"],
+                    "thumbnail": thumb,
                     "width": v.get("width", 1920),
                     "height": v.get("height", 1080),
                     "duration": v.get("duration", 0),

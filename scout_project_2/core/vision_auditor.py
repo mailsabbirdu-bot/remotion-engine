@@ -89,9 +89,12 @@ class VisionAuditor:
         except Exception as e:
             print(f"⚠️ [AUDIT] Thumbnail rank error: {e}")
 
-        # Sort by thumbnail score
+        # Sort by thumbnail score and discard garbage early (score < 0.1)
         candidates.sort(key=lambda x: x.get("thumbnail_score", -1.0), reverse=True)
-        return candidates
+        survivors = [c for c in candidates if c.get("thumbnail_score", 0) > 0.1]
+
+        print(f"      📉 [AUDIT] Thumbnail Filter: {len(candidates)} -> {len(survivors)} survivors")
+        return survivors if survivors else candidates[:10]
 
     def audit_batch(self, candidate_paths_with_types):
         results = [None] * len(candidate_paths_with_types)
@@ -159,20 +162,43 @@ class VisionAuditor:
                 found_mandatory = False
                 targets = self.must_have + ([self.custom_detail] if self.custom_detail else [])
 
+                # 1. BLIP Verification (Caption Match)
                 for cap in cand_captions:
                     for neg in self.negative_prompts:
-                        if neg.lower() in cap: penalty += 1.5
+                        if neg.lower() in cap: penalty += 2.0
 
                     for target in targets:
                         words = target.lower().split()
                         if any(w in cap for w in words):
                             found_mandatory = True
-                            mandatory_bonus += 3.5
+                            mandatory_bonus += 4.5
+
+                # 2. CLIP Secondary Verification for Mandatory Items (Semantic Alignment)
+                if targets and not found_mandatory:
+                    try:
+                        target_str = " ".join(targets)
+                        # Re-use frames from memory
+                        start = sum(frame_counts[:s_idx])
+                        cand_frames = all_frames[start : start+count]
+
+                        m_inputs = CLIP_PROCESSOR(text=[target_str], images=cand_frames, return_tensors="pt", padding=True).to(DEVICE)
+                        with torch.inference_mode():
+                            m_out = CLIP_MODEL(**m_inputs)
+                            m_scores = torch.matmul(m_out.image_embeds, m_out.text_embeds.T).squeeze().tolist()
+                            if isinstance(m_scores, float): m_scores = [m_scores]
+                            max_m = max(m_scores) if m_scores else 0
+
+                            if max_m > 0.23: # Confidence threshold for mandatory match
+                                found_mandatory = True
+                                mandatory_bonus += 3.0
+                                print(f"      🎯 [AUDIT] Mandatory CLIP recovery: {target_str} ({max_m:.2f})")
+                    except: pass
 
                 c_score = next(c["clip_score"] for c in survivors if c["index"] == s_idx)
 
+                # "Soft Strict" scoring: High penalty but not binary exclusion unless really bad
                 if self.is_strict and targets and not found_mandatory:
-                    final_score = -10.0
+                    final_score = (c_score * 8) - 15.0 # Strong penalty for missing mandatory
                 else:
                     final_score = (c_score * 12) + mandatory_bonus - penalty
 
