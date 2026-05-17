@@ -201,14 +201,34 @@ def generate_production_plan():
 # PARALLEL DOWNLOAD
 # =========================================================
 
-async def download_asset(session, url, path):
+async def download_asset(session, url, path, source="stock"):
     try:
-        async with session.get(url, timeout=30) as r:
-            if r.status != 200: return None
-            with open(path, "wb") as f:
-                f.write(await r.read())
-        return path
-    except:
+        if source == "youtube":
+            print(f"📥 [ENGINE] Downloading YouTube Asset: {url}")
+            cmd = [
+                "yt-dlp",
+                "-f", "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080][ext=mp4]/best",
+                "--merge-output-format", "mp4",
+                "-o", path,
+                url
+            ]
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            await process.communicate()
+            if os.path.exists(path):
+                return path
+            return None
+        else:
+            async with session.get(url, timeout=30) as r:
+                if r.status != 200: return None
+                with open(path, "wb") as f:
+                    f.write(await r.read())
+            return path
+    except Exception as e:
+        print(f"❌ [ENGINE] Download failed: {e}")
         return None
 
 # =========================================================
@@ -230,9 +250,17 @@ def render_scene_video(asset_path, asset_type, audio, out, duration, delay):
 async def process_scene(scene, idx):
     print(f"\n🎬 [ENGINE] PROCESSING SCENE {idx}: {scene['scene_id']}")
 
+    auditor = VisionAuditor(scene)
+
     # 1. Initial Candidates Pool
     all_pool = await get_all_candidates(scene)
     if not all_pool: return None
+
+    # Pre-audit with thumbnails to prune pool for speed on CPU
+    async with aiohttp.ClientSession() as session:
+        print(f"🔍 [ENGINE] Thumbnail Auditing {len(all_pool)} candidates...")
+        all_pool = await auditor.audit_thumbnails(all_pool, session)
+
     all_pool = technical_filter(all_pool, scene["duration"])
     all_pool = semantic_filter(scene, all_pool)
 
@@ -275,7 +303,7 @@ async def process_scene(scene, idx):
         candidates = [c for c in all_pool if c["url"] not in audited_urls]
         if not candidates: continue
 
-        batch_size = 12 if phase == 1 and is_strict else 8
+        batch_size = 6 if phase == 1 and is_strict else 4 # Reduced for CPU speed
         top_batch = candidates[:batch_size]
 
         trial_data = []
@@ -284,7 +312,7 @@ async def process_scene(scene, idx):
             for i, cand in enumerate(top_batch, 1):
                 ext = ".mp4" if cand["type"]=="video" else ".jpg"
                 path = f"{TEMP_DIR}/scene_{idx}_p{phase}_t{i}{ext}"
-                tasks.append(download_asset(session, cand["url"], path))
+                tasks.append(download_asset(session, cand["url"], path, source=cand["source"]))
                 audited_urls.add(cand["url"])
             paths = await asyncio.gather(*tasks)
             for cand, path in zip(top_batch, paths):
@@ -293,7 +321,6 @@ async def process_scene(scene, idx):
         if not trial_data: continue
 
         print(f"🔍 [ENGINE] Batch Auditing {len(trial_data)} candidates (Phase {phase})...")
-        auditor = VisionAuditor(scene)
         audit_results = auditor.audit_batch(trial_data)
 
         for (path, is_vid, cand), result in zip(trial_data, audit_results):

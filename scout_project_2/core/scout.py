@@ -1,5 +1,8 @@
 import aiohttp
 import asyncio
+import subprocess
+import json
+import re
 
 from core.config import API_KEYS
 
@@ -41,6 +44,7 @@ async def fetch_pexels_video(session, query, limit=40):
                         "source": "pexels",
                         "id": f"pexels_video_{v['id']}",
                         "url": best["link"],
+                        "thumbnail": v.get("image"),
                         "width": best.get("width", 0),
                         "height": best.get("height", 0),
                         "duration": v.get("duration", 0),
@@ -75,6 +79,7 @@ async def fetch_pexels_image(session, query, limit=12):
                         "source": "pexels",
                         "id": f"pexels_image_{p['id']}",
                         "url": p["src"]["large2x"],
+                        "thumbnail": p["src"]["medium"],
                         "width": p["width"],
                         "height": p["height"],
                         "duration": 5,
@@ -108,6 +113,7 @@ async def fetch_pixabay_video(session, query, limit=40):
                         "source": "pixabay",
                         "id": f"pixabay_video_{v['id']}",
                         "url": vid["url"],
+                        "thumbnail": f"https://i.vimeocdn.com/video/{v['picture_id']}_640x360.jpg",
                         "width": vid.get("width", 0),
                         "height": vid.get("height", 0),
                         "duration": v.get("duration", 0),
@@ -140,6 +146,7 @@ async def fetch_pixabay_image(session, query, limit=12):
                         "source": "pixabay",
                         "id": f"pixabay_image_{p['id']}",
                         "url": p["largeImageURL"],
+                        "thumbnail": p["previewURL"],
                         "width": p["imageWidth"],
                         "height": p["imageHeight"],
                         "duration": 5,
@@ -153,6 +160,54 @@ async def fetch_pixabay_image(session, query, limit=12):
         print(f"❌ [SCOUT] Pixabay Image Fetch failed: {e}")
         return []
 
+async def fetch_youtube_video(query, limit=10):
+    print(f"📡 [SCOUT] Searching YouTube for: '{query}'")
+    try:
+        # Optimized yt-dlp search command
+        cmd = [
+            "yt-dlp",
+            f"ytsearch{limit}:{query}",
+            "--dump-json",
+            "--flat-playlist",
+            "--quiet",
+            "--no-warnings"
+        ]
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
+
+        if process.returncode != 0:
+            print(f"⚠️ [SCOUT] YouTube Search Error: {stderr.decode()}")
+            return []
+
+        final = []
+        for line in stdout.decode().splitlines():
+            try:
+                v = json.loads(line)
+                if not v.get("url"): continue
+
+                final.append({
+                    "type": "video",
+                    "source": "youtube",
+                    "id": f"youtube_{v['id']}",
+                    "url": v["url"], # This is the video URL, not direct file URL
+                    "thumbnail": v.get("thumbnail"),
+                    "width": v.get("width", 1920),
+                    "height": v.get("height", 1080),
+                    "duration": v.get("duration", 0),
+                    "title": v.get("title", ""),
+                    "description": v.get("description", "")
+                })
+            except:
+                continue
+        return final
+    except Exception as e:
+        print(f"❌ [SCOUT] YouTube Search failed: {e}")
+        return []
+
 
 async def get_all_candidates(scene):
     prefs = scene.get("asset_preferences", {})
@@ -164,6 +219,8 @@ async def get_all_candidates(scene):
 
     scout = scene.get("scout_config", {})
     keywords = scout.get("keywords", [])
+    use_youtube = scene.get("use_youtube", False)
+
     if not keywords:
         keywords = [scene["text"]]
 
@@ -173,6 +230,8 @@ async def get_all_candidates(scene):
             if allow_video:
                 tasks.append(fetch_pexels_video(session, query))
                 tasks.append(fetch_pixabay_video(session, query))
+                if use_youtube:
+                    tasks.append(fetch_youtube_video(query))
             if allow_image:
                 tasks.append(fetch_pexels_image(session, query))
                 tasks.append(fetch_pixabay_image(session, query))

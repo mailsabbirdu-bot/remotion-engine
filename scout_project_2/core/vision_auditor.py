@@ -1,6 +1,7 @@
 import torch
 import cv2
 import numpy as np
+import asyncio
 from PIL import Image
 
 from core.model_manager import (
@@ -49,6 +50,48 @@ class VisionAuditor:
             cap.release()
         except: pass
         return frames
+
+    async def audit_thumbnails(self, candidates, session):
+        """
+        Ranks candidates using CLIP on their thumbnails before full download.
+        Extremely efficient for CPU usage.
+        """
+        import aiohttp
+        import io
+
+        async def fetch_thumb(url):
+            try:
+                async with session.get(url, timeout=10) as r:
+                    if r.status == 200:
+                        return Image.open(io.BytesIO(await r.read())).convert("RGB")
+            except: pass
+            return None
+
+        # Gather thumbnails
+        tasks = [fetch_thumb(c["thumbnail"]) for c in candidates if c.get("thumbnail")]
+        thumbs = await asyncio.gather(*tasks)
+
+        valid_thumbs = [t for t in thumbs if t is not None]
+        valid_indices = [i for i, t in enumerate(thumbs) if t is not None]
+
+        if not valid_thumbs: return candidates
+
+        # CLIP Scoring on thumbnails
+        try:
+            inputs = CLIP_PROCESSOR(text=[self.clip_prompt], images=valid_thumbs, return_tensors="pt", padding=True).to(DEVICE)
+            with torch.inference_mode():
+                out = CLIP_MODEL(**inputs)
+                scores = torch.matmul(out.image_embeds, out.text_embeds.T).squeeze().tolist()
+                if isinstance(scores, float): scores = [scores]
+
+            for idx, score in zip(valid_indices, scores):
+                candidates[idx]["thumbnail_score"] = score
+        except Exception as e:
+            print(f"⚠️ [AUDIT] Thumbnail rank error: {e}")
+
+        # Sort by thumbnail score
+        candidates.sort(key=lambda x: x.get("thumbnail_score", -1.0), reverse=True)
+        return candidates
 
     def audit_batch(self, candidate_paths_with_types):
         results = [None] * len(candidate_paths_with_types)

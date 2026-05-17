@@ -97,15 +97,18 @@ async def redo_scene_loop():
         target_scene["scout_config"]["must_have_required"] = required
         target_scene["strict_mode"] = False
         target_scene["custom_detail"] = custom_detail
+        target_scene["use_youtube"] = False
 
         if choice == "1":
-            print("🔍 Mode: More Specific")
+            print("🔍 Mode: More Specific (YouTube Enabled)")
             target_scene["strict_mode"] = True # Activate AI enforcement
+            target_scene["use_youtube"] = True
             keywords = []
 
             # 1. Custom detail priority
             if custom_detail:
-                keywords.append(custom_detail)
+                keywords.append(f"{custom_detail} cinematic 4k")
+                keywords.append(f"{custom_detail} b-roll")
                 keywords.append(f"{custom_detail} close up 4k")
 
             # 2. Required items individually

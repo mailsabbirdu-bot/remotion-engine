@@ -1,7 +1,7 @@
 def technical_filter(candidates, target_duration):
     """
     Filters candidates based on technical specifications.
-    Strictly eliminates videos lower than 2K resolution (2560x1440).
+    Strictly eliminates videos lower than 1080p resolution (1920x1080).
     """
     survivors = []
 
@@ -10,8 +10,8 @@ def technical_filter(candidates, target_duration):
         h = c.get("height", 0)
         d = c.get("duration", 0)
 
-        # STRICT 2K FILTER: Minimum 2560 width or 1440 height (to allow for portrait/square 2K)
-        if w < 2560 and h < 1440:
+        # STRICT 1080p FILTER: Minimum 1920 width or 1080 height
+        if w < 1920 and h < 1080:
             continue
 
         # Duration check
