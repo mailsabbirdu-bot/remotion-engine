@@ -15,10 +15,14 @@ def get_story_text_for_scene(scene):
     if os.path.exists(txt_path):
         try:
             with open(txt_path, "r", encoding="utf-8") as f:
-                return f.read().strip()
+                content = f.read().strip()
+                if content:
+                    return content
         except:
             pass
-    return ""
+
+    # Fallback to scene text if story text file is missing or empty
+    return scene.get("text", "")
 
 async def redo_scene_loop():
     # Set the render directory to the new location for re-scouting
@@ -76,20 +80,31 @@ async def redo_scene_loop():
                     " ".join(unique_words[8:12]),
                     " ".join(unique_words[:6])
                 ]
+            elif unique_words:
+                keywords = [" ".join(unique_words), story_text[:100]]
             else:
-                keywords = [story_text[:60]]
+                keywords = [story_text[:100]] if story_text else ["cinematic specific"]
         elif choice == "2":
             print("🔍 Mode: More Generic")
             if len(unique_words) >= 2:
                 keywords = [" ".join(unique_words[:2])]
+            elif unique_words:
+                keywords = [unique_words[0]]
             else:
-                keywords = ["cinematic " + (unique_words[0] if unique_words else "scenery")]
+                keywords = ["cinematic atmosphere"]
         else:
             print("🔍 Mode: Default")
             if len(unique_words) >= 3:
                 keywords = [" ".join(unique_words[:3]), " ".join(unique_words[3:6])]
+            elif unique_words:
+                keywords = [" ".join(unique_words)]
             else:
                 keywords = [story_text[:50]] if story_text else ["cinematic atmosphere"]
+
+        # Ensure keywords are not empty strings or lists of empty strings
+        keywords = [k for k in keywords if k and k.strip()]
+        if not keywords:
+            keywords = [target_scene.get("text", "cinematic atmosphere")]
 
         target_scene["scout_config"]["keywords"] = keywords
         print(f"🆕 New Keywords: {keywords}")
