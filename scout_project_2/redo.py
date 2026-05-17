@@ -2,13 +2,7 @@ import os
 import json
 import asyncio
 import re
-from main import (
-    PLAN_PATH,
-    AUDIO_DIR,
-    get_unique_words,
-    process_scene,
-    BASE
-)
+import main  # Import the whole module to modify its globals
 
 def get_story_text_for_scene(scene):
     audio_path = scene.get("audio_path")
@@ -16,7 +10,7 @@ def get_story_text_for_scene(scene):
         return ""
 
     base_name = os.path.splitext(os.path.basename(audio_path))[0]
-    txt_path = os.path.join(AUDIO_DIR, f"{base_name}.txt")
+    txt_path = os.path.join(main.AUDIO_DIR, f"{base_name}.txt")
 
     if os.path.exists(txt_path):
         try:
@@ -27,12 +21,18 @@ def get_story_text_for_scene(scene):
     return ""
 
 async def redo_scene_loop():
-    if not os.path.exists(PLAN_PATH):
-        print(f"❌ Production plan not found at {PLAN_PATH}!")
+    # Set the render directory to the new location for re-scouting
+    main.RENDER_DIR = os.path.join(main.BASE, "audio", "re_scout")
+    os.makedirs(main.RENDER_DIR, exist_ok=True)
+
+    print(f"📂 RE-SCOUT RENDER DIR: {main.RENDER_DIR}")
+
+    if not os.path.exists(main.PLAN_PATH):
+        print(f"❌ Production plan not found at {main.PLAN_PATH}!")
         return
 
     while True:
-        with open(PLAN_PATH, "r", encoding="utf-8") as f:
+        with open(main.PLAN_PATH, "r", encoding="utf-8") as f:
             plan_data = json.load(f)
 
         scenes = plan_data.get("scenes", [])
@@ -65,7 +65,7 @@ async def redo_scene_loop():
         choice = input("Your choice (1/2/blank): ").strip()
 
         story_text = get_story_text_for_scene(target_scene)
-        unique_words = get_unique_words(story_text, limit=15)
+        unique_words = main.get_unique_words(story_text, limit=15)
 
         if choice == "1":
             print("🔍 Mode: More Specific")
@@ -95,11 +95,12 @@ async def redo_scene_loop():
         print(f"🆕 New Keywords: {keywords}")
 
         # Save updated plan
-        with open(PLAN_PATH, "w", encoding="utf-8") as f:
+        with open(main.PLAN_PATH, "w", encoding="utf-8") as f:
             json.dump(plan_data, f, indent=2, ensure_ascii=False)
 
         print(f"🚀 Re-processing Scene {scene_idx + 1}...")
-        await process_scene(target_scene, scene_idx + 1)
+        # process_scene uses main.RENDER_DIR for output path
+        await main.process_scene(target_scene, scene_idx + 1)
 
         cont = input("\nDo you want to re-scout another scene? (y/n): ").strip().lower()
         if cont != 'y':
