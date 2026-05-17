@@ -76,7 +76,7 @@ async def redo_scene_loop():
         template_ref = template_scenes[scene_idx] if scene_idx < len(template_scenes) else {}
 
         print("\nOptions for scouting:")
-        print("1. More specific (Dense, targeted queries)")
+        print("1. More specific (Dense, targeted queries with extreme AI audit)")
         print("2. More generic (Broad, atmospheric queries)")
         print("Leave blank for default extraction")
         choice = input("Your choice (1/2/blank): ").strip()
@@ -89,26 +89,36 @@ async def redo_scene_loop():
         template_text = template_ref.get("text", "")
         required = template_ref.get("scout_config", {}).get("must_have_required", [])
 
+        # Update scene config with template requirements for auditor
+        target_scene["scout_config"]["must_have_required"] = required
+        target_scene["strict_mode"] = False
+
         if choice == "1":
             print("🔍 Mode: More Specific")
+            target_scene["strict_mode"] = True # Activate AI enforcement
             keywords = []
 
             # Use hand-crafted template text + requirements
             if template_text:
                 keywords.append(template_text)
                 if required:
-                    keywords.append(f"{template_text} {required[0]}")
+                    for req in required:
+                        keywords.append(f"{template_text} {req}")
+                        keywords.append(req) # Individual requirement search
 
             # Denser word combinations from story
             if len(unique_words) >= 8:
-                keywords.append(" ".join(unique_words[:5]))
-                keywords.append(" ".join(unique_words[5:10]))
-                keywords.append(" ".join(unique_words[:8]))
+                keywords.append(" ".join(unique_words[:4])) # Short density
+                keywords.append(" ".join(unique_words[4:8]))
+                keywords.append(" ".join(unique_words[:6]))
+                keywords.append(" ".join(unique_words[2:6]))
 
             # Add specificity modifiers
             if required:
                 for req in required[:2]:
                     keywords.append(f"highly detailed {req} close up 4k")
+                    keywords.append(f"scientific {req} footage macro")
+                    keywords.append(f"{req} animation")
 
             # Include all template keywords if they exist
             keywords.extend(template_keywords)
@@ -146,6 +156,8 @@ async def redo_scene_loop():
 
         target_scene["scout_config"]["keywords"] = keywords
         print(f"🆕 New Keywords: {keywords}")
+        if required:
+            print(f"📌 Mandatory Items: {required}")
 
         # Save updated plan
         with open(main.PLAN_PATH, "w", encoding="utf-8") as f:

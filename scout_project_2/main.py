@@ -229,64 +229,122 @@ def render_scene_video(asset_path, asset_type, audio, out, duration, delay):
 
 async def process_scene(scene, idx):
     print(f"\n🎬 [ENGINE] PROCESSING SCENE {idx}: {scene['scene_id']}")
-    candidates = await get_all_candidates(scene)
-    if not candidates: return None
 
-    candidates = technical_filter(candidates, scene["duration"])
-    candidates = semantic_filter(scene, candidates)
-    if not candidates: return None
+    # 1. Initial Candidates Pool
+    all_pool = await get_all_candidates(scene)
+    if not all_pool: return None
+    all_pool = technical_filter(all_pool, scene["duration"])
+    all_pool = semantic_filter(scene, all_pool)
 
-    # 1. Parallel Download for Top 5
-    top_candidates = candidates[:5]
-    trial_data = []
-    async with aiohttp.ClientSession() as session:
-        tasks = []
-        for i, cand in enumerate(top_candidates, 1):
-            ext = ".mp4" if cand["type"]=="video" else ".jpg"
-            path = f"{TEMP_DIR}/scene_{idx}_trial_{i}{ext}"
-            tasks.append(download_asset(session, cand["url"], path))
-        paths = await asyncio.gather(*tasks)
-
-        for cand, path in zip(top_candidates, paths):
-            if path: trial_data.append((path, cand["type"]=="video", cand))
-
-    if not trial_data: return None
-
-    # 2. Batch Vision Audit
-    print(f"🔍 [ENGINE] Batch Auditing {len(trial_data)} candidates...")
-    auditor = VisionAuditor(scene)
-    audit_results = auditor.audit_batch(trial_data)
+    audited_urls = set()
+    is_strict = scene.get("strict_mode", False)
+    must_have = scene.get("scout_config", {}).get("must_have_required", [])
 
     final_selection = None
     asset_path = None
+    scored_trials = []
 
-    for (path, is_vid, cand), result in zip(trial_data, audit_results):
-        if not result: continue
+    # Two Main Phases:
+    # Phase 1: Audit top candidates from initial pool
+    # Phase 2: If Phase 1 fails (strict mode), re-scout using ONLY must_have keywords and audit again.
 
-        # Uniqueness Check
-        v_hash = get_visual_hash(path, is_vid)
-        if v_hash in HASH_REGISTRY:
-            print(f"      ⚠️ [ENGINE] DUPLICATE DETECTED. Skipping...")
-            continue
+    for phase in range(1, 3):
+        if phase == 2:
+            if not is_strict or not must_have: break # Only Phase 2 in strict mode
+            print(f"🔄 [ENGINE] PHASE 2: No mandatory match in initial pool. Triggering EXTREME RE-SEARCH...")
 
-        print(f"      📊 Candidate {cand['source']}: Tech={cand.get('technical_score',0):.1f} | Sem={cand.get('semantic_score',0):.1f} | Vision={result['audit_score']}")
+            # Create a specialized mini-scene for Phase 2 searching
+            phase2_scene = scene.copy()
+            phase2_scene["scout_config"] = scene["scout_config"].copy()
+            # Search ONLY for the required items
+            phase2_scene["scout_config"]["keywords"] = [f"{m} close up" for m in must_have] + must_have
 
-        if result["audit_score"] < 0:
-            print(f"      ❌ [ENGINE] Audit fail. Skipping...")
-            continue
+            new_candidates = await get_all_candidates(phase2_scene)
+            if new_candidates:
+                new_candidates = technical_filter(new_candidates, scene["duration"])
+                new_candidates = semantic_filter(phase2_scene, new_candidates)
+                # Merge into pool, ensuring uniqueness
+                all_pool.extend([c for c in new_candidates if c["url"] not in [x["url"] for x in all_pool]])
 
-        HASH_REGISTRY.add(v_hash)
-        final_selection = cand
-        asset_path = f"{TEMP_DIR}/scene_{idx}_final{os.path.splitext(path)[1]}"
-        shutil.move(path, asset_path)
-        print(f"      ✨ [ENGINE] UNIQUE ASSET SELECTED: {cand['source']} ({v_hash})")
-        break
+        # Filter out already audited URLs from the pool
+        candidates = [c for c in all_pool if c["url"] not in audited_urls]
+        if not candidates: continue
 
+        # Audit Batch Size
+        batch_size = 10 if phase == 1 and is_strict else 8
+        top_batch = candidates[:batch_size]
+
+        trial_data = []
+        async with aiohttp.ClientSession() as session:
+            tasks = []
+            for i, cand in enumerate(top_batch, 1):
+                ext = ".mp4" if cand["type"]=="video" else ".jpg"
+                path = f"{TEMP_DIR}/scene_{idx}_p{phase}_t{i}{ext}"
+                tasks.append(download_asset(session, cand["url"], path))
+                audited_urls.add(cand["url"])
+            paths = await asyncio.gather(*tasks)
+
+            for cand, path in zip(top_batch, paths):
+                if path: trial_data.append((path, cand["type"]=="video", cand))
+
+        if not trial_data: continue
+
+        # Vision Audit
+        print(f"🔍 [ENGINE] Batch Auditing {len(trial_data)} candidates (Phase {phase})...")
+        auditor = VisionAuditor(scene)
+        audit_results = auditor.audit_batch(trial_data)
+
+        # Score and Sort
+        for (path, is_vid, cand), result in zip(trial_data, audit_results):
+            if result:
+                scored_trials.append(((path, is_vid, cand), result))
+
+        scored_trials.sort(key=lambda x: x[1]["audit_score"], reverse=True)
+
+        # Selection Loop
+        phase_match = False
+        for (path, is_vid, cand), result in scored_trials:
+            if not os.path.exists(path): continue
+
+            # Uniqueness Check
+            v_hash = get_visual_hash(path, is_vid)
+            if v_hash in HASH_REGISTRY:
+                print(f"      ⚠️ [ENGINE] DUPLICATE DETECTED ({v_hash}). Skipping...")
+                continue
+
+            mandatory_str = " [MANDATORY MATCH]" if result.get("mandatory_match") else ""
+            print(f"      📊 Candidate {cand['source']}: Audit={result['audit_score']:.1f}{mandatory_str} | Captions: {result.get('captions', [])}")
+
+            if result["audit_score"] < 0:
+                print(f"      ❌ [ENGINE] Audit fail (Score: {result['audit_score']}). Skipping...")
+                continue
+
+            # In Phase 1 Strict, we ONLY accept mandatory matches
+            if is_strict and must_have and phase == 1 and not result.get("mandatory_match"):
+                continue
+
+            # Accept if match found or if we are in Phase 2 / Non-strict mode
+            HASH_REGISTRY.add(v_hash)
+            final_selection = cand
+            asset_path = f"{TEMP_DIR}/scene_{idx}_final{os.path.splitext(path)[1]}"
+            shutil.move(path, asset_path)
+            print(f"      ✨ [ENGINE] UNIQUE ASSET SELECTED: {cand['source']} ({v_hash})")
+            phase_match = True
+            break
+
+        if phase_match: break
+
+    # Final Fallback
     if not final_selection:
-        print("⚠️ [ENGINE] No unique/passing candidate in batch. Falling back.")
-        path, is_vid, final_selection = trial_data[0]
-        asset_path = f"{TEMP_DIR}/scene_{idx}_final{os.path.splitext(path)[1]}"
-        shutil.move(path, asset_path)
+        print("⚠️ [ENGINE] No perfect candidate found after all phases. Falling back to highest scored trial.")
+        if scored_trials:
+            scored_trials.sort(key=lambda x: x[1]["audit_score"], reverse=True)
+            (path, is_vid, final_selection), result = scored_trials[0]
+            asset_path = f"{TEMP_DIR}/scene_{idx}_final{os.path.splitext(path)[1]}"
+            if not os.path.exists(asset_path) and os.path.exists(path):
+                shutil.move(path, asset_path)
+        else:
+            return None
 
     out = f"{RENDER_DIR}/{scene['scene_id']}.mp4"
     try:
