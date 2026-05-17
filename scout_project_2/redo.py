@@ -35,6 +35,16 @@ async def redo_scene_loop():
         print(f"❌ Production plan not found at {main.PLAN_PATH}!")
         return
 
+    # Load Template Plan (from Repo) for better keywords
+    template_scenes = []
+    if os.path.exists(main.TEMPLATE_PLAN_PATH):
+        try:
+            with open(main.TEMPLATE_PLAN_PATH, "r", encoding="utf-8") as f:
+                template_data = json.load(f)
+                template_scenes = template_data.get("scenes", [])
+        except:
+            pass
+
     while True:
         with open(main.PLAN_PATH, "r", encoding="utf-8") as f:
             plan_data = json.load(f)
@@ -62,47 +72,75 @@ async def redo_scene_loop():
         target_scene = scenes[scene_idx]
         print(f"🎬 Selected Scene {scene_idx + 1}: {target_scene['scene_id']}")
 
+        # Get template reference if available
+        template_ref = template_scenes[scene_idx] if scene_idx < len(template_scenes) else {}
+
         print("\nOptions for scouting:")
-        print("1. More specific (Dense queries)")
-        print("2. More generic (Broad query)")
+        print("1. More specific (Dense, targeted queries)")
+        print("2. More generic (Broad, atmospheric queries)")
         print("Leave blank for default extraction")
         choice = input("Your choice (1/2/blank): ").strip()
 
         story_text = get_story_text_for_scene(target_scene)
         unique_words = main.get_unique_words(story_text, limit=15)
 
+        # Base keywords from template
+        template_keywords = template_ref.get("scout_config", {}).get("keywords", [])
+        template_text = template_ref.get("text", "")
+        required = template_ref.get("scout_config", {}).get("must_have_required", [])
+
         if choice == "1":
             print("🔍 Mode: More Specific")
-            if len(unique_words) >= 6:
-                keywords = [
-                    " ".join(unique_words[:4]),
-                    " ".join(unique_words[4:8]),
-                    " ".join(unique_words[8:12]),
-                    " ".join(unique_words[:6])
-                ]
-            elif unique_words:
-                keywords = [" ".join(unique_words), story_text[:100]]
-            else:
-                keywords = [story_text[:100]] if story_text else ["cinematic specific"]
+            keywords = []
+
+            # Use hand-crafted template text + requirements
+            if template_text:
+                keywords.append(template_text)
+                if required:
+                    keywords.append(f"{template_text} {required[0]}")
+
+            # Denser word combinations from story
+            if len(unique_words) >= 8:
+                keywords.append(" ".join(unique_words[:5]))
+                keywords.append(" ".join(unique_words[5:10]))
+                keywords.append(" ".join(unique_words[:8]))
+
+            # Add specificity modifiers
+            if required:
+                for req in required[:2]:
+                    keywords.append(f"highly detailed {req} close up 4k")
+
+            # Include all template keywords if they exist
+            keywords.extend(template_keywords)
+
         elif choice == "2":
             print("🔍 Mode: More Generic")
+            keywords = []
             if len(unique_words) >= 2:
-                keywords = [" ".join(unique_words[:2])]
-            elif unique_words:
-                keywords = [unique_words[0]]
+                keywords.append(" ".join(unique_words[:2]))
+
+            if required:
+                keywords.append(f"cinematic {required[0]} atmosphere")
             else:
-                keywords = ["cinematic atmosphere"]
+                keywords.append("cinematic background scenery")
+
+            # Use broad terms from template
+            if template_text:
+                words = template_text.split()
+                if len(words) >= 2:
+                    keywords.append(" ".join(words[:2]))
         else:
             print("🔍 Mode: Default")
-            if len(unique_words) >= 3:
+            if template_keywords:
+                keywords = template_keywords
+            elif len(unique_words) >= 3:
                 keywords = [" ".join(unique_words[:3]), " ".join(unique_words[3:6])]
-            elif unique_words:
-                keywords = [" ".join(unique_words)]
             else:
                 keywords = [story_text[:50]] if story_text else ["cinematic atmosphere"]
 
-        # Ensure keywords are not empty strings or lists of empty strings
-        keywords = [k for k in keywords if k and k.strip()]
+        # Deduplicate and clean
+        keywords = list(dict.fromkeys([k.strip() for k in keywords if k and k.strip()]))
+
         if not keywords:
             keywords = [target_scene.get("text", "cinematic atmosphere")]
 
