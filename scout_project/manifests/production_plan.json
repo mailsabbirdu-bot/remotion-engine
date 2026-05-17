@@ -4,113 +4,828 @@
   "scenes": [
     {
       "scene_id": "scene_1",
-      "text": "cinematic nature ocean atmosphere",
-      "duration": 9.36,
+      "text": "crowded dhaka street morning drone shot cinematic overcast",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
       "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_01.wav",
-      "audio_duration": 8.36,
-      "audio_start_in_scene": 0.5,
-      "negative_prompts": ["low quality", "blurry", "text", "watermark", "people"],
-      "asset_preferences": {
-        "allow_video": true,
-        "allow_image": true,
-        "preferred_type": "video"
-      },
       "scout_config": {
         "keywords": [
-          "cinematic ocean",
-          "4k ocean"
+          "crowded dhaka street morning",
+          "cinematic drone shot dhaka",
+          "overcast city aerial view"
         ],
-        "must_have_required": ["ocean", "sea"],
-        "must_have_optional": []
-      }
+        "must_have_required": [
+          "dhaka street"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
     },
     {
       "scene_id": "scene_2",
-      "text": "cinematic nature sky atmosphere",
-      "duration": 10.04,
+      "text": "construction worker sweat close up building concrete bangladesh",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
       "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_02.wav",
-      "audio_duration": 9.04,
-      "audio_start_in_scene": 0.5,
-      "negative_prompts": ["low quality", "blurry", "text", "watermark", "people"],
-      "asset_preferences": {
-        "allow_video": true,
-        "allow_image": true,
-        "preferred_type": "video"
-      },
       "scout_config": {
         "keywords": [
-          "cinematic sky",
-          "4k sky background"
+          "construction worker sweating close up",
+          "building concrete structure bangladesh",
+          "manual labor working on site"
         ],
-        "must_have_required": ["sky"],
-        "must_have_optional": []
-      }
+        "must_have_required": [
+          "construction worker"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
     },
     {
       "scene_id": "scene_3",
-      "text": "cinematic forest atmosphere",
-      "duration": 9.96,
+      "text": "abstract macro ticking clock gears shadow ominous depth of field",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
       "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_03.wav",
-      "audio_duration": 8.96,
-      "audio_start_in_scene": 0.5,
-      "negative_prompts": ["low quality", "blurry", "text", "watermark", "people"],
-      "asset_preferences": {
-        "allow_video": true,
-        "allow_image": true,
-        "preferred_type": "video"
-      },
       "scout_config": {
         "keywords": [
-          "cinematic forest",
-          "4k forest"
+          "abstract macro ticking clock",
+          "gears moving in shadow",
+          "ominous depth of field clock"
         ],
-        "must_have_required": ["forest"],
-        "must_have_optional": []
-      }
+        "must_have_required": [
+          "ticking clock gears"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
     },
     {
       "scene_id": "scene_4",
-      "text": "cinematic spaceship",
-      "duration": 9.28,
+      "text": "old vintage wall clock pendulum swinging close up dark room",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
       "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_04.wav",
-      "audio_duration": 8.28,
-      "audio_start_in_scene": 0.5,
-      "negative_prompts": ["low quality", "blurry", "text", "watermark", "people"],
-      "asset_preferences": {
-        "allow_video": true,
-        "allow_image": true,
-        "preferred_type": "video"
-      },
       "scout_config": {
         "keywords": [
-          "cinematic spaceship",
-          "4k spaceship"
+          "old vintage wall clock",
+          "pendulum swinging close up",
+          "dark room ticking clock"
         ],
-        "must_have_required": ["spaceship"],
-        "must_have_optional": []
-      }
+        "must_have_required": [
+          "vintage wall clock"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
     },
     {
       "scene_id": "scene_5",
-      "text": "cinematic science",
-      "duration": 8.87,
+      "text": "earthquake security camera footage shaking room interior panic",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
       "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_05.wav",
-      "audio_duration": 7.87,
-      "audio_start_in_scene": 0.5,
-      "negative_prompts": ["low quality", "blurry", "text", "watermark", "people"],
-      "asset_preferences": {
-        "allow_video": true,
-        "allow_image": true,
-        "preferred_type": "video"
-      },
       "scout_config": {
         "keywords": [
-          "cinematic computer science",
-          "4k computer background"
+          "earthquake security camera footage",
+          "shaking room interior panic",
+          "cctv room shaking earthquake"
         ],
-        "must_have_required": ["computer"],
-        "must_have_optional": []
-      }
+        "must_have_required": [
+          "earthquake security camera"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_6",
+      "text": "scientific seismograph needle shaking moving rapidly close up red line",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_06.wav",
+      "scout_config": {
+        "keywords": [
+          "scientific seismograph needle shaking",
+          "moving rapidly close up",
+          "seismograph recording red line"
+        ],
+        "must_have_required": [
+          "seismograph needle"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_7",
+      "text": "human hand trembling tea spilling from cup table vibration",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_07.wav",
+      "scout_config": {
+        "keywords": [
+          "human hand trembling tea",
+          "spilling from cup table",
+          "table vibration earthquake ripple"
+        ],
+        "must_have_required": [
+          "hand trembling"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_8",
+      "text": "concrete wall structural crack zooming in slowly grit texture",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_08.wav",
+      "scout_config": {
+        "keywords": [
+          "concrete wall structural crack",
+          "zooming in slowly crack",
+          "grit texture damaged wall"
+        ],
+        "must_have_required": [
+          "concrete wall crack"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_9",
+      "text": "people running out of buildings dhaka street chaos handheld camera",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_09.wav",
+      "scout_config": {
+        "keywords": [
+          "people running out of buildings",
+          "dhaka street chaos panic",
+          "handheld camera earthquake aftermath"
+        ],
+        "must_have_required": [
+          "people running"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_10",
+      "text": "flashing red ambulance light night abstract blur rainy street",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_10.wav",
+      "scout_config": {
+        "keywords": [
+          "flashing red ambulance light",
+          "night abstract blur city",
+          "rainy street emergency vehicles"
+        ],
+        "must_have_required": [
+          "ambulance light"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_11",
+      "text": "university heavy metal gate closing slowly locked chain padlock",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_11.wav",
+      "scout_config": {
+        "keywords": [
+          "university heavy metal gate",
+          "closing slowly locked gate",
+          "chain padlock campus closure"
+        ],
+        "must_have_required": [
+          "metal gate"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_12",
+      "text": "empty university campus courtyard wind blowing lonely autumn leaf",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_12.wav",
+      "scout_config": {
+        "keywords": [
+          "empty university campus courtyard",
+          "wind blowing empty campus",
+          "lonely autumn leaf blowing"
+        ],
+        "must_have_required": [
+          "empty campus"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_13",
+      "text": "tv studio control room monitors news graphics glowing screen",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_13.wav",
+      "scout_config": {
+        "keywords": [
+          "tv studio control room",
+          "monitors news graphics glowing",
+          "broadcasting studio video screen"
+        ],
+        "must_have_required": [
+          "tv studio control"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_14",
+      "text": "stormy dark clouds lightning striking city silhouette cinematic",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_14.wav",
+      "scout_config": {
+        "keywords": [
+          "stormy dark clouds lightning",
+          "lightning striking city silhouette",
+          "cinematic dramatic thunderstorm night"
+        ],
+        "must_have_required": [
+          "lightning striking city"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_15",
+      "text": "scientist looking at data screens analytics map laboratory dark",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_15.wav",
+      "scout_config": {
+        "keywords": [
+          "scientist looking at data",
+          "screens analytics map laboratory",
+          "dark control room researcher"
+        ],
+        "must_have_required": [
+          "scientist looking data"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_16",
+      "text": "geologist hands touching ancient rock layer soil samples examining",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_16.wav",
+      "scout_config": {
+        "keywords": [
+          "geologist hands touching ancient",
+          "rock layer soil samples",
+          "examining geological earth texture"
+        ],
+        "must_have_required": [
+          "geologist hands touching"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_17",
+      "text": "abstract digital Earth 3D wireframe tectonic plates data visualization",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_17.wav",
+      "scout_config": {
+        "keywords": [
+          "abstract digital Earth wireframe",
+          "3D wireframe tectonic plates",
+          "tectonic plates data visualization"
+        ],
+        "must_have_required": [
+          "tectonic plates data"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_18",
+      "text": "elderly scientist eyes widening surprise shock looking at screen close up",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_18.wav",
+      "scout_config": {
+        "keywords": [
+          "elderly scientist eyes widening",
+          "surprise shock looking screen",
+          "scientist close up eyes"
+        ],
+        "must_have_required": [
+          "scientist eyes widening"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_19",
+      "text": "peaceful bengal river silt drone shot golden hour calm water",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_19.wav",
+      "scout_config": {
+        "keywords": [
+          "peaceful bengal river silt",
+          "drone shot golden hour",
+          "calm water river drone"
+        ],
+        "must_have_required": [
+          "bengal river silt"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_20",
+      "text": "laboratory blue light glowing tech screen grid lines reveals map",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_20.wav",
+      "scout_config": {
+        "keywords": [
+          "laboratory blue light glowing",
+          "tech screen grid lines",
+          "reveals map digital analytics"
+        ],
+        "must_have_required": [
+          "laboratory tech screen"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_21",
+      "text": "3D earth crust animation friction heat line glowing red fault line",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_21.wav",
+      "scout_config": {
+        "keywords": [
+          "3D earth crust animation",
+          "friction heat line glowing",
+          "glowing red fault line"
+        ],
+        "must_have_required": [
+          "glowing red fault line"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_22",
+      "text": "two massive tectonic plates grinding animation pressure build up glow",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_22.wav",
+      "scout_config": {
+        "keywords": [
+          "two massive tectonic plates",
+          "grinding animation pressure build",
+          "pressure build up glow"
+        ],
+        "must_have_required": [
+          "tectonic plates grinding"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_23",
+      "text": "repetitive water droplets falling creating ripples close up macro",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_23.wav",
+      "scout_config": {
+        "keywords": [
+          "repetitive water droplets falling",
+          "creating ripples close up",
+          "ripples macro slow motion"
+        ],
+        "must_have_required": [
+          "water droplets falling"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_24",
+      "text": "dry mud cracking abstract macro glass fracturing slowly close up",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_24.wav",
+      "scout_config": {
+        "keywords": [
+          "dry mud cracking abstract",
+          "macro glass fracturing slowly",
+          "fracturing slowly close up"
+        ],
+        "must_have_required": [
+          "glass fracturing slowly"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_25",
+      "text": "old brick wall masonry hairline fracture opening wider slow macro",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_25.wav",
+      "scout_config": {
+        "keywords": [
+          "old brick wall masonry",
+          "hairline fracture opening wider",
+          "slow macro structural crack"
+        ],
+        "must_have_required": [
+          "brick wall fracture"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_26",
+      "text": "dhaka city extreme wide panoramic cinematic dark moody sunset clouds",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_26.wav",
+      "scout_config": {
+        "keywords": [
+          "dhaka city extreme wide",
+          "panoramic cinematic dark city",
+          "moody sunset clouds aerial"
+        ],
+        "must_have_required": [
+          "dhaka city skyline"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_27",
+      "text": "wet children school notebook lying abandoned on ground rain drops",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_27.wav",
+      "scout_config": {
+        "keywords": [
+          "wet children school notebook",
+          "lying abandoned on ground",
+          "rain drops falling macro"
+        ],
+        "must_have_required": [
+          "abandoned school notebook"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_28",
+      "text": "lone man standing on high balcony looking at vulnerable old buildings",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_28.wav",
+      "scout_config": {
+        "keywords": [
+          "lone man standing balcony",
+          "looking at vulnerable buildings",
+          "old city infrastructure risk"
+        ],
+        "must_have_required": [
+          "vulnerable old buildings"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_29",
+      "text": "deeply buried stone layers shifting massive earth crust concept",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_29.wav",
+      "scout_config": {
+        "keywords": [
+          "deeply buried stone layers",
+          "shifting massive earth crust",
+          "geological tectonic layer movement"
+        ],
+        "must_have_required": [
+          "stone layers shifting"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_30",
+      "text": "concrete ground splitting open texture abstract flash effect",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_30.wav",
+      "scout_config": {
+        "keywords": [
+          "concrete ground splitting open",
+          "splitting open texture abstract",
+          "flash effect earthquake simulation"
+        ],
+        "must_have_required": [
+          "concrete ground splitting"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_31",
+      "text": "construction blueprints engineering safety helmet orange close up table",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_31.wav",
+      "scout_config": {
+        "keywords": [
+          "construction blueprints engineering planning",
+          "safety helmet orange close",
+          "engineering gear on table"
+        ],
+        "must_have_required": [
+          "construction blueprints"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_32",
+      "text": "direct eye contact shot child innocence look window dhaka city blur background",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_32.wav",
+      "scout_config": {
+        "keywords": [
+          "direct eye contact child",
+          "innocence look window view",
+          "dhaka city blur background"
+        ],
+        "must_have_required": [
+          "child innocence look"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
+    },
+    {
+      "scene_id": "scene_33",
+      "text": "pitch black screen slow smoke vignette ambient dark textures",
+      "negative_prompts": [
+        "low quality",
+        "blurry",
+        "text",
+        "watermark",
+        "people"
+      ],
+      "audio_path": "/content/drive/MyDrive/Counterism_Studio_V4/audio/SC_33.wav",
+      "scout_config": {
+        "keywords": [
+          "pitch black screen smoke",
+          "slow smoke vignette effect",
+          "ambient dark textures background"
+        ],
+        "must_have_required": [
+          "slow smoke vignette"
+        ]
+      },
+      "audio_start_in_scene": 0.5,
+      "duration": "",
+      "audio_duration": ""
     }
   ]
 }
