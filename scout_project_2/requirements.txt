@@ -1,0 +1,12 @@
+nest-asyncio
+aiohttp
+pydub
+sentence-transformers
+transformers
+torch
+torchvision
+pillow
+opencv-python
+moviepy
+imagehash
+PyWavelets
