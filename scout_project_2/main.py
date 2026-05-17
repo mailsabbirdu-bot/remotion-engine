@@ -239,39 +239,43 @@ async def process_scene(scene, idx):
     audited_urls = set()
     is_strict = scene.get("strict_mode", False)
     must_have = scene.get("scout_config", {}).get("must_have_required", [])
+    custom_detail = scene.get("custom_detail", "")
 
     final_selection = None
     asset_path = None
     scored_trials = []
 
-    # Two Main Phases:
-    # Phase 1: Audit top candidates from initial pool
-    # Phase 2: If Phase 1 fails (strict mode), re-scout using ONLY must_have keywords and audit again.
-
+    # Two Main Phases
     for phase in range(1, 3):
         if phase == 2:
-            if not is_strict or not must_have: break # Only Phase 2 in strict mode
-            print(f"🔄 [ENGINE] PHASE 2: No mandatory match in initial pool. Triggering EXTREME RE-SEARCH...")
+            if not is_strict or (not must_have and not custom_detail): break
+            print(f"🔄 [ENGINE] PHASE 2: Triggering EXTREME RE-SEARCH for mandatory items...")
 
-            # Create a specialized mini-scene for Phase 2 searching
             phase2_scene = scene.copy()
             phase2_scene["scout_config"] = scene["scout_config"].copy()
-            # Search ONLY for the required items
-            phase2_scene["scout_config"]["keywords"] = [f"{m} close up" for m in must_have] + must_have
+
+            # Focused searching
+            keywords = []
+            if custom_detail:
+                keywords.append(custom_detail)
+                keywords.append(f"{custom_detail} close up macro")
+            if must_have:
+                keywords.extend(must_have)
+                for m in must_have:
+                    keywords.append(f"{m} close up")
+
+            phase2_scene["scout_config"]["keywords"] = keywords
 
             new_candidates = await get_all_candidates(phase2_scene)
             if new_candidates:
                 new_candidates = technical_filter(new_candidates, scene["duration"])
                 new_candidates = semantic_filter(phase2_scene, new_candidates)
-                # Merge into pool, ensuring uniqueness
                 all_pool.extend([c for c in new_candidates if c["url"] not in [x["url"] for x in all_pool]])
 
-        # Filter out already audited URLs from the pool
         candidates = [c for c in all_pool if c["url"] not in audited_urls]
         if not candidates: continue
 
-        # Audit Batch Size
-        batch_size = 10 if phase == 1 and is_strict else 8
+        batch_size = 12 if phase == 1 and is_strict else 8
         top_batch = candidates[:batch_size]
 
         trial_data = []
@@ -283,47 +287,36 @@ async def process_scene(scene, idx):
                 tasks.append(download_asset(session, cand["url"], path))
                 audited_urls.add(cand["url"])
             paths = await asyncio.gather(*tasks)
-
             for cand, path in zip(top_batch, paths):
                 if path: trial_data.append((path, cand["type"]=="video", cand))
 
         if not trial_data: continue
 
-        # Vision Audit
         print(f"🔍 [ENGINE] Batch Auditing {len(trial_data)} candidates (Phase {phase})...")
         auditor = VisionAuditor(scene)
         audit_results = auditor.audit_batch(trial_data)
 
-        # Score and Sort
         for (path, is_vid, cand), result in zip(trial_data, audit_results):
             if result:
                 scored_trials.append(((path, is_vid, cand), result))
 
         scored_trials.sort(key=lambda x: x[1]["audit_score"], reverse=True)
 
-        # Selection Loop
         phase_match = False
         for (path, is_vid, cand), result in scored_trials:
             if not os.path.exists(path): continue
-
-            # Uniqueness Check
             v_hash = get_visual_hash(path, is_vid)
-            if v_hash in HASH_REGISTRY:
-                print(f"      ⚠️ [ENGINE] DUPLICATE DETECTED ({v_hash}). Skipping...")
-                continue
+            if v_hash in HASH_REGISTRY: continue
 
             mandatory_str = " [MANDATORY MATCH]" if result.get("mandatory_match") else ""
             print(f"      📊 Candidate {cand['source']}: Audit={result['audit_score']:.1f}{mandatory_str} | Captions: {result.get('captions', [])}")
 
-            if result["audit_score"] < 0:
-                print(f"      ❌ [ENGINE] Audit fail (Score: {result['audit_score']}). Skipping...")
+            if result["audit_score"] < 0: continue
+
+            # Strict mode Phase 1 REQUIREMENT
+            if is_strict and (must_have or custom_detail) and phase == 1 and not result.get("mandatory_match"):
                 continue
 
-            # In Phase 1 Strict, we ONLY accept mandatory matches
-            if is_strict and must_have and phase == 1 and not result.get("mandatory_match"):
-                continue
-
-            # Accept if match found or if we are in Phase 2 / Non-strict mode
             HASH_REGISTRY.add(v_hash)
             final_selection = cand
             asset_path = f"{TEMP_DIR}/scene_{idx}_final{os.path.splitext(path)[1]}"
@@ -334,17 +327,14 @@ async def process_scene(scene, idx):
 
         if phase_match: break
 
-    # Final Fallback
     if not final_selection:
-        print("⚠️ [ENGINE] No perfect candidate found after all phases. Falling back to highest scored trial.")
+        print("⚠️ [ENGINE] No perfect candidate found. Falling back to highest scored trial.")
         if scored_trials:
             scored_trials.sort(key=lambda x: x[1]["audit_score"], reverse=True)
             (path, is_vid, final_selection), result = scored_trials[0]
             asset_path = f"{TEMP_DIR}/scene_{idx}_final{os.path.splitext(path)[1]}"
-            if not os.path.exists(asset_path) and os.path.exists(path):
-                shutil.move(path, asset_path)
-        else:
-            return None
+            if os.path.exists(path): shutil.move(path, asset_path)
+        else: return None
 
     out = f"{RENDER_DIR}/{scene['scene_id']}.mp4"
     try:
