@@ -17,7 +17,7 @@ def deduplicate(candidates):
     return final
 
 
-async def fetch_pexels_video(session, query, limit=12):
+async def fetch_pexels_video(session, query, limit=40):
     print(f"📡 [SCOUT] Searching Pexels Videos for: '{query}'")
     url = f"https://api.pexels.com/videos/search?query={query}&per_page={limit}"
     headers = {
@@ -89,7 +89,7 @@ async def fetch_pexels_image(session, query, limit=12):
         return []
 
 
-async def fetch_pixabay_video(session, query, limit=12):
+async def fetch_pixabay_video(session, query, limit=40):
     print(f"📡 [SCOUT] Searching Pixabay Videos for: '{query}'")
     key = API_KEYS["pixabay"]
     url = f"https://pixabay.com/api/videos/?key={key}&q={query}&per_page={limit}"
@@ -185,4 +185,4 @@ async def get_all_candidates(scene):
 
     final = deduplicate(final)
     print(f"✅ [SCOUT] Candidates Pool: {len(final)} ({'Videos Only' if preferred_type=='video' else 'Mixed'})")
-    return final[:40]
+    return final[:80] # Return more candidates for auditing

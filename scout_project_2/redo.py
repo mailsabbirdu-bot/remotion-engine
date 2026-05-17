@@ -98,27 +98,27 @@ async def redo_scene_loop():
             target_scene["strict_mode"] = True # Activate AI enforcement
             keywords = []
 
-            # Use hand-crafted template text + requirements
+            # Use hand-crafted template text
             if template_text:
                 keywords.append(template_text)
-                if required:
-                    for req in required:
-                        keywords.append(f"{template_text} {req}")
-                        keywords.append(req) # Individual requirement search
+
+            # High-impact short queries (2-3 words)
+            if required:
+                for req in required:
+                    keywords.append(req)
+                    keywords.append(f"{req} close up")
+                    keywords.append(f"{req} macro")
+                    keywords.append(f"{req} scientific")
 
             # Denser word combinations from story
-            if len(unique_words) >= 8:
-                keywords.append(" ".join(unique_words[:4])) # Short density
-                keywords.append(" ".join(unique_words[4:8]))
-                keywords.append(" ".join(unique_words[:6]))
-                keywords.append(" ".join(unique_words[2:6]))
+            if len(unique_words) >= 6:
+                keywords.append(" ".join(unique_words[:3]))
+                keywords.append(" ".join(unique_words[3:6]))
+                keywords.append(" ".join(unique_words[:4]))
 
-            # Add specificity modifiers
-            if required:
-                for req in required[:2]:
-                    keywords.append(f"highly detailed {req} close up 4k")
-                    keywords.append(f"scientific {req} footage macro")
-                    keywords.append(f"{req} animation")
+            # Specific style tags
+            keywords.append("professional cinematography 4k")
+            keywords.append("highly detailed asset")
 
             # Include all template keywords if they exist
             keywords.extend(template_keywords)
@@ -130,7 +130,7 @@ async def redo_scene_loop():
                 keywords.append(" ".join(unique_words[:2]))
 
             if required:
-                keywords.append(f"cinematic {required[0]} atmosphere")
+                keywords.append(f"cinematic {required[0]} background")
             else:
                 keywords.append("cinematic background scenery")
 
