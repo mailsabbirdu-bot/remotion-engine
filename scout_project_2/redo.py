@@ -81,6 +81,10 @@ async def redo_scene_loop():
         print("Leave blank for default extraction")
         choice = input("Your choice (1/2/blank): ").strip()
 
+        custom_detail = ""
+        if choice == "1":
+            custom_detail = input("Enter any specific detail or subject (optional, e.g. 'red needle'): ").strip()
+
         story_text = get_story_text_for_scene(target_scene)
         unique_words = main.get_unique_words(story_text, limit=15)
 
@@ -92,36 +96,39 @@ async def redo_scene_loop():
         # Update scene config with template requirements for auditor
         target_scene["scout_config"]["must_have_required"] = required
         target_scene["strict_mode"] = False
+        target_scene["custom_detail"] = custom_detail
 
         if choice == "1":
             print("🔍 Mode: More Specific")
             target_scene["strict_mode"] = True # Activate AI enforcement
             keywords = []
 
-            # Use hand-crafted template text
-            if template_text:
-                keywords.append(template_text)
+            # 1. Custom detail priority
+            if custom_detail:
+                keywords.append(custom_detail)
+                keywords.append(f"{custom_detail} close up 4k")
 
-            # High-impact short queries (2-3 words)
+            # 2. Required items individually
             if required:
                 for req in required:
                     keywords.append(req)
-                    keywords.append(f"{req} close up")
                     keywords.append(f"{req} macro")
                     keywords.append(f"{req} scientific")
 
-            # Denser word combinations from story
-            if len(unique_words) >= 6:
+            # 3. High-impact word combos from story
+            if len(unique_words) >= 4:
+                keywords.append(" ".join(unique_words[:2]))
+                keywords.append(" ".join(unique_words[2:4]))
                 keywords.append(" ".join(unique_words[:3]))
-                keywords.append(" ".join(unique_words[3:6]))
-                keywords.append(" ".join(unique_words[:4]))
 
-            # Specific style tags
-            keywords.append("professional cinematography 4k")
-            keywords.append("highly detailed asset")
-
-            # Include all template keywords if they exist
-            keywords.extend(template_keywords)
+            # 4. Hand-crafted template text
+            if template_text:
+                # Split template text into shorter segments if it's too long
+                t_words = template_text.split()
+                if len(t_words) > 5:
+                    keywords.append(" ".join(t_words[:4]))
+                else:
+                    keywords.append(template_text)
 
         elif choice == "2":
             print("🔍 Mode: More Generic")
@@ -158,6 +165,8 @@ async def redo_scene_loop():
         print(f"🆕 New Keywords: {keywords}")
         if required:
             print(f"📌 Mandatory Items: {required}")
+        if custom_detail:
+            print(f"🎯 Custom Detail: {custom_detail}")
 
         # Save updated plan
         with open(main.PLAN_PATH, "w", encoding="utf-8") as f:
