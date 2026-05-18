@@ -1,0 +1,61 @@
+# 🔄 Re-Scout Engine (V3) Colab Guide
+
+Run this interactive tool in Google Colab to re-scout specific scenes with custom keywords and mandatory requirements.
+
+## 📁 Prerequisites (Google Drive)
+The engine assumes you already have:
+- `Counterism_Studio_V4/audio/` containing your `.wav` and `.txt` files.
+- `Counterism_Studio_V4/manifests/production_plan.json` already generated.
+
+Re-scouted scenes will be saved to:
+- `Counterism_Studio_V4/audio/re_scout/`
+
+---
+
+## 🎬 Execution Code
+
+Copy and paste the following into a Google Colab code cell:
+
+```python
+# @title 🔄 Start Re-Scout Engine V3
+import os
+import shutil
+
+# 1. Mount Google Drive
+if not os.path.exists('/content/drive'):
+    from google.colab import drive
+    drive.mount('/content/drive')
+
+# --- CONFIGURATION ---
+REPO_URL = "https://github.com/mailsabbirdu-bot/remotion-engine.git"
+PROJECT_DIR = "/content/scout-engine"
+
+# 2. Setup Environment
+if os.path.exists(PROJECT_DIR):
+    shutil.rmtree(PROJECT_DIR)
+
+print("🛰️ Cloning engine...")
+!git clone {REPO_URL} {PROJECT_DIR}
+%cd {PROJECT_DIR}/scout_project_3
+
+# 3. Install System Dependencies
+print("📦 Installing system dependencies...")
+!apt-get install -y ffmpeg libavcodec-extra > /dev/null
+
+# 4. Install Python Dependencies
+print("🐍 Installing Python packages...")
+!pip install -r requirements.txt --quiet
+
+# 5. Run the Re-Scout Script
+print("\n🎬 STARTING RE-SCOUT ENGINE...")
+!python re_scout.py
+```
+
+## 📝 How it works
+1. **Interactive Loop**: The terminal will ask you for the **Scene Number**.
+2. **Editing**:
+   - You can review and edit **Keywords**.
+   - You can specify **Must Have** items (Mandatory visual verification).
+   - You can update **Negative Prompts**.
+3. **Re-Rendering**: The engine re-downloads assets, re-audits them using AI, and renders the scene with audio sync and padding.
+4. **Target Folder**: Output is saved in `Drive > Counterism_Studio_V4 > audio > re_scout`.
