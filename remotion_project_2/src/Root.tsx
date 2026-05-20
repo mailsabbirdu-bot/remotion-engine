@@ -59,9 +59,9 @@ const loadFonts = async () => {
 loadFonts();
 
 export const RemotionRoot: React.FC = () => {
-  const totalDuration = data.scenes.reduce((acc, scene, index) => {
-    const transitionOverlap = index < data.scenes.length - 1 ? (scene.transition?.duration || 0) : 0;
-    return acc + scene.duration - transitionOverlap;
+  const totalDuration = (data.scenes || []).reduce((acc, scene, index) => {
+    const transitionOverlap = index < (data.scenes || []).length - 1 ? (scene.transition?.duration || 0) : 0;
+    return acc + (scene.duration || 0) - transitionOverlap;
   }, 0);
 
   return (
@@ -70,9 +70,9 @@ export const RemotionRoot: React.FC = () => {
         id="Main"
         component={MainComposition as any}
         durationInFrames={Math.max(1, totalDuration)}
-        fps={data.fps}
-        width={data.width}
-        height={data.height}
+        fps={data.fps || 30}
+        width={data.width || 1080}
+        height={data.height || 1920}
         defaultProps={{
           data: data as any,
         }}

@@ -1,5 +1,5 @@
 {
-  "name": "remotion-engine",
+  "name": "remotion-project-2",
   "version": "1.0.0",
   "description": "Remotion project with Bangla/English font support and dynamic JSON configuration",
   "main": "src/index.ts",
