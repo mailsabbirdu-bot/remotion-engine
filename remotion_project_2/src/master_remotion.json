@@ -1,0 +1,1461 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "banglaFont": "FN Mahin Dui Dashok Italic",
+  "englishFont": "Audiowide-Regular",
+  "scenes": [
+    {
+      "Id": "scene_1",
+      "duration": 245,
+      "src": "scene_1.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_1.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_1",
+          "type": "text",
+          "content": "ঢাকা: পৃথিবীর অন্যতম ঘনবসতিপূর্ণ মেগাসিটি।",
+          "start": 0,
+          "duration": 244,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-up",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rect",
+            "color": "rgba(0, 0, 0, 0.75)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_2",
+      "duration": 281,
+      "src": "scene_2.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_2.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_2",
+          "type": "text",
+          "content": "দুই কোটিরও বেশি মানুষের অবিরাম লড়াই।",
+          "start": 0,
+          "duration": 281,
+          "style": {
+            "color": "#f1c40f",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-in",
+            "easing": "ease-in-out"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "ease-in-out"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rounded-rect",
+            "color": "rgba(20, 20, 20, 0.6)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_3",
+      "duration": 283,
+      "src": "scene_3.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_3.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_3",
+          "type": "text",
+          "content": "কিন্তু এই শহরের নিচেই লুকিয়ে আছে এক টাইমবোম্ব।",
+          "start": 0,
+          "duration": 283,
+          "style": {
+            "color": "#e74c3c",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-up",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "animationOut": {
+            "type": "fade-down",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rect",
+            "color": "rgba(0, 0, 0, 0.8)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_4",
+      "duration": 229,
+      "src": "scene_4.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_4.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_4",
+          "type": "text",
+          "content": "একটি জিওলজিক্যাল ক্লক... যা টিকটিক করে চলছে।",
+          "start": 0,
+          "duration": 229,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-in",
+            "easing": "linear"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "linear"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": false,
+            "type": "none",
+            "color": "rgba(0, 0, 0, 0)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_5",
+      "duration": 203,
+      "src": "scene_5.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_5.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_5",
+          "type": "text",
+          "content": "শুরুটা ৫.৭ মাত্রার এক আচমকা ভূমিকম্পে।",
+          "start": 0,
+          "duration": 203,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-up",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rect",
+            "color": "rgba(192, 57, 43, 0.85)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_6",
+      "duration": 165,
+      "src": "scene_6.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_6.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_6",
+          "type": "text",
+          "content": "পর পর তিনটা মারাত্মক আফটারশকের আঘাত।",
+          "start": 0,
+          "duration": 165,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-in",
+            "easing": "ease-in"
+          },
+          "animationOut": {
+            "type": "fade-down",
+            "easing": "ease-in"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rect",
+            "color": "rgba(0, 0, 0, 0.7)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_7",
+      "duration": 293,
+      "src": "scene_7.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_7.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_7",
+          "type": "text",
+          "content": "এটা স্রেফ মৃদু কম্পন ছিল না, এটি ছিল ওække-up কল।",
+          "start": 0,
+          "duration": 293,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-up",
+            "easing": "ease-in-out"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "ease-in-out"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rounded-rect",
+            "color": "rgba(44, 62, 80, 0.8)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_8",
+      "duration": 167,
+      "src": "scene_8.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_8.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_8",
+          "type": "text",
+          "content": "নিরাপত্তার মিথ্যা দেয়াল এক ঝটকায় চূর্ণ।",
+          "start": 0,
+          "duration": 167,
+          "style": {
+            "color": "#e74c3c",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-in",
+            "easing": "ease-out"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "ease-out"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": false,
+            "type": "none",
+            "color": "rgba(0, 0, 0, 0)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_9",
+      "duration": 174,
+      "src": "scene_9.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_9.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_9",
+          "type": "text",
+          "content": "পুরো অঞ্চল জুড়ে ছড়িয়ে পড়া তীব্র আতঙ্ক।",
+          "start": 0,
+          "duration": 174,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-up",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rect",
+            "color": "rgba(0, 0, 0, 0.7)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_10",
+      "duration": 308,
+      "src": "scene_10.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_10.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_10",
+          "type": "text",
+          "content": "১০টি তাজা প্রাণের চিরতরে বিদায়।",
+          "start": 0,
+          "duration": 308,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-in",
+            "easing": "ease-in-out"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "ease-in-out"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rounded-rect",
+            "color": "rgba(192, 57, 43, 0.9)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_11",
+      "duration": 270,
+      "src": "scene_11.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_11.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_11",
+          "type": "text",
+          "content": "বন্ধ হলো বিশ্ববিদ্যালয়ের চেনা দুয়ার।",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-up",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "animationOut": {
+            "type": "fade-down",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rect",
+            "color": "rgba(0, 0, 0, 0.8)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_12",
+      "duration": 270,
+      "src": "scene_12.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_12.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_12",
+          "type": "text",
+          "content": "মুখর ক্যাম্পাসগুলো ঢাকল ভুতুড়ে নীরবতায়।",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#bdc3c7",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-in",
+            "easing": "linear"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "linear"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": false,
+            "type": "none",
+            "color": "rgba(0, 0, 0, 0)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_13",
+      "duration": 270,
+      "src": "scene_13.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_13.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_13",
+          "type": "text",
+          "content": "মিডিয়া জুড়ে প্রশ্ন— এটি কি স্রেফ স্বাভাবিক বিচ্যুতি?",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-up",
+            "easing": "ease-in-out"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "ease-in-out"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rect",
+            "color": "rgba(22, 160, 133, 0.8)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_14",
+      "duration": 270,
+      "src": "scene_14.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_14.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_14",
+          "type": "text",
+          "content": "নাকি মহাপ্রলয়ের আগে প্রকৃতির শেষ সতর্কবার্তা?",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#f39c12",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-in",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "animationOut": {
+            "type": "fade-down",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rounded-rect",
+            "color": "rgba(0, 0, 0, 0.75)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_15",
+      "duration": 270,
+      "src": "scene_15.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_15.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_15",
+          "type": "text",
+          "content": "ডেটা ও ইতিহাসের সন্ধানে গবেষকদের তৎপরতা।",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-up",
+            "easing": "ease-out"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "ease-out"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rect",
+            "color": "rgba(44, 62, 80, 0.85)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_16",
+      "duration": 270,
+      "src": "scene_16.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_16.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_16",
+          "type": "text",
+          "content": "প্রকৃতির নিজস্ব টাইমলাইন বোঝার চেষ্টা।",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-in",
+            "easing": "linear"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "linear"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rounded-rect",
+            "color": "rgba(0, 0, 0, 0.6)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_17",
+      "duration": 270,
+      "src": "scene_17.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_17.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_17",
+          "type": "text",
+          "content": "নতুন সিসমিক ডেটার গভীরে অনুসন্ধানের পালা...",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-up",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "animationOut": {
+            "type": "fade-down",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rect",
+            "color": "rgba(0, 0, 0, 0.7)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_18",
+      "duration": 270,
+      "src": "scene_18.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_18.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_18",
+          "type": "text",
+          "content": "সত্য উন্মোচনে বিজ্ঞানীদের চরম বিস্ময়!",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#ffdd57",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-in",
+            "easing": "ease-in-out"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "ease-in-out"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": false,
+            "type": "none",
+            "color": "rgba(0, 0, 0, 0)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_19",
+      "duration": 270,
+      "src": "scene_19.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_19.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_19",
+          "type": "text",
+          "content": "ধারণা ছিল, পলিমাটির নরম স্তর রক্ষা করবে বাংলাদেশকে।",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-up",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rect",
+            "color": "rgba(39, 174, 96, 0.75)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_20",
+      "duration": 270,
+      "src": "scene_20.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_20.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_20",
+          "type": "text",
+          "content": "কিন্তু আধুনিক বিজ্ঞান উন্মোচন করল আসল সত্য।",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-in",
+            "easing": "ease-out"
+          },
+          "animationOut": {
+            "type": "fade-down",
+            "easing": "ease-out"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rounded-rect",
+            "color": "rgba(0, 0, 0, 0.8)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_21",
+      "duration": 270,
+      "src": "scene_21.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_21.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_21",
+          "type": "text",
+          "content": "মাটির নিচে সুপ্ত দানবীয় মেগাথ্রাস্ট ফল্ট লাইন।",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#e74c3c",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-up",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rect",
+            "color": "rgba(0, 0, 0, 0.85)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_22",
+      "duration": 270,
+      "src": "scene_22.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_22.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_22",
+          "type": "text",
+          "content": "এক বিশাল প্লেট প্রতিনিয়ত ধেয়ে আসছে অন্যটির নিচে।",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-in",
+            "easing": "linear"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "linear"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": false,
+            "type": "none",
+            "color": "rgba(0, 0, 0, 0)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_23",
+      "duration": 270,
+      "src": "scene_23.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_23.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_23",
+          "type": "text",
+          "content": "এই ছোট কম্পনগুলো কোনো কাকতালীয় ঘটনা নয়।",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-up",
+            "easing": "ease-in-out"
+          },
+          "animationOut": {
+            "type": "fade-down",
+            "easing": "ease-in-out"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rect",
+            "color": "rgba(44, 62, 80, 0.7)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_24",
+      "duration": 270,
+      "src": "scene_24.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_24.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_24",
+          "type": "text",
+          "content": "Apply text layers: এগুলো বড় কোনো ধ্বংসের পূর্বাভাস বা 'ফোরশক্স'।",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#f1c40f",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-in",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rounded-rect",
+            "color": "rgba(192, 57, 43, 0.8)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_25",
+      "duration": 270,
+      "src": "scene_25.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_25.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_25",
+          "type": "text",
+          "content": "মূল পতনের ঠিক আগে দেয়ালে যেমন ফাটল ধরে।",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-up",
+            "easing": "ease-out"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "ease-out"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": false,
+            "type": "none",
+            "color": "rgba(0, 0, 0, 0)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_26",
+      "duration": 270,
+      "src": "scene_26.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_26.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_26",
+          "type": "text",
+          "content": "এই লাইফটাইমেই ধেয়ে আসছে এক বিধ্বংসী ভূমিকম্প।",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-in",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "animationOut": {
+            "type": "fade-down",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rect",
+            "color": "rgba(0, 0, 0, 0.9)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_27",
+      "duration": 270,
+      "src": "scene_27.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_27.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_27",
+          "type": "text",
+          "content": "ছোট আঘাতেই যখন এমন বিপর্যয় আর ক্ষয়ক্ষতি...",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-up",
+            "easing": "ease-in-out"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "ease-in-out"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rounded-rect",
+            "color": "rgba(0, 0, 0, 0.65)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_28",
+      "duration": 270,
+      "src": "scene_28.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_28.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_28",
+          "type": "text",
+          "content": "এই জাতি কতটা বড় ঝুঁকির মুখে দাঁড়িয়ে!",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#e74c3c",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-in",
+            "easing": "ease-in"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "ease-in"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rect",
+            "color": "rgba(0, 0, 0, 0.75)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_29",
+      "duration": 270,
+      "src": "scene_29.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_29.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_29",
+          "type": "text",
+          "content": "মাটির গভীরের এই মহাজাগতিক গতি রুখবে কে?",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-up",
+            "easing": "linear"
+          },
+          "animationOut": {
+            "type": "fade-down",
+            "easing": "linear"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": false,
+            "type": "none",
+            "color": "rgba(0, 0, 0, 0)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_30",
+      "duration": 270,
+      "src": "scene_30.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_30.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_30",
+          "type": "text",
+          "content": "ঠিক কোন মুহূর্তে মাটি ফাটবে, তা অনুমান করা অসম্ভব।",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-in",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rect",
+            "color": "rgba(192, 57, 43, 0.8)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_31",
+      "duration": 270,
+      "src": "scene_31.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_31.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_31",
+          "type": "text",
+          "content": "তবে আমাদের হাতে আছে একটিই পথ— সঠিক প্রস্তুতি।",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#2ecc71",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-up",
+            "easing": "ease-out"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "ease-out"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rounded-rect",
+            "color": "rgba(0, 0, 0, 0.8)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_32",
+      "duration": 270,
+      "src": "scene_32.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_32.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_32",
+          "type": "text",
+          "content": "প্রকৃতি তার চূড়ান্ত সতর্কবার্তা দিয়ে দিয়েছে।",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-in",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "animationOut": {
+            "type": "fade-down",
+            "easing": "cubic-bezier(0.33, 1, 0.68, 1)"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rect",
+            "color": "rgba(0, 0, 0, 0.75)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_33",
+      "duration": 270,
+      "src": "scene_33.mp4",
+      "background": {
+        "type": "video",
+        "src": "scene_33.mp4",
+        "audio": ""
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "Layers": [
+        {
+          "id": "text_layer_33",
+          "type": "text",
+          "content": "ডেল্টা তার ঋণ বুঝে নেওয়ার আগে... আমরা কি জাগব?",
+          "start": 0,
+          "duration": 270,
+          "style": {
+            "color": "#ffdd57",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-up",
+            "easing": "ease-in-out"
+          },
+          "animationOut": {
+            "type": "fade-out",
+            "easing": "ease-in-out"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": false,
+            "type": "none",
+            "color": "rgba(0, 0, 0, 0)"
+          }
+        }
+      ]
+    }
+  ]
+}
