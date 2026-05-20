@@ -30,6 +30,9 @@ ASSET_SOURCE_DRIVE = f"{BASE_DRIVE_PATH}/renders" # @param {type:"string"}
 
 def setup_and_run():
     # 2. Setup Local Environment
+    print("📦 Installing system dependencies...")
+    !pip install opencv-python --quiet
+
     print("📦 Initializing local SSD...")
     if os.path.exists(REPO_PATH_LOCAL):
         shutil.rmtree(REPO_PATH_LOCAL)
@@ -37,58 +40,7 @@ def setup_and_run():
     print(f"🛰️ Cloning engine from GitHub...")
     !git clone {REPO_URL} {REPO_PATH_LOCAL}
 
-    # 3. CONFIG SEARCH
-    print("🔍 Searching for configuration in Drive...")
-    found_config = None
-    config_patterns = [
-        f"{BASE_DRIVE_PATH}/master_remotion.json",
-        f"{BASE_DRIVE_PATH}/master_render.json",
-        f"{BASE_DRIVE_PATH}/**/master_remotion.json",
-        f"{BASE_DRIVE_PATH}/**/master_render.json"
-    ]
-
-    for pattern in config_patterns:
-        matches = glob.glob(pattern, recursive=True)
-        if matches:
-            found_config = matches[0]
-            break
-
-    if found_config:
-        print(f"✅ Found config: {found_config}")
-        import json
-        import re
-
-        try:
-            with open(found_config, 'r') as f:
-                data = json.load(f)
-
-            # Auto-fix asset names (e.g., scene_1.mp4 -> scene_SC_01.mp4)
-            if 'scenes' in data:
-                for scene in data['scenes']:
-                    src = scene.get('src', '')
-                    if src and isinstance(src, str) and src.startswith('scene_') and src.endswith('.mp4'):
-                        match = re.match(r'scene_(\d+)\.mp4', src)
-                        if match:
-                            num = match.group(1).zfill(2)
-                            new_src = f"scene_SC_{num}.mp4"
-                            scene['src'] = new_src
-                            if 'background' in scene:
-                                scene['background']['src'] = new_src
-
-            target_json = os.path.join(PROJECT_PATH_LOCAL, "src/master_remotion.json")
-            with open(target_json, 'w') as f:
-                json.dump(data, f, indent=2)
-
-            print(f"✅ Fixed and copied config to {target_json}")
-            print("📜 PROCESSED CONFIG CONTENT:")
-            print(json.dumps(data, indent=2))
-        except Exception as e:
-            print(f"❌ Error processing config: {e}")
-            shutil.copy2(found_config, os.path.join(PROJECT_PATH_LOCAL, "src/master_remotion.json"))
-    else:
-        print("⚠️ No config found in Drive! Using default from GitHub.")
-
-    # 4. AGGRESSIVE ASSET MIRRORING
+    # 3. AGGRESSIVE ASSET MIRRORING
     print("🚚 Mirroring assets to public root...")
     public_path = os.path.join(PROJECT_PATH_LOCAL, "public")
     os.makedirs(public_path, exist_ok=True)
@@ -126,14 +78,86 @@ def setup_and_run():
 
     print(f"✅ Mirrored {asset_count} assets to /public")
 
-    # Clean up empty placeholder files that might cause render failures
+    # Clean up empty placeholder files
     for f in os.listdir(public_path):
         fpath = os.path.join(public_path, f)
         if os.path.isfile(fpath) and os.path.getsize(fpath) == 0:
-            print(f"🗑️ Removing 0-byte placeholder: {f}")
             os.remove(fpath)
 
-    print(f"📦 Public folder content: {os.listdir(public_path)}")
+    # 4. CONFIG SEARCH & DURATION AUTO-FIX
+    print("🔍 Searching for configuration in Drive...")
+    found_config = None
+    config_patterns = [
+        f"{BASE_DRIVE_PATH}/master_remotion.json",
+        f"{BASE_DRIVE_PATH}/master_render.json",
+        f"{BASE_DRIVE_PATH}/**/master_remotion.json",
+        f"{BASE_DRIVE_PATH}/**/master_render.json"
+    ]
+
+    for pattern in config_patterns:
+        matches = glob.glob(pattern, recursive=True)
+        if matches:
+            found_config = matches[0]
+            break
+
+    if found_config:
+        print(f"✅ Found config: {found_config}")
+        import json
+        import re
+        import cv2
+
+        def get_video_frame_count(file_path):
+            try:
+                cap = cv2.VideoCapture(file_path)
+                if not cap.isOpened(): return None
+                frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                cap.release()
+                return frames
+            except: return None
+
+        try:
+            with open(found_config, 'r') as f:
+                data = json.load(f)
+
+            # Auto-fix asset names & DURATIONS
+            scenes = data.get('scenes', data.get('Scenes', []))
+            for scene in scenes:
+                src = scene.get('src', '')
+                if src and isinstance(src, str) and src.startswith('scene_') and src.endswith('.mp4'):
+                    match = re.match(r'scene_(\d+)\.mp4', src)
+                    if match:
+                        num = match.group(1).zfill(2)
+                        src = f"scene_SC_{num}.mp4"
+                        scene['src'] = src
+                        if 'background' in scene:
+                            scene['background']['src'] = src
+
+                # Update duration from actual video file
+                asset_path = os.path.join(public_path, src)
+                if os.path.exists(asset_path):
+                    frames = get_video_frame_count(asset_path)
+                    if frames:
+                        print(f"⏱️ Updating {src} duration: {scene.get('duration')}f -> {frames}f")
+                        scene['duration'] = frames
+                        # Sync all text layers to full scene duration
+                        layers = scene.get('layers', scene.get('Layers', []))
+                        for layer in layers:
+                            if layer.get('type') == 'text':
+                                layer['duration'] = frames
+
+            target_json = os.path.join(PROJECT_PATH_LOCAL, "src/master_remotion.json")
+            with open(target_json, 'w') as f:
+                json.dump(data, f, indent=2)
+
+            print(f"✅ Fixed and copied config to {target_json}")
+            print("📜 PROCESSED CONFIG SUMMARY:")
+            for s in scenes:
+                print(f" - {s.get('Id', s.get('id'))}: {s.get('duration')} frames")
+        except Exception as e:
+            print(f"❌ Error processing config: {e}")
+            shutil.copy2(found_config, os.path.join(PROJECT_PATH_LOCAL, "src/master_remotion.json"))
+    else:
+        print("⚠️ No config found in Drive! Using default from GitHub.")
 
     # 5. Build and Render
     %cd {PROJECT_PATH_LOCAL}
