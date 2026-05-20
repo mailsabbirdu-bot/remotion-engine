@@ -73,10 +73,12 @@ loadFonts();
 export const RemotionRoot: React.FC = () => {
   const scenes = data.scenes || (data as any).Scenes || [];
 
-  // Clean Finish Calculation: Total duration is simply the sum of all scene durations.
-  // The transitions are now handled as extensions within TransitionHandler.
-  const totalDuration = scenes.reduce((acc: number, scene: any) => {
-    return acc + (scene.duration || 0);
+  // Additive Timeline Logic:
+  // Total duration = Sum of all scene durations + Sum of all transition durations.
+  // This ensures that transitions happen BETWEEN scenes, not ON TOP of their content.
+  const totalDuration = scenes.reduce((acc: number, scene: any, index: number) => {
+    const transitionDuration = (index < scenes.length - 1) ? (scene.transition?.duration || 0) : 0;
+    return acc + (scene.duration || 0) + transitionDuration;
   }, 0);
 
   return (
