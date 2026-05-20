@@ -26,10 +26,9 @@ export const TransitionHandler: React.FC<TransitionHandlerProps> = ({
 
         const layers = scene.Layers || scene.layers || [];
         const shiftedLayers = layers.map(layer => {
-          // 1. DO NOT shift the start time.
-          // The <Freeze> in Scene.tsx already handles the offset for us internally.
-          // If we shift here, we are double-shifting.
-          const newStart = layer.start;
+          // 1. Shift the start time by the previous transition duration.
+          // This ensures that 'start: 0' layers begin AFTER the fade-in from the previous scene.
+          const newStart = layer.start + prevTransitionDuration;
 
           // 2. Extend full-scene layers to cover the "Tail" transition.
           // This ensures textboxes stay visible until the fade-out is complete.
