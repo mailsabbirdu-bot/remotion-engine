@@ -100,6 +100,14 @@ def setup_and_run():
             print(f"⚠️ Could not copy font {fname}: {e}")
 
     print(f"✅ Mirrored {asset_count} assets to /public")
+
+    # Clean up empty placeholder files that might cause render failures
+    for f in os.listdir(public_path):
+        fpath = os.path.join(public_path, f)
+        if os.path.isfile(fpath) and os.path.getsize(fpath) == 0:
+            print(f"🗑️ Removing 0-byte placeholder: {f}")
+            os.remove(fpath)
+
     print(f"📦 Public folder content: {os.listdir(public_path)}")
 
     # 5. Build and Render
