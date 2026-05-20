@@ -55,11 +55,34 @@ def setup_and_run():
 
     if found_config:
         print(f"✅ Found config: {found_config}")
-        shutil.copy2(found_config, os.path.join(PROJECT_PATH_LOCAL, "src/master_remotion.json"))
-        os.environ["REMOTION_DRIVE_JSON"] = found_config
-        # Print contents for verification
-        with open(found_config, 'r') as f:
-            print(f"📄 Config content summary: {f.read()[:200]}...")
+        import json
+        import re
+
+        try:
+            with open(found_config, 'r') as f:
+                data = json.load(f)
+
+            # Auto-fix asset names (e.g., scene_1.mp4 -> scene_SC_01.mp4)
+            if 'scenes' in data:
+                for scene in data['scenes']:
+                    src = scene.get('src', '')
+                    if src and isinstance(src, str) and src.startswith('scene_') and src.endswith('.mp4'):
+                        match = re.match(r'scene_(\d+)\.mp4', src)
+                        if match:
+                            num = match.group(1).zfill(2)
+                            new_src = f"scene_SC_{num}.mp4"
+                            scene['src'] = new_src
+                            if 'background' in scene:
+                                scene['background']['src'] = new_src
+
+            target_json = os.path.join(PROJECT_PATH_LOCAL, "src/master_remotion.json")
+            with open(target_json, 'w') as f:
+                json.dump(data, f, indent=2)
+
+            print(f"✅ Fixed and copied config to {target_json}")
+        except Exception as e:
+            print(f"❌ Error processing config: {e}")
+            shutil.copy2(found_config, os.path.join(PROJECT_PATH_LOCAL, "src/master_remotion.json"))
     else:
         print("⚠️ No config found in Drive! Using default from GitHub.")
 
