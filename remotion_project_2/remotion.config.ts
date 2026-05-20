@@ -1,4 +1,4 @@
-import { Config } from 'remotion';
+import { Config } from '@remotion/cli/config';
 import fs from 'fs';
 
 const DEFAULT_DRIVE_PATH = '/content/drive/MyDrive/Counterism_Studio_V4/master_remotion.json';
