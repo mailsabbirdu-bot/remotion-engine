@@ -45,8 +45,8 @@ export const Scene: React.FC<SceneProps> = ({ scene, banglaFontFamily, englishFo
   }, [id, scene.duration, contentDuration, offset]);
 
   return (
-    <Freeze frame={activeFrame}>
-      <AbsoluteFill>
+    <AbsoluteFill>
+      <Freeze frame={activeFrame}>
         {scene.background.type === 'video' && (
           <OffthreadVideo
             src={resolveAsset(scene.background.src)}
@@ -65,16 +65,16 @@ export const Scene: React.FC<SceneProps> = ({ scene, banglaFontFamily, englishFo
         )}
 
         {scene.background.audio && <Audio src={resolveAsset(scene.background.audio)} />}
+      </Freeze>
 
-        {layers.map((layer, index) => (
-          <Layer
-            key={`${id}-layer-${index}`}
-            layer={layer}
-            banglaFontFamily={banglaFontFamily}
-            englishFontFamily={englishFontFamily}
-          />
-        ))}
-      </AbsoluteFill>
-    </Freeze>
+      {layers.map((layer, index) => (
+        <Layer
+          key={`${id}-layer-${index}`}
+          layer={layer}
+          banglaFontFamily={banglaFontFamily}
+          englishFontFamily={englishFontFamily}
+        />
+      ))}
+    </AbsoluteFill>
   );
 };

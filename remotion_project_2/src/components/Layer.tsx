@@ -54,29 +54,31 @@ export const Layer: React.FC<LayerProps> = ({ layer, banglaFontFamily, englishFo
   let translateY = 0;
   let scale = 1;
 
-  if (animationIn && localFrame < animationIn.duration) {
-    opacity = interpolate(localFrame, [0, animationIn.duration], [0, 1], {
+  const animInDuration = animationIn?.duration ?? 15;
+  if (animationIn && localFrame < animInDuration) {
+    opacity = interpolate(localFrame, [0, animInDuration], [0, 1], {
       easing: getEasing(animationIn.easing),
       extrapolateRight: 'clamp',
     });
     if (animationIn.type === 'fade-up') {
-      translateY = interpolate(localFrame, [0, animationIn.duration], [50, 0], {
+      translateY = interpolate(localFrame, [0, animInDuration], [50, 0], {
         easing: getEasing(animationIn.easing),
       });
     }
   }
 
   // Out Animation
-  const outStart = duration - (animationOut?.duration || 0);
+  const animOutDuration = animationOut?.duration ?? 15;
+  const outStart = duration - animOutDuration;
   if (animationOut && localFrame >= outStart) {
     const outProgress = localFrame - outStart;
-    const outOpacity = interpolate(outProgress, [0, animationOut.duration], [1, 0], {
+    const outOpacity = interpolate(outProgress, [0, animOutDuration], [1, 0], {
       easing: getEasing(animationOut.easing),
       extrapolateRight: 'clamp',
     });
     opacity *= outOpacity;
     if (animationOut.type === 'fade-down') {
-      translateY = interpolate(outProgress, [0, animationOut.duration], [0, 50], {
+      translateY = interpolate(outProgress, [0, animOutDuration], [0, 50], {
         easing: getEasing(animationOut.easing),
       });
     }
