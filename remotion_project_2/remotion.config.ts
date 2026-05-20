@@ -8,7 +8,7 @@ if (fs.existsSync(configPath)) {
   try {
     const rawData = fs.readFileSync(configPath, 'utf-8');
     const data = JSON.parse(rawData);
-    Config.setProps({
+    Config.overrideDefaultProps({
       data: data
     });
     console.log(`[REMOTION_CONFIG] Successfully loaded configuration from: ${configPath}`);
