@@ -17,18 +17,36 @@ export const TransitionHandler: React.FC<TransitionHandlerProps> = ({
   return (
     <TransitionSeries>
       {scenes.map((scene, index) => {
-        const transitionDuration = scene.transition?.duration || 0;
+        const transitionDuration = (index < scenes.length - 1) ? (scene.transition?.duration || 0) : 0;
+
+        // "Clean Finish" logic: Extend the sequence duration by the transition duration
+        // so the actual content plays fully before the overlap begins.
+        const sequenceDuration = scene.duration + transitionDuration;
+
+        // Automatically extend layers that were meant to last the full scene
+        const layers = scene.Layers || scene.layers || [];
+        const extendedLayers = layers.map(layer => {
+          if (layer.duration >= scene.duration - 1) {
+             return { ...layer, duration: sequenceDuration };
+          }
+          return layer;
+        });
 
         return (
           <React.Fragment key={scene.Id || scene.id || `scene-${index}`}>
-            <TransitionSeries.Sequence durationInFrames={scene.duration}>
+            <TransitionSeries.Sequence durationInFrames={sequenceDuration}>
               <Scene
-                scene={scene}
+                scene={{
+                  ...scene,
+                  duration: sequenceDuration,
+                  layers: extendedLayers,
+                  Layers: extendedLayers
+                }}
                 banglaFontFamily={banglaFontFamily}
                 englishFontFamily={englishFontFamily}
               />
             </TransitionSeries.Sequence>
-            {index < scenes.length - 1 && transitionDuration > 0 && (
+            {transitionDuration > 0 && (
                 <TransitionSeries.Transition
                     presentation={fade()}
                     timing={linearTiming({ durationInFrames: transitionDuration })}

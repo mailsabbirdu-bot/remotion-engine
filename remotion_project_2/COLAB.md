@@ -31,6 +31,7 @@ ASSET_SOURCE_DRIVE = f"{BASE_DRIVE_PATH}/renders" # @param {type:"string"}
 def setup_and_run():
     # 2. Setup Local Environment
     print("📦 Installing system dependencies...")
+    !apt-get install -y ffmpeg --quiet
     !pip install opencv-python --quiet
 
     print("📦 Initializing local SSD...")
@@ -107,13 +108,34 @@ def setup_and_run():
         import cv2
 
         def get_video_frame_count(file_path):
+            """Returns accurate frame count using ffprobe."""
+            import subprocess
+            try:
+                # ffprobe is more reliable than cv2 for metadata extraction
+                cmd = [
+                    'ffprobe',
+                    '-v', 'error',
+                    '-select_streams', 'v:0',
+                    '-count_packets',
+                    '-show_entries', 'stream=nb_read_packets',
+                    '-of', 'csv=p=0',
+                    file_path
+                ]
+                output = subprocess.check_output(cmd).decode('utf-8').strip()
+                if output:
+                    return int(output)
+            except:
+                pass
+
+            # Fallback to CV2 if ffprobe fails
             try:
                 cap = cv2.VideoCapture(file_path)
-                if not cap.isOpened(): return None
-                frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                cap.release()
-                return frames
-            except: return None
+                if cap.isOpened():
+                    frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                    cap.release()
+                    return frames
+            except:
+                return None
 
         try:
             with open(found_config, 'r') as f:
