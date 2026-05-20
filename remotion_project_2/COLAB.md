@@ -56,6 +56,7 @@ def setup_and_run():
     if found_config:
         print(f"✅ Found config: {found_config}")
         shutil.copy2(found_config, os.path.join(PROJECT_PATH_LOCAL, "src/master_remotion.json"))
+        os.environ["REMOTION_DRIVE_JSON"] = found_config
         # Print contents for verification
         with open(found_config, 'r') as f:
             print(f"📄 Config content summary: {f.read()[:200]}...")
@@ -67,16 +68,19 @@ def setup_and_run():
     public_path = os.path.join(PROJECT_PATH_LOCAL, "public")
     os.makedirs(public_path, exist_ok=True)
 
+    asset_count = 0
     # Copy background renders
     if os.path.exists(ASSET_SOURCE_DRIVE):
         for item in os.listdir(ASSET_SOURCE_DRIVE):
             s = os.path.join(ASSET_SOURCE_DRIVE, item)
             if os.path.isfile(s):
-                shutil.copy2(s, os.path.join(public_path, item))
+                try:
+                    shutil.copy2(s, os.path.join(public_path, item))
+                    asset_count += 1
+                except Exception as e:
+                    print(f"⚠️ Could not copy asset {item}: {e}")
 
-    # Deep search for ALL fonts in the Drive project folder
-    font_files = glob.glob(f"{BASE_DRIVE_PATH}/**/*.{os.path.join('*', '*')}", recursive=True)
-    # Filter for font extensions
+    # Filter for font extensions in the Drive project folder
     fonts_to_copy = [f for f in glob.glob(f"{BASE_DRIVE_PATH}/**/*.*", recursive=True)
                      if f.lower().endswith(('.ttf', '.otf', '.woff', '.woff2'))]
 
@@ -87,10 +91,16 @@ def setup_and_run():
     copied_fonts = []
     for f in fonts_to_copy:
         fname = os.path.basename(f)
-        shutil.copy2(f, os.path.join(public_path, fname))
-        if fname not in copied_fonts: copied_fonts.append(fname)
+        try:
+            shutil.copy2(f, os.path.join(public_path, fname))
+            if fname not in copied_fonts:
+                copied_fonts.append(fname)
+                asset_count += 1
+        except Exception as e:
+            print(f"⚠️ Could not copy font {fname}: {e}")
 
-    print(f"✅ All mirrored files in /public: {os.listdir(public_path)}")
+    print(f"✅ Mirrored {asset_count} assets to /public")
+    print(f"📦 Public folder content: {os.listdir(public_path)}")
 
     # 5. Build and Render
     %cd {PROJECT_PATH_LOCAL}
