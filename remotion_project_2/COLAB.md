@@ -108,26 +108,34 @@ def setup_and_run():
         import cv2
 
         def get_video_frame_count(file_path):
-            """Returns accurate frame count using ffprobe."""
+            """Returns accurate frame count using ffprobe duration * fps."""
             import subprocess
             try:
-                # ffprobe is more reliable than cv2 for metadata extraction
-                cmd = [
-                    'ffprobe',
-                    '-v', 'error',
-                    '-select_streams', 'v:0',
-                    '-count_packets',
-                    '-show_entries', 'stream=nb_read_packets',
-                    '-of', 'csv=p=0',
-                    file_path
-                ]
-                output = subprocess.check_output(cmd).decode('utf-8').strip()
-                if output:
-                    return int(output)
+                # Get duration
+                cmd_dur = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', file_path]
+                duration = float(subprocess.check_output(cmd_dur).decode('utf-8').strip())
+
+                # Get FPS
+                cmd_fps = ['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=r_frame_rate', '-of', 'default=noprint_wrappers=1:nokey=1', file_path]
+                fps_raw = subprocess.check_output(cmd_fps).decode('utf-8').strip()
+                if '/' in fps_raw:
+                    num, den = fps_raw.split('/')
+                    fps = float(num) / float(den)
+                else:
+                    fps = float(fps_raw)
+
+                return int(round(duration * fps))
             except:
                 pass
 
-            # Fallback to CV2 if ffprobe fails
+            # Alternative: count packets (slow but accurate for some files)
+            try:
+                cmd = ['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-count_packets', '-show_entries', 'stream=nb_read_packets', '-of', 'csv=p=0', file_path]
+                output = subprocess.check_output(cmd).decode('utf-8').strip()
+                if output: return int(output)
+            except: pass
+
+            # Fallback to CV2
             try:
                 cap = cv2.VideoCapture(file_path)
                 if cap.isOpened():
@@ -183,9 +191,12 @@ def setup_and_run():
 
     # 5. Build and Render
     %cd {PROJECT_PATH_LOCAL}
-    print("🟢 Installing dependencies...")
-    !rm -f package-lock.json
-    !npm install --no-audit --no-fund --quiet
+    if not os.path.exists("node_modules"):
+        print("🟢 Installing dependencies...")
+        !rm -f package-lock.json
+        !npm install --no-audit --no-fund --quiet
+    else:
+        print("⚡ node_modules exists, skipping install.")
 
     print("🟢 Ensuring browser...")
     !npm run ensure

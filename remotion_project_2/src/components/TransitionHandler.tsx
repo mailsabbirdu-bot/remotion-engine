@@ -17,19 +17,28 @@ export const TransitionHandler: React.FC<TransitionHandlerProps> = ({
   return (
     <TransitionSeries>
       {scenes.map((scene, index) => {
-        const transitionDuration = (index < scenes.length - 1) ? (scene.transition?.duration || 0) : 0;
+        const prevTransitionDuration = index > 0 ? (scenes[index - 1].transition?.duration || 0) : 0;
+        const nextTransitionDuration = (index < scenes.length - 1) ? (scene.transition?.duration || 0) : 0;
 
-        // "Clean Finish" logic: Extend the sequence duration by the transition duration
-        // so the actual content plays fully before the overlap begins.
-        const sequenceDuration = scene.duration + transitionDuration;
+        // The original 'scene.duration' is the intended CONTENT length.
+        // The sequence duration must include both overlap margins.
+        const sequenceDuration = prevTransitionDuration + scene.duration + nextTransitionDuration;
 
-        // Automatically extend layers that were meant to last the full scene
         const layers = scene.Layers || scene.layers || [];
-        const extendedLayers = layers.map(layer => {
+        const shiftedLayers = layers.map(layer => {
+          // 1. DO NOT shift the start time.
+          // The <Freeze> in Scene.tsx already handles the offset for us internally.
+          // If we shift here, we are double-shifting.
+          const newStart = layer.start;
+
+          // 2. Extend full-scene layers to cover the "Tail" transition.
+          // This ensures textboxes stay visible until the fade-out is complete.
+          let newDuration = layer.duration;
           if (layer.duration >= scene.duration - 1) {
-             return { ...layer, duration: sequenceDuration };
+             newDuration = scene.duration + nextTransitionDuration;
           }
-          return layer;
+
+          return { ...layer, start: newStart, duration: newDuration };
         });
 
         return (
@@ -39,17 +48,19 @@ export const TransitionHandler: React.FC<TransitionHandlerProps> = ({
                 scene={{
                   ...scene,
                   duration: sequenceDuration,
-                  layers: extendedLayers,
-                  Layers: extendedLayers
+                  contentDuration: scene.duration,
+                  offset: prevTransitionDuration,
+                  layers: shiftedLayers,
+                  Layers: shiftedLayers
                 }}
                 banglaFontFamily={banglaFontFamily}
                 englishFontFamily={englishFontFamily}
               />
             </TransitionSeries.Sequence>
-            {transitionDuration > 0 && (
+            {nextTransitionDuration > 0 && (
                 <TransitionSeries.Transition
                     presentation={fade()}
-                    timing={linearTiming({ durationInFrames: transitionDuration })}
+                    timing={linearTiming({ durationInFrames: nextTransitionDuration })}
                 />
             )}
           </React.Fragment>
