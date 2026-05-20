@@ -39,7 +39,11 @@ def setup_and_run():
     # 3. DEEP CONFIG SEARCH (Find master_remotion.json anywhere in your Drive project)
     print("🔍 Searching for configuration in Drive...")
     found_config = None
+
+    # Priority paths for Counterism Studio V4 structure
     config_patterns = [
+        "/content/drive/MyDrive/Counterism_Studio_V4/master_remotion.json",
+        "/content/drive/MyDrive/Counterism_Studio_V4/master_render.json",
         f"{PROJECT_PATH_DRIVE}/master_remotion.json",
         f"{PROJECT_PATH_DRIVE}/master_render.json",
         f"{PROJECT_PATH_DRIVE}/**/master_remotion.json",
@@ -105,10 +109,19 @@ def setup_and_run():
 
     # 6. Save Result
     if os.path.exists("out/video.mp4"):
-        OUTPUT_DRIVE_DIR = os.path.join(PROJECT_PATH_DRIVE, "out")
-        os.makedirs(OUTPUT_DRIVE_DIR, exist_ok=True)
-        shutil.copy("out/video.mp4", os.path.join(OUTPUT_DRIVE_DIR, "video.mp4"))
-        print(f"\n✅ SUCCESS! Video saved at: {OUTPUT_DRIVE_DIR}/video.mp4")
+        # Save to Project Folder
+        OUTPUT_PROJECT_DIR = os.path.join(PROJECT_PATH_DRIVE, "out")
+        os.makedirs(OUTPUT_PROJECT_DIR, exist_ok=True)
+        shutil.copy("out/video.mp4", os.path.join(OUTPUT_PROJECT_DIR, "video.mp4"))
+
+        # Save to Studio Folder (for better visibility)
+        STUDIO_OUT_DIR = "/content/drive/MyDrive/Counterism_Studio_V4/out"
+        os.makedirs(STUDIO_OUT_DIR, exist_ok=True)
+        shutil.copy("out/video.mp4", os.path.join(STUDIO_OUT_DIR, "final_render.mp4"))
+
+        print(f"\n✅ SUCCESS!")
+        print(f"🎬 Video saved at: {OUTPUT_PROJECT_DIR}/video.mp4")
+        print(f"🎬 Studio link: {STUDIO_OUT_DIR}/final_render.mp4")
     else:
         print("\n❌ ERROR: Render failed. See logs above.")
 

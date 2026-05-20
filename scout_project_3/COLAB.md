@@ -34,7 +34,7 @@ if os.path.exists(PROJECT_DIR):
 
 print("🛰️ Cloning engine...")
 !git clone {REPO_URL} {PROJECT_DIR}
-%cd {PROJECT_DIR}/scout_project
+%cd {PROJECT_DIR}/scout_project_3
 
 # 3. Install System Dependencies
 print("📦 Installing system dependencies...")
