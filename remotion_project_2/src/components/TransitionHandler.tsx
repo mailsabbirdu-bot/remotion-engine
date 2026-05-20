@@ -40,31 +40,33 @@ export const TransitionHandler: React.FC<TransitionHandlerProps> = ({
           return { ...layer, start: newStart, duration: newDuration };
         });
 
-        return (
-          <React.Fragment key={scene.Id || scene.id || `scene-${index}`}>
-            <TransitionSeries.Sequence durationInFrames={sequenceDuration}>
-              <Scene
-                scene={{
-                  ...scene,
-                  duration: sequenceDuration,
-                  contentDuration: scene.duration,
-                  offset: prevTransitionDuration,
-                  layers: shiftedLayers,
-                  Layers: shiftedLayers
-                }}
-                banglaFontFamily={banglaFontFamily}
-                englishFontFamily={englishFontFamily}
-              />
-            </TransitionSeries.Sequence>
-            {nextTransitionDuration > 0 && (
-                <TransitionSeries.Transition
-                    presentation={fade()}
-                    timing={linearTiming({ durationInFrames: nextTransitionDuration })}
-                />
-            )}
-          </React.Fragment>
-        );
-      })}
+        return [
+          <TransitionSeries.Sequence
+              key={scene.Id || scene.id || `scene-${index}`}
+              durationInFrames={sequenceDuration}
+          >
+            <Scene
+              scene={{
+                ...scene,
+                duration: sequenceDuration,
+                contentDuration: scene.duration,
+                offset: prevTransitionDuration,
+                layers: shiftedLayers,
+                Layers: shiftedLayers
+              }}
+              banglaFontFamily={banglaFontFamily}
+              englishFontFamily={englishFontFamily}
+            />
+          </TransitionSeries.Sequence>,
+          ...(nextTransitionDuration > 0 ? [
+            <TransitionSeries.Transition
+              key={`transition-${index}`}
+              presentation={fade()}
+              timing={linearTiming({ durationInFrames: nextTransitionDuration })}
+            />
+          ] : [])
+        ];
+      }).flat()}
     </TransitionSeries>
   );
 };
