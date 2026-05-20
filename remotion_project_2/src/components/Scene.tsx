@@ -30,6 +30,15 @@ export const Scene: React.FC<SceneProps> = ({ scene, banglaFontFamily, englishFo
   const layers = scene.Layers || scene.layers || [];
   const id = scene.Id || scene.id || 'scene';
 
+  React.useEffect(() => {
+    console.log(`[ULTRA_DEBUG] [SCENE_MOUNT] ID=${id}, Duration=${scene.duration}f, Assets=[BG:${scene.background.src}, Audio:${scene.background.audio || 'none'}]`);
+    layers.forEach((l, i) => {
+      if (l.type === 'text') {
+        console.log(`[ULTRA_DEBUG] [LAYER_TEXT] Scene=${id}, Layer=${i}, Content="${l.content?.substring(0, 50)}..."`);
+      }
+    });
+  }, [id, scene.duration, scene.background.src, scene.background.audio, layers]);
+
   return (
     <AbsoluteFill>
       {scene.background.type === 'video' && (
