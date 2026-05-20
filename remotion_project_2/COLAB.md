@@ -230,16 +230,35 @@ def setup_and_run():
     !npm run ensure
 
     print("🎬 Rendering video...")
+    os.makedirs("out", exist_ok=True)
     !npm run render
 
-    # 6. Save Result
-    if os.path.exists("out/video.mp4"):
+    # 6. Save Result & Forensic Audit
+    local_output = os.path.join(PROJECT_PATH_LOCAL, "out/video.mp4")
+    if os.path.exists(local_output):
         OUTPUT_DRIVE_DIR = os.path.join(BASE_DRIVE_PATH, "out")
         os.makedirs(OUTPUT_DRIVE_DIR, exist_ok=True)
-        shutil.copy("out/video.mp4", os.path.join(OUTPUT_DRIVE_DIR, "video.mp4"))
-        print(f"\n✅ SUCCESS! Video saved at: {OUTPUT_DRIVE_DIR}/video.mp4")
+        drive_output = os.path.join(OUTPUT_DRIVE_DIR, "video.mp4")
+        shutil.copy2(local_output, drive_output)
+        print(f"\n✅ SUCCESS! Video saved at: {drive_output}")
+
+        # FORENSIC AUDIT
+        print("\n" + "="*80)
+        print("🕵️ POST-RENDER FORENSIC AUDIT")
+        print("="*80)
+        rendered_frames = get_video_frame_count(drive_output)
+        if rendered_frames:
+            diff = rendered_frames - total_project_frames
+            status = "✅ PERFECT MATCH" if diff == 0 else f"⚠️ MISMATCH ({diff:+} frames)"
+            print(f" - Target frames:   {total_project_frames}")
+            print(f" - Rendered frames: {rendered_frames}")
+            print(f" - Audit Result:    {status}")
+        else:
+            print("⚠️ Audit could not be completed (ffprobe failed).")
+        print("="*80 + "\n")
     else:
-        print("\n❌ ERROR: Render failed. See logs above.")
+        print("\n❌ ERROR: Render failed. 'out/video.mp4' not found.")
+        print(f"DEBUG: Searched at {local_output}")
 
 setup_and_run()
 ```
