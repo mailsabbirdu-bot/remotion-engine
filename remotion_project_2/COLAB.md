@@ -19,31 +19,32 @@ if not os.path.exists('/content/drive'):
     drive.mount('/content/drive')
 
 # --- CONFIGURATION ---
-# The folder where your project is stored in Drive:
-PROJECT_PATH_DRIVE = "/content/drive/MyDrive/remotion-engine" # @param {type:"string"}
-PROJECT_PATH_LOCAL = "/content/remotion-engine"
+# The main workspace folder in Google Drive:
+BASE_DRIVE_PATH = "/content/drive/MyDrive/Counterism_Studio_V4" # @param {type:"string"}
+REPO_PATH_LOCAL = "/content/remotion-repo"
+PROJECT_PATH_LOCAL = os.path.join(REPO_PATH_LOCAL, "remotion_project_2")
 REPO_URL = "https://github.com/mailsabbirdu-bot/remotion-engine.git" # @param {type:"string"}
 
-# Folder where your scene videos are:
-ASSET_SOURCE_DRIVE = "/content/drive/MyDrive/Counterism_Studio_V4/renders" # @param {type:"string"}
+# Folder where your scene videos/renders are:
+ASSET_SOURCE_DRIVE = f"{BASE_DRIVE_PATH}/renders" # @param {type:"string"}
 
 def setup_and_run():
     # 2. Setup Local Environment
     print("📦 Initializing local SSD...")
-    if os.path.exists(PROJECT_PATH_LOCAL):
-        shutil.rmtree(PROJECT_PATH_LOCAL)
+    if os.path.exists(REPO_PATH_LOCAL):
+        shutil.rmtree(REPO_PATH_LOCAL)
 
     print(f"🛰️ Cloning engine from GitHub...")
-    !git clone {REPO_URL} {PROJECT_PATH_LOCAL}
+    !git clone {REPO_URL} {REPO_PATH_LOCAL}
 
-    # 3. DEEP CONFIG SEARCH (Find master_remotion.json anywhere in your Drive project)
+    # 3. CONFIG SEARCH
     print("🔍 Searching for configuration in Drive...")
     found_config = None
     config_patterns = [
-        f"{PROJECT_PATH_DRIVE}/master_remotion.json",
-        f"{PROJECT_PATH_DRIVE}/master_render.json",
-        f"{PROJECT_PATH_DRIVE}/**/master_remotion.json",
-        f"{PROJECT_PATH_DRIVE}/**/master_render.json"
+        f"{BASE_DRIVE_PATH}/master_remotion.json",
+        f"{BASE_DRIVE_PATH}/master_render.json",
+        f"{BASE_DRIVE_PATH}/**/master_remotion.json",
+        f"{BASE_DRIVE_PATH}/**/master_render.json"
     ]
 
     for pattern in config_patterns:
@@ -74,9 +75,9 @@ def setup_and_run():
                 shutil.copy2(s, os.path.join(public_path, item))
 
     # Deep search for ALL fonts in the Drive project folder
-    font_files = glob.glob(f"{PROJECT_PATH_DRIVE}/**/*.{os.path.join('*', '*')}", recursive=True)
+    font_files = glob.glob(f"{BASE_DRIVE_PATH}/**/*.{os.path.join('*', '*')}", recursive=True)
     # Filter for font extensions
-    fonts_to_copy = [f for f in glob.glob(f"{PROJECT_PATH_DRIVE}/**/*.*", recursive=True)
+    fonts_to_copy = [f for f in glob.glob(f"{BASE_DRIVE_PATH}/**/*.*", recursive=True)
                      if f.lower().endswith(('.ttf', '.otf', '.woff', '.woff2'))]
 
     # Also check the specific renders folder
@@ -105,7 +106,7 @@ def setup_and_run():
 
     # 6. Save Result
     if os.path.exists("out/video.mp4"):
-        OUTPUT_DRIVE_DIR = os.path.join(PROJECT_PATH_DRIVE, "out")
+        OUTPUT_DRIVE_DIR = os.path.join(BASE_DRIVE_PATH, "out")
         os.makedirs(OUTPUT_DRIVE_DIR, exist_ok=True)
         shutil.copy("out/video.mp4", os.path.join(OUTPUT_DRIVE_DIR, "video.mp4"))
         print(f"\n✅ SUCCESS! Video saved at: {OUTPUT_DRIVE_DIR}/video.mp4")
