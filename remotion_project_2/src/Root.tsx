@@ -5,7 +5,19 @@ import internalData from './master_remotion.json';
 import { resolveAsset } from './utils/path-utils';
 
 const inputProps = getInputProps();
+const isUsingInputProps = !!inputProps.data;
 const data = (inputProps.data as typeof internalData) || internalData;
+
+console.log(`[ULTRA_DEBUG] Source: ${isUsingInputProps ? 'External (getInputProps)' : 'Internal (master_remotion.json)'}`);
+console.log(`[ULTRA_DEBUG] Config Overview: FPS=${data.fps}, Resolution=${data.width}x${data.height}, Scenes=${(data.scenes || (data as any).Scenes || []).length}`);
+
+if (data.scenes || (data as any).Scenes) {
+    const debugScenes = data.scenes || (data as any).Scenes || [];
+    debugScenes.forEach((s: any, i: number) => {
+        const textLayer = (s.Layers || s.layers || []).find((l: any) => l.type === 'text');
+        console.log(`[ULTRA_DEBUG] Scene ${i + 1}: ID=${s.Id || s.id}, Src=${s.src}, Text="${textLayer?.content?.substring(0, 30)}..."`);
+    });
+}
 
 // Handle font registration for Colab/Local environment
 const waitForFont = delayRender('Loading Fonts');

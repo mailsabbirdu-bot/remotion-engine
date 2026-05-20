@@ -80,6 +80,8 @@ def setup_and_run():
                 json.dump(data, f, indent=2)
 
             print(f"✅ Fixed and copied config to {target_json}")
+            print("📜 PROCESSED CONFIG CONTENT:")
+            print(json.dumps(data, indent=2))
         except Exception as e:
             print(f"❌ Error processing config: {e}")
             shutil.copy2(found_config, os.path.join(PROJECT_PATH_LOCAL, "src/master_remotion.json"))
