@@ -156,7 +156,7 @@ def setup_and_run():
             fps = data.get('fps', 30)
 
             for i, scene in enumerate(scenes):
-                orig_dur = scene.get('duration', 0)
+                intended_dur = scene.get('duration', 0)
                 src = scene.get('src', '')
                 if src and isinstance(src, str) and src.startswith('scene_') and src.endswith('.mp4'):
                     match = re.match(r'scene_(\d+)\.mp4', src)
@@ -167,33 +167,41 @@ def setup_and_run():
                         if 'background' in scene:
                             scene['background']['src'] = src
 
-                # Update duration from actual video file
+                # Get actual video duration
                 asset_path = os.path.join(public_path, src)
-                detected_dur = orig_dur
+                video_dur = intended_dur
                 if os.path.exists(asset_path):
                     frames = get_video_frame_count(asset_path)
                     if frames:
-                        detected_dur = frames
-                        scene['duration'] = frames
-                        # Sync all text layers to full scene duration
-                        layers = scene.get('layers', scene.get('Layers', []))
-                        for layer in layers:
-                            if layer.get('type') == 'text':
-                                layer['duration'] = frames
+                        video_dur = frames
+                        # If scene has NO duration (0), we MUST take the video's.
+                        # Otherwise, we keep the intended duration to prevent premature cuts.
+                        if intended_dur <= 0:
+                            intended_dur = frames
+                            scene['duration'] = frames
+
+                        # Store actual video length for correct freezing in Scene.tsx
+                        scene['videoDuration'] = frames
+
+                # Sync all text layers to FULL scene duration
+                layers = scene.get('layers', scene.get('Layers', []))
+                for layer in layers:
+                    if layer.get('type') == 'text' and (layer.get('duration', 0) >= intended_dur - 1 or layer.get('duration', 0) == 0):
+                        layer['duration'] = intended_dur
 
                 trans_dur = (scene.get('transition', {}).get('duration', 0)) if i < len(scenes) - 1 else 0
                 prev_trans_dur = (scenes[i-1].get('transition', {}).get('duration', 0)) if i > 0 else 0
-                seq_dur = prev_trans_dur + detected_dur + trans_dur
+                seq_dur = prev_trans_dur + intended_dur + trans_dur
 
                 timing_log.append({
                     'id': scene.get('Id', scene.get('id', f'scene_{i+1}')),
-                    'original': orig_dur,
-                    'detected': detected_dur,
+                    'intended': intended_dur,
+                    'video': video_dur,
                     'transition_out': trans_dur,
                     'transition_in_offset': prev_trans_dur,
                     'total_seq': seq_dur
                 })
-                total_project_frames += (detected_dur + trans_dur)
+                total_project_frames += (intended_dur + trans_dur)
 
             target_json = os.path.join(PROJECT_PATH_LOCAL, "src/master_remotion.json")
             with open(target_json, 'w') as f:
@@ -203,10 +211,10 @@ def setup_and_run():
             print("\n" + "="*80)
             print(f"📊 TOTAL DISCLOSURE: TIMING & DURATION REPORT (FPS: {fps})")
             print("="*80)
-            print(f"{'Scene ID':<15} | {'Orig':<6} | {'Detected':<8} | {'In-Off':<6} | {'Out-Tr':<6} | {'Total Seq'}")
+            print(f"{'Scene ID':<15} | {'Intended':<8} | {'Video':<8} | {'In-Off':<6} | {'Out-Tr':<6} | {'Total Seq'}")
             print("-"*80)
             for entry in timing_log:
-                print(f"{entry['id']:<15} | {entry['original']:<6} | {entry['detected']:<8} | {entry['transition_in_offset']:<6} | {entry['transition_out']:<6} | {entry['total_seq']} frames")
+                print(f"{entry['id']:<15} | {entry['intended']:<8} | {entry['video']:<8} | {entry['transition_in_offset']:<6} | {entry['transition_out']:<6} | {entry['total_seq']} frames")
             print("="*80)
             print(f"🎬 PROJECT TOTAL: {total_project_frames} frames ({total_project_frames/fps:.2f} seconds)")
             print("="*80 + "\n")

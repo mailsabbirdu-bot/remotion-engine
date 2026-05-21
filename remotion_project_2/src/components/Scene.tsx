@@ -8,6 +8,7 @@ export interface SceneData {
   Id?: string; // Support for capitalized Id
   duration: number;
   contentDuration?: number; // Raw video duration
+  videoDuration?: number; // Actual physical length of video asset
   offset?: number; // Start offset due to previous transition
   background: {
     type: 'video' | 'image' | 'color';
@@ -34,12 +35,14 @@ export const Scene: React.FC<SceneProps> = ({ scene, banglaFontFamily, englishFo
   const id = scene.Id || scene.id || 'scene';
 
   // "Clean Finish" frame calculation:
-  // If we are in the 'Head' (transition from previous scene), we freeze at frame 0.
-  // If we are in the 'Tail' (transition to next scene), we freeze at the last frame.
+  // 1. We determine the 'real' clock for this scene by subtracting the transition offset.
+  // 2. We use 'videoDuration' (physical file length) if available, otherwise fallback to contentDuration.
+  // 3. If the video is shorter than the intended scene duration, we freeze it at its last frame.
   const offset = scene.offset || 0;
-  const contentDuration = scene.contentDuration || scene.duration;
-  const activeFrame = Math.min(Math.max(0, frame - offset), contentDuration - 1);
+  const videoLimit = scene.videoDuration || scene.contentDuration || scene.duration;
+  const activeFrame = Math.min(Math.max(0, frame - offset), videoLimit - 1);
 
+  const contentDuration = scene.contentDuration || scene.duration;
   React.useEffect(() => {
     console.log(`[ULTRA_DEBUG] [SCENE_MOUNT] ID=${id}, Offset=${offset}, Content=${contentDuration}, Total=${scene.duration}f`);
   }, [id, scene.duration, contentDuration, offset]);

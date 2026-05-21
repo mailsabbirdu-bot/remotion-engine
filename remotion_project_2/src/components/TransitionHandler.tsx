@@ -50,6 +50,7 @@ export const TransitionHandler: React.FC<TransitionHandlerProps> = ({
                 ...scene,
                 duration: sequenceDuration,
                 contentDuration: scene.duration,
+                videoDuration: (scene as any).videoDuration,
                 offset: prevTransitionDuration,
                 layers: shiftedLayers,
                 Layers: shiftedLayers
