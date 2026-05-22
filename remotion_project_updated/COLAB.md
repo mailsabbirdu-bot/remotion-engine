@@ -18,7 +18,8 @@ PROJECT_DIR = os.path.join(LOCAL_ROOT, "remotion_project_updated")
 
 def run():
     print("📦 Setting up environment...")
-    !apt-get install -y ffmpeg --quiet
+    # Install missing browser dependencies for Remotion
+    !apt-get update && apt-get install -y ffmpeg libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libasound2 --quiet
 
     if os.path.exists(LOCAL_ROOT): shutil.rmtree(LOCAL_ROOT)
     !git clone {REPO_URL} {LOCAL_ROOT}
