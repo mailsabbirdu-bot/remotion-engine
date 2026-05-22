@@ -1,7 +1,8 @@
 import React from 'react';
-import { Composition, continueRender, delayRender, getInputProps, staticFile } from 'remotion';
+import { Composition, continueRender, delayRender, getInputProps } from 'remotion';
 import { MainComposition } from './Composition';
 import internalData from './master_remotion.json';
+import { resolveAsset } from './utils/path-utils';
 
 const inputProps = getInputProps();
 const data = (inputProps.data as any) || internalData;
@@ -14,15 +15,12 @@ const loadFonts = async () => {
     return;
   }
 
-  const resolveAsset = (path: string) => {
-    if (path.startsWith('http') || path.startsWith('data:')) return path;
-    return staticFile(path);
-  };
-
   const fontsToLoad = [
     { name: data.englishFont, url: data.englishFont ? resolveAsset(`${data.englishFont}.ttf`) : null },
     { name: data.banglaFont, url: data.banglaFont ? resolveAsset(`${data.banglaFont}.ttf`) : null }
   ].filter(f => f.name && f.url);
+
+  console.log(`[FONT_SYSTEM] Blueprint: English="${data.englishFont}", Bangla="${data.banglaFont}"`);
 
   try {
     await Promise.all(
@@ -31,9 +29,9 @@ const loadFonts = async () => {
           const fontFace = new FontFace(f.name!, `url("${f.url}")`);
           const loadedFace = await fontFace.load();
           document.fonts.add(loadedFace);
-          console.log(`[FONT_SYSTEM] Loaded: ${f.name}`);
+          console.log(`[FONT_SYSTEM] SUCCESS: Loaded "${f.name}"`);
         } catch (e) {
-          console.error(`[FONT_SYSTEM] Failed to load: ${f.name}`, e);
+          console.error(`[FONT_SYSTEM] FAILED: "${f.name}" at ${f.url}`, e);
         }
       })
     );
@@ -47,15 +45,11 @@ loadFonts();
 export const RemotionRoot: React.FC = () => {
   const scenes = data.scenes || [];
 
-  // Total Duration Calculation:
-  // Remotion's <TransitionSeries> works by overlapping sequences.
-  // Duration = Sum(scenes.duration) - Sum(transitions.duration)
   const totalDuration = scenes.reduce((acc: number, scene: any, index: number) => {
     const transitionDuration = (index < scenes.length - 1) ? (scene.transition?.duration || 0) : 0;
     return acc + (scene.duration || 0) - transitionDuration;
   }, 0);
 
-  // Fallback if no scenes
   const finalDuration = Math.max(1, totalDuration || 100);
 
   return (

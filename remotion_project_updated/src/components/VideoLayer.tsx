@@ -1,5 +1,6 @@
 import React from 'react';
-import { useCurrentFrame, interpolate, OffthreadVideo, staticFile } from 'remotion';
+import { useCurrentFrame, interpolate, OffthreadVideo } from 'remotion';
+import { resolveAsset } from '../utils/path-utils';
 
 export const VideoLayer: React.FC<{ data: any }> = ({ data }) => {
     const frame = useCurrentFrame();
@@ -7,11 +8,6 @@ export const VideoLayer: React.FC<{ data: any }> = ({ data }) => {
 
     if (frame < start || frame >= start + duration) return null;
     const localFrame = frame - start;
-
-    const resolveAsset = (path: string) => {
-      if (path.startsWith('http') || path.startsWith('data:')) return path;
-      return staticFile(path);
-    };
 
     let opacity = 1;
     const animInDur = animationIn?.duration || 15;

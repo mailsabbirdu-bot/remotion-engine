@@ -1,9 +1,10 @@
 import React from 'react';
-import { AbsoluteFill, OffthreadVideo, Audio, useCurrentFrame, interpolate, staticFile } from 'remotion';
+import { AbsoluteFill, OffthreadVideo, Audio, useCurrentFrame, interpolate } from 'remotion';
 import { TextLayer } from './TextLayer';
 import { ImageLayer } from './ImageLayer';
 import { VideoLayer } from './VideoLayer';
 import { ShapeLayer } from './ShapeLayer';
+import { resolveAsset } from '../utils/path-utils';
 
 export const Scene: React.FC<{ data: any; banglaFont: string; englishFont: string }> = ({
   data,
@@ -14,16 +15,9 @@ export const Scene: React.FC<{ data: any; banglaFont: string; englishFont: strin
   const background = data.background || {};
   const layers = data.layers || [];
 
-  const resolveAsset = (path: string) => {
-    if (!path) return '';
-    if (path.startsWith('http') || path.startsWith('data:')) return path;
-    return staticFile(path);
-  };
-
   const renderBackground = () => {
     const { type, src, audio, zoom } = background;
 
-    // Ken Burns effect for background
     let transform = 'scale(1)';
     if (zoom) {
         const scale = interpolate(frame, [0, data.duration], [1, zoom], {
