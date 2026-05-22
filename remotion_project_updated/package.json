@@ -11,13 +11,13 @@
     "ensure": "remotion browser ensure"
   },
   "dependencies": {
-    "@remotion/cli": "4.0.140",
-    "@remotion/google-fonts": "4.0.140",
-    "@remotion/transitions": "4.0.140",
+    "@remotion/cli": "4.0.459",
+    "@remotion/google-fonts": "4.0.459",
+    "@remotion/transitions": "4.0.459",
     "lucide-react": "^0.400.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
-    "remotion": "4.0.140",
+    "remotion": "4.0.459",
     "zod": "^3.22.0"
   },
   "devDependencies": {

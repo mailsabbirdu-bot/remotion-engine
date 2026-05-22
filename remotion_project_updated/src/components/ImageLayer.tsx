@@ -1,6 +1,7 @@
 import React from 'react';
-import { useCurrentFrame, interpolate, staticFile } from 'remotion';
+import { useCurrentFrame, interpolate } from 'remotion';
 import { getEasing } from '../utils/animation-utils';
+import { resolveAsset } from '../utils/path-utils';
 
 export const ImageLayer: React.FC<{ data: any }> = ({ data }) => {
   const frame = useCurrentFrame();
@@ -9,15 +10,9 @@ export const ImageLayer: React.FC<{ data: any }> = ({ data }) => {
   if (frame < start || frame >= start + duration) return null;
   const localFrame = frame - start;
 
-  const resolveAsset = (path: string) => {
-    if (path.startsWith('http') || path.startsWith('data:')) return path;
-    return staticFile(path);
-  };
-
   let opacity = 1;
   let scale = style?.scale || 1;
 
-  // In/Out Animations
   const animInDur = animationIn?.duration || 15;
   if (localFrame < animInDur) {
     opacity = interpolate(localFrame, [0, animInDur], [0, 1], {
@@ -26,7 +21,6 @@ export const ImageLayer: React.FC<{ data: any }> = ({ data }) => {
     });
   }
 
-  // Ken Burns for layer
   if (style?.zoom) {
       scale *= interpolate(localFrame, [0, duration], [1, style.zoom]);
   }
