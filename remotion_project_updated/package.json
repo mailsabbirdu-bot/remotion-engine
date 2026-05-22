@@ -1,0 +1,29 @@
+{
+  "name": "remotion-ae-machine",
+  "version": "1.0.0",
+  "description": "After Effects-like Remotion engine with advanced JSON orchestration",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "remotion preview src/index.ts",
+    "build": "remotion bundle src/index.ts out/bundle.js",
+    "render": "remotion render src/index.ts Main out/video.mp4 --concurrency=1 --bundle-cache=false",
+    "typecheck": "tsc",
+    "ensure": "remotion browser ensure"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.140",
+    "@remotion/google-fonts": "4.0.140",
+    "@remotion/transitions": "4.0.140",
+    "lucide-react": "^0.400.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "remotion": "4.0.140",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "typescript": "^5.0.0"
+  },
+  "license": "ISC"
+}

@@ -1,0 +1,97 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "banglaFont": "FN Mahin Dui Dashok Italic",
+  "englishFont": "Audiowide-Regular",
+  "scenes": [
+    {
+      "id": "scene_1",
+      "duration": 245,
+      "background": {
+        "type": "video",
+        "src": "scene_1.mp4",
+        "zoom": 1.1
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 15
+      },
+      "layers": [
+        {
+          "type": "shape",
+          "start": 0,
+          "duration": 245,
+          "shape": {
+            "type": "rect",
+            "width": 800,
+            "height": 200,
+            "color": "rgba(231, 76, 60, 0.8)",
+            "borderRadius": 10
+          },
+          "style": { "x": "50%", "y": "20%", "zIndex": 1 },
+          "animationIn": { "type": "zoom-in", "duration": 20, "easing": "ease-out" }
+        },
+        {
+          "type": "text",
+          "content": "ঢাকা: একটি সুপ্ত টাইমবোম্ব",
+          "start": 10,
+          "duration": 235,
+          "style": { "x": "50%", "y": "20%", "fontSize": 80, "color": "#ffffff", "zIndex": 2 },
+          "animationIn": { "type": "blur-in", "duration": 25 },
+          "textAnimation": { "mode": "character", "duration": 50 }
+        }
+      ]
+    },
+    {
+      "id": "scene_2",
+      "duration": 281,
+      "background": {
+        "type": "video",
+        "src": "scene_2.mp4",
+        "zoom": 1.2
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 15
+      },
+      "layers": [
+        {
+          "type": "text",
+          "content": "দুই কোটিরও বেশি মানুষের অবিরাম লড়াই।",
+          "start": 0,
+          "duration": 281,
+          "style": { "x": "50%", "y": "80%", "fontSize": 60, "color": "#f1c40f" },
+          "animationIn": { "type": "fade-up", "duration": 20 },
+          "textbox": { "enabled": true, "type": "rounded-rect", "color": "rgba(0,0,0,0.7)" },
+          "textAnimation": { "mode": "word", "duration": 40 }
+        }
+      ]
+    },
+    {
+        "id": "scene_3",
+        "duration": 283,
+        "background": {
+          "type": "video",
+          "src": "scene_3.mp4",
+          "zoom": 1.05
+        },
+        "transition": {
+          "type": "wipe",
+          "duration": 20
+        },
+        "layers": [
+          {
+            "type": "text",
+            "content": "একটি জিওলজিক্যাল ক্লক... যা টিকটিক করে চলছে।",
+            "start": 0,
+            "duration": 283,
+            "style": { "x": "50%", "y": "50%", "fontSize": 70, "color": "#ffffff" },
+            "animationIn": { "type": "zoom-in", "duration": 30 },
+            "animationOut": { "type": "fade-down", "duration": 20 },
+            "textAnimation": { "mode": "word", "duration": 50 }
+          }
+        ]
+      }
+  ]
+}
