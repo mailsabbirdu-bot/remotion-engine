@@ -5,7 +5,7 @@ One-cell solution to render your ultra-modern video.
 ```python
 # @title 🎬 Start Automated Render
 from google.colab import drive
-import os, shutil, glob, json
+import os, shutil, glob, json, re
 
 # 1. Mount Drive
 if not os.path.exists('/content/drive'): drive.mount('/content/drive')
@@ -18,8 +18,8 @@ PROJECT_DIR = os.path.join(LOCAL_ROOT, "remotion_project_updated")
 
 def run():
     print("📦 Setting up environment...")
-    # Install browser dependencies for Remotion
-    !apt-get update && apt-get install -y ffmpeg libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libasound2 libxshmfence1 --quiet
+    # Comprehensive list of dependencies for Headless Chrome on Ubuntu
+    !apt-get update && apt-get install -y ffmpeg libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libasound2 libxshmfence1 libpangocairo-1.0-0 libpango-1.0-0 libatk1.0-0 libatspi0 libxkbcommon0 --quiet
 
     if os.path.exists(LOCAL_ROOT): shutil.rmtree(LOCAL_ROOT)
     print(f"🛰️ Cloning repository...")
@@ -30,19 +30,43 @@ def run():
     os.makedirs(public_path, exist_ok=True)
 
     print("🚚 Mirroring assets to public/ folder...")
-    # Copy from renders folder and root project folder
     search_paths = [f"{BASE_DRIVE}/renders", BASE_DRIVE]
     asset_count = 0
+
+    # 1. Recursive search for fonts
+    font_files = glob.glob(f"{BASE_DRIVE}/**/*.ttf", recursive=True) + \
+                 glob.glob(f"{BASE_DRIVE}/**/*.otf", recursive=True)
+    for f in font_files:
+        try:
+            shutil.copy2(f, os.path.join(public_path, os.path.basename(f)))
+            asset_count += 1
+        except: pass
+
+    # 2. Copy and map videos/images
     for path in search_paths:
         if os.path.exists(path):
             for f in os.listdir(path):
-                if f.lower().endswith(('.mp4', '.jpg', '.png', '.ttf', '.otf', '.wav', '.mp3')):
+                f_path = os.path.join(path, f)
+                if not os.path.isfile(f_path): continue
+
+                f_lower = f.lower()
+                # Copy original
+                if f_lower.endswith(('.mp4', '.jpg', '.png', '.wav', '.mp3')):
                     try:
-                        shutil.copy2(os.path.join(path, f), os.path.join(public_path, f))
+                        shutil.copy2(f_path, os.path.join(public_path, f))
                         asset_count += 1
+
+                        # Auto-mapping: scene_SC_01.mp4 -> scene_1.mp4
+                        if f_lower.startswith('scene_sc_') and f_lower.endswith('.mp4'):
+                            match = re.search(r'scene_sc_(\d+)', f_lower)
+                            if match:
+                                num = str(int(match.group(1)))
+                                clean_name = f"scene_{num}.mp4"
+                                shutil.copy2(f_path, os.path.join(public_path, clean_name))
+                                asset_count += 1
                     except: pass
 
-    print(f"✅ Mirrored {asset_count} assets.")
+    print(f"✅ Mirrored {asset_count} assets to /public")
 
     # Find and link master_remotion.json
     config_drive = f"{BASE_DRIVE}/master_remotion.json"
@@ -53,14 +77,18 @@ def run():
     # Install & Render
     %cd {PROJECT_DIR}
     print("🟢 Installing Node packages...")
-    !npm install --no-audit --no-fund --quiet
+    # --force to handle any peer dependency issues
+    !npm install --no-audit --no-fund --quiet --force
 
     print("🟢 Ensuring browser...")
     !npm run ensure
 
     print("🎬 Rendering video (CPU)...")
     os.makedirs("out", exist_ok=True)
-    !npm run render
+
+    # Use absolute path for public-dir to avoid any relative path issues
+    abs_public = os.path.abspath("public")
+    !npx remotion render src/index.ts Main out/video.mp4 --public-dir="{abs_public}" --concurrency=1 --bundle-cache=false
 
     # Save output
     out_local = "out/video.mp4"
