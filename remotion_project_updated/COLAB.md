@@ -18,8 +18,16 @@ PROJECT_DIR = os.path.join(LOCAL_ROOT, "remotion_project_updated")
 
 def run():
     print("📦 Setting up environment...")
-    # Comprehensive list of dependencies for Headless Chrome on Ubuntu
-    !apt-get update && apt-get install -y ffmpeg libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libasound2 libxshmfence1 libpangocairo-1.0-0 libpango-1.0-0 libatk1.0-0 libatspi0 libxkbcommon0 --quiet
+    # Comprehensive list of dependencies for Headless Chrome on Ubuntu 22.04
+    # We use a robust install command that won't fail if one package is missing
+    packages = [
+        "ffmpeg", "libnss3", "libatk1.0-0", "libatk-bridge2.0-0", "libcups2",
+        "libdrm2", "libxcomposite1", "libxdamage1", "libxrandr2", "libgbm1",
+        "libasound2", "libxshmfence1", "libpangocairo-1.0-0", "libpango-1.0-0",
+        "libxkbcommon0", "libx11-xcb1"
+    ]
+    !apt-get update --quiet
+    !apt-get install -y {" ".join(packages)} --quiet --fix-missing
 
     if os.path.exists(LOCAL_ROOT): shutil.rmtree(LOCAL_ROOT)
     print(f"🛰️ Cloning repository...")
@@ -50,9 +58,9 @@ def run():
                 if not os.path.isfile(f_path): continue
 
                 f_lower = f.lower()
-                # Copy original
                 if f_lower.endswith(('.mp4', '.jpg', '.png', '.wav', '.mp3')):
                     try:
+                        # Copy original
                         shutil.copy2(f_path, os.path.join(public_path, f))
                         asset_count += 1
 
@@ -77,7 +85,6 @@ def run():
     # Install & Render
     %cd {PROJECT_DIR}
     print("🟢 Installing Node packages...")
-    # --force to handle any peer dependency issues
     !npm install --no-audit --no-fund --quiet --force
 
     print("🟢 Ensuring browser...")
@@ -86,9 +93,8 @@ def run():
     print("🎬 Rendering video (CPU)...")
     os.makedirs("out", exist_ok=True)
 
-    # Use absolute path for public-dir to avoid any relative path issues
-    abs_public = os.path.abspath("public")
-    !npx remotion render src/index.ts Main out/video.mp4 --public-dir="{abs_public}" --concurrency=1 --bundle-cache=false
+    # Run render with explicit public directory
+    !npx remotion render src/index.ts Main out/video.mp4 --public-dir=public --concurrency=1 --bundle-cache=false
 
     # Save output
     out_local = "out/video.mp4"
