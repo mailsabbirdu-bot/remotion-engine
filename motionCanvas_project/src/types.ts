@@ -48,6 +48,7 @@ export interface Scene {
     type: 'video' | 'image' | 'color';
     src: string;
     opacity?: number;
+    audio?: string;
   };
   transition?: {
     type: 'fade' | 'slide' | 'wipe';
@@ -60,5 +61,6 @@ export interface MotionCanvasConfig {
   width: number;
   height: number;
   fps: number;
+  audio?: string;
   scenes: Scene[];
 }

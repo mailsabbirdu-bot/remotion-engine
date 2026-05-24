@@ -24,17 +24,6 @@ export default makeScene2D(function* (view) {
   let frameCount = 0;
   console.log(`🎬 Starting Motion Canvas Engine with ${config.scenes.length} scenes at ${width}x${height}`);
 
-  if (isRendering) {
-      // Ensure canvas element is properly sized in the DOM
-      const canvas = document.querySelector('canvas');
-      if (canvas) {
-          canvas.width = width;
-          canvas.height = height;
-          canvas.style.width = `${width}px`;
-          canvas.style.height = `${height}px`;
-      }
-  }
-
   for (let i = 0; i < config.scenes.length; i++) {
     const scene = config.scenes[i];
     console.log(`🎥 Rendering Scene ${i + 1}/${config.scenes.length}: ${scene.id}`);
@@ -45,24 +34,26 @@ export default makeScene2D(function* (view) {
     // Timing logic
     const totalFrames = Math.round(scene.duration * 30);
 
-    // We run the animation
-    const animationRunner = renderScene(container, scene);
+    // Run the animation
+    const videoRef = createRef<Video>();
+    const animationRunner = renderScene(container, scene, videoRef);
+    // @ts-ignore
     const task = yield animationRunner;
+
+    // Ensure video is playing and ready if it exists
+    if (videoRef() && scene.background?.type === 'video') {
+        // Subtle wait for video buffer
+        yield* waitFor(0.1);
+    }
 
     // Manual capture loop
     for(let f=0; f < totalFrames; f++) {
+        yield* waitFor(1/30);
         if (isRendering && (window as any).saveFrame) {
-            const canvas = document.querySelector('canvas');
-            if (canvas) {
-                if (f === 0) {
-                    console.log(`Canvas dimensions for ${scene.id}: ${canvas.width}x${canvas.height}`);
-                }
-                const dataUrl = canvas.toDataURL('image/png');
-                yield (window as any).saveFrame(frameCount, dataUrl);
-            }
+            // Await the capture in the browser's context
+            yield (window as any).saveFrame(frameCount);
         }
         frameCount++;
-        yield* waitFor(1/30);
     }
 
     container().remove();
@@ -74,18 +65,7 @@ export default makeScene2D(function* (view) {
   }
 });
 
-function* renderScene(container: any, scene: Scene) {
-  container().add(
-      <Rect
-        width="100%"
-        height="100%"
-        fill={'rgba(0,0,0,0.01)'} // Minimal overlay
-        zIndex={10}
-      />
-  );
-
-  const videoRef = createRef<Video>();
-
+function* renderScene(container: any, scene: Scene, videoRef: any) {
   container().add(
     <Rect width="100%" height="100%" fill="#0a0a0a" zIndex={-2} />
   );

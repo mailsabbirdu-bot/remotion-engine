@@ -1,4 +1,4 @@
-# 🚀 Motion Canvas One-Cell Colab Runner (V7)
+# 🚀 Motion Canvas One-Cell Colab Runner (V8)
 
 ```python
 # @title 🎬 START MOTION CANVAS RENDER
@@ -27,7 +27,6 @@ def run_command(cmd, cwd=None):
 def setup_and_render():
     global PROJECT_DIR
     print("📦 Installing system dependencies...")
-    # Using subprocess for apt-get to avoid syntax issues in some environments, though ! works in Colab
     run_command("apt-get update && apt-get install -y ffmpeg build-essential --quiet")
 
     if os.path.exists(LOCAL_ROOT):
@@ -48,11 +47,8 @@ def setup_and_render():
                 print(f"✅ Found project at: {PROJECT_DIR}")
                 found = True
                 break
-
         if not found:
             print("❌ Error: Could not find motionCanvas_project directory.")
-            # List directory to help debugging
-            run_command(f"ls -R {LOCAL_ROOT}")
             return
     else:
         PROJECT_DIR = os.path.abspath(PROJECT_DIR)
@@ -61,7 +57,6 @@ def setup_and_render():
     # Sync Manifest from Drive
     drive_manifest = os.path.join(BASE_DRIVE, "manifests/motion_canvas.json")
     local_manifest = os.path.join(PROJECT_DIR, "motion_canvas.json")
-
     if os.path.exists(drive_manifest):
         print("🚚 Syncing manifest from Drive...")
         shutil.copy2(drive_manifest, local_manifest)
@@ -86,30 +81,21 @@ def setup_and_render():
     run_command("npx playwright install-deps", cwd=PROJECT_DIR)
 
     print("🎬 Rendering animation (Headless)...")
-    # Clean output dir first
     out_dir = os.path.join(PROJECT_DIR, "out")
-    if os.path.exists(out_dir):
-        shutil.rmtree(out_dir)
+    if os.path.exists(out_dir): shutil.rmtree(out_dir)
 
+    # The rendering script now handles both frame capture and audio muxing internally
     run_command("NODE_OPTIONS='--max-old-space-size=4096' node render-headless.js", cwd=PROJECT_DIR)
 
-    # Encode to MP4
-    print("🎞️ Encoding video...")
-    output_video = os.path.join(PROJECT_DIR, "video.mp4")
-    if os.path.exists(out_dir) and len(os.listdir(out_dir)) > 0:
-        print(f"✅ Found {len(os.listdir(out_dir))} frames. Starting FFmpeg...")
-        run_command("ffmpeg -y -framerate 30 -i out/%06d.png -c:v libx264 -crf 18 -pix_fmt yuv420p video.mp4", cwd=PROJECT_DIR)
-    else:
-        print("❌ Error: No frames were rendered in the 'out' directory.")
-
     # Export to Drive
+    output_video = os.path.join(PROJECT_DIR, "video.mp4")
     final_destination = os.path.join(BASE_DRIVE, "out/motion_canvas_final.mp4")
     if os.path.exists(output_video):
         os.makedirs(os.path.dirname(final_destination), exist_ok=True)
         shutil.copy2(output_video, final_destination)
         print(f"✅ SUCCESS! Video saved to {final_destination}")
     else:
-        print("❌ Render failed. Check logs.")
+        print("❌ Render failed. Check logs for FFmpeg errors.")
 
 setup_and_render()
 ```
