@@ -22,7 +22,7 @@ export default makeScene2D(function* (view) {
   view.size({x: width, y: height});
   view.fill(null);
 
-  console.log(`🎬 Overlay Engine: ${config.scenes.length} scenes at ${width}x${height}`);
+  console.log(`🎬 [MC] Engine Init: ${config.scenes.length} scenes | ${width}x${height}`);
 
   if (isRendering) {
     const canvas = document.querySelector('canvas');
@@ -31,11 +31,15 @@ export default makeScene2D(function* (view) {
         canvas.style.height = `${height}px`;
         canvas.width = width;
         canvas.height = height;
+        console.log(`📊 [MC] Canvas resized to ${canvas.width}x${canvas.height}`);
+    } else {
+        console.error('❌ [MC] Canvas element not found!');
     }
   }
 
   for (let i = 0; i < config.scenes.length; i++) {
     const scene = config.scenes[i];
+    console.log(`🎥 [MC] Starting Scene: ${scene.id} (${scene.duration}s)`);
 
     if (isRendering && (window as any).startScene) {
         yield (window as any).startScene(i, scene.id);
@@ -56,7 +60,7 @@ export default makeScene2D(function* (view) {
         );
     }());
 
-    // Frame capture loop - capturing from the very first frame of the scene
+    // Frame capture loop
     for(let f=0; f < totalFrames; f++) {
         if (isRendering && (window as any).saveFrame) {
             const canvas = document.querySelector('canvas');
@@ -72,11 +76,13 @@ export default makeScene2D(function* (view) {
         yield (window as any).endScene(i);
     }
 
+    console.log(`✅ [MC] Finished Scene: ${scene.id}`);
     container().remove();
   }
 
   if (typeof window !== 'undefined') {
       (window as any).finished = true;
+      console.log('🏁 [MC] All scenes rendered!');
   }
 });
 

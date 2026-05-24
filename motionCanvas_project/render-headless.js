@@ -80,6 +80,7 @@ async function render() {
         currentSceneId = id || `scene_${index + 1}`;
         currentSceneDir = path.join(outRoot, currentSceneId);
         if (!fs.existsSync(currentSceneDir)) fs.mkdirSync(currentSceneDir);
+        console.log(`\n🎬 [NODE] Rendering Scene: ${currentSceneId}`);
     });
 
     await page.exposeFunction('saveFrame', async (frameNumber, dataUrl) => {
@@ -88,21 +89,25 @@ async function render() {
         const fileName = `${frameNumber.toString().padStart(6, '0')}.png`;
         const filePath = path.join(currentSceneDir, fileName);
         fs.writeFileSync(filePath, base64Data, 'base64');
+
+        // Progress indicator
+        if (frameNumber % 30 === 0) {
+            process.stdout.write(`.`);
+        }
     });
 
     await page.exposeFunction('endScene', (index) => {
-        console.log(`✅ Scene ${currentSceneId} captured. Encoding...`);
+        process.stdout.write(`\n`);
+        console.log(`✅ [NODE] Scene ${currentSceneId} captured. Encoding...`);
         const videoOutput = path.join(outRoot, `${currentSceneId}.webm`);
         const framesPattern = path.join(currentSceneDir, '%06d.png');
 
         try {
-            // Encode scene as WebM with VP9 to preserve transparency
             execSync(`ffmpeg -y -framerate 30 -i "${framesPattern}" -c:v libvpx-vp9 -pix_fmt yuva420p -b:v 4M -crf 15 "${videoOutput}"`, { stdio: 'ignore' });
-            console.log(`🚀 Scene Video ready: ${currentSceneId}.webm`);
-            // Cleanup frames to save space
+            console.log(`🚀 [NODE] Scene Video ready: ${currentSceneId}.webm`);
             fs.rmSync(currentSceneDir, {recursive: true});
         } catch (err) {
-            console.error(`❌ Failed to encode scene ${currentSceneId}:`, err.message);
+            console.error(`❌ [NODE] Failed to encode scene ${currentSceneId}:`, err.message);
         }
     });
 
