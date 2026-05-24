@@ -16,10 +16,31 @@ REPO_URL = "https://github.com/mailsabbirdu-bot/remotion-engine.git"
 LOCAL_ROOT = "/content/remotion-repo"
 PROJECT_DIR = os.path.join(LOCAL_ROOT, "remotion_project_updated")
 
+def get_video_frame_count(file_path):
+    """Returns accurate frame count using ffprobe."""
+    import subprocess
+    try:
+        # Get duration
+        cmd_dur = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', file_path]
+        duration = float(subprocess.check_output(cmd_dur).decode('utf-8').strip())
+
+        # Get FPS
+        cmd_fps = ['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=r_frame_rate', '-of', 'default=noprint_wrappers=1:nokey=1', file_path]
+        fps_raw = subprocess.check_output(cmd_fps).decode('utf-8').strip()
+        if '/' in fps_raw:
+            num, den = fps_raw.split('/')
+            fps = float(num) / float(den)
+        else:
+            fps = float(fps_raw)
+
+        return int(round(duration * fps))
+    except Exception as e:
+        return None
+
 def run():
     print("📦 Setting up environment...")
-    # Comprehensive list of dependencies for Headless Chrome on Ubuntu
-    !apt-get update && apt-get install -y ffmpeg libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libasound2 libxshmfence1 libpangocairo-1.0-0 libpango-1.0-0 libatk1.0-0 libatspi0 libxkbcommon0 --quiet
+    # Comprehensive list of dependencies for Headless Chrome on Ubuntu Jammy (22.04)
+    !apt-get update && apt-get install -y ffmpeg libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libasound2 libxshmfence1 libpangocairo-1.0-0 libpango-1.0-0 libxkbcommon0 libatspi-2.0-0 --quiet
 
     if os.path.exists(LOCAL_ROOT): shutil.rmtree(LOCAL_ROOT)
     print(f"🛰️ Cloning repository...")
@@ -68,11 +89,42 @@ def run():
 
     print(f"✅ Mirrored {asset_count} assets to /public")
 
-    # Find and link master_remotion.json
+    # Find and link master_remotion.json with Auto-fix durations
     config_drive = f"{BASE_DRIVE}/master_remotion.json"
+    target_json = os.path.join(PROJECT_DIR, "src/master_remotion.json")
+
     if os.path.exists(config_drive):
-        shutil.copy2(config_drive, os.path.join(PROJECT_DIR, "src/master_remotion.json"))
-        print(f"✅ Linked config from Drive")
+        print(f"🔍 Processing config with duration auto-fix...")
+        try:
+            with open(config_drive, 'r') as f:
+                data = json.load(f)
+
+            scenes = data.get('scenes', [])
+            for scene in scenes:
+                src = scene.get('background', {}).get('src', scene.get('src', ''))
+                if not src: continue
+
+                # Try to find the actual file in public folder
+                asset_path = os.path.join(public_path, os.path.basename(src))
+                if os.path.exists(asset_path) and asset_path.lower().endswith('.mp4'):
+                    frames = get_video_frame_count(asset_path)
+                    if frames:
+                        old_scene_dur = scene.get('duration', frames)
+                        print(f"  🎬 {src}: {old_scene_dur} -> {frames} frames")
+                        scene['duration'] = frames
+
+                        # Sync layers that were supposed to last the whole scene
+                        for layer in scene.get('layers', []):
+                            # If layer spans to the end of the scene (with 2 frame buffer), keep it spanning
+                            if layer.get('start', 0) + layer.get('duration', 0) >= old_scene_dur - 2:
+                                layer['duration'] = max(0, frames - layer.get('start', 0))
+
+            with open(target_json, 'w') as f:
+                json.dump(data, f, indent=2)
+            print(f"✅ Linked and fixed config from Drive")
+        except Exception as e:
+            print(f"⚠️ Error fixing config: {e}. Using raw copy.")
+            shutil.copy2(config_drive, target_json)
 
     # Install & Render
     %cd {PROJECT_DIR}
