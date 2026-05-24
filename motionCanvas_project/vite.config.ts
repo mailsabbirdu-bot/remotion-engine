@@ -3,7 +3,7 @@ import motionCanvas from '@motion-canvas/vite-plugin';
 
 export default defineConfig({
   plugins: [
-    motionCanvas.default ? motionCanvas.default() : motionCanvas(),
+    motionCanvas(),
   ],
   server: {
     port: 3000,

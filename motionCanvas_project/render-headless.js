@@ -8,19 +8,17 @@ async function render() {
     const url = `http://127.0.0.1:${port}/?render=true`;
 
     console.log('🚀 Starting Vite server...');
-    // We use 'npm run start' which calls 'vite'
     const vite = spawn('npm', ['run', 'start', '--', '--port', port.toString(), '--host', '127.0.0.1', '--strictPort'], {
         cwd: process.cwd(),
         shell: true
     });
 
     vite.stdout.on('data', (data) => {
-        const str = data.toString();
-        process.stdout.write(`Vite: ${str}`);
+        process.stdout.write(`Vite: ${data}`);
     });
 
     vite.stderr.on('data', (data) => {
-        process.stderr.write(`Vite Error: ${data.toString()}`);
+        process.stderr.write(`Vite Error: ${data}`);
     });
 
     console.log('⏳ Waiting for Vite to be ready...');
@@ -53,17 +51,16 @@ async function render() {
         await page.goto(url, {waitUntil: 'networkidle', timeout: 90000});
 
         console.log('⏳ Waiting for completion signal from Motion Canvas...');
-        await page.waitForFunction(() => window.finished === true, {timeout: 900000});
+        // Increased timeout to 20 minutes for large projects
+        await page.waitForFunction(() => window.finished === true, {timeout: 1200000});
         console.log('✅ Render complete!');
     } catch (e) {
         console.error('❌ Render failed:', e.message);
-        // Take a screenshot of the error page
         await page.screenshot({path: 'error-screenshot.png'});
         console.log('📸 Error screenshot saved to error-screenshot.png');
     } finally {
         await browser.close();
         vite.kill();
-        // Give some time for vite to die
         await new Promise(r => setTimeout(r, 2000));
         process.exit(0);
     }
