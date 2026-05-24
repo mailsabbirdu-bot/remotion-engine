@@ -36,8 +36,8 @@ async function render() {
 
     await page.goto('http://localhost:3000/?render=true');
 
-    // Wait for completion signal
-    await page.waitForFunction(() => (window as any).finished === true, {timeout: 600000});
+    // Wait for completion signal - Fixed SyntaxError (removed TypeScript 'as' keyword)
+    await page.waitForFunction(() => window.finished === true, {timeout: 600000});
 
     console.log('✅ Render complete!');
     await browser.close();
