@@ -4,36 +4,19 @@ import path from 'path';
 import fs from 'fs';
 import http from 'http';
 
-async function waitForServer(url, timeout = 30000) {
-    const start = Date.now();
-    while (Date.now() - start < timeout) {
-        try {
-            await new Promise((resolve, reject) => {
-                http.get(url, (res) => resolve(res.statusCode === 200))
-                    .on('error', reject);
-            });
-            return true;
-        } catch (e) {
-            await new Promise(r => setTimeout(resolve, 1000));
-        }
-    }
-    return false;
-}
-
 async function render() {
     const port = 3000;
-    const url = `http://localhost:${port}/?render=true`;
+    const url = `http://127.0.0.1:${port}/?render=true`;
 
     console.log('🚀 Starting Vite server...');
-    const vite = spawn('npx', ['vite', '--port', port.toString(), '--host', '0.0.0.0'], {
+    const vite = spawn('npx', ['vite', '--port', port.toString(), '--strictPort'], {
         cwd: process.cwd(),
         shell: true,
         stdio: 'inherit'
     });
 
     console.log('⏳ Waiting for Vite to be ready...');
-    // Simple delay as fallback, better check would be ideal
-    await new Promise(r => setTimeout(r, 15000));
+    await new Promise(r => setTimeout(r, 10000));
 
     console.log('🌐 Opening browser...');
     const browser = await chromium.launch({
@@ -45,7 +28,6 @@ async function render() {
         viewport: {width: 1920, height: 1080}
     });
 
-    // Create output dir
     const outDir = path.join(process.cwd(), 'out');
     if (fs.existsSync(outDir)) fs.rmSync(outDir, {recursive: true});
     fs.mkdirSync(outDir);
@@ -59,8 +41,21 @@ async function render() {
     });
 
     try {
-        await page.goto(url, {waitUntil: 'networkidle', timeout: 60000});
-        // Wait for completion signal
+        // Reduced timeout and added retries
+        let success = false;
+        for(let i=0; i<5; i++) {
+            try {
+                await page.goto(url, {waitUntil: 'networkidle', timeout: 30000});
+                success = true;
+                break;
+            } catch (e) {
+                console.log(`Retry ${i+1} connecting to Vite...`);
+                await new Promise(r => setTimeout(r, 2000));
+            }
+        }
+
+        if (!success) throw new Error('Could not connect to Vite server');
+
         await page.waitForFunction(() => window.finished === true, {timeout: 600000});
         console.log('✅ Render complete!');
     } catch (e) {
