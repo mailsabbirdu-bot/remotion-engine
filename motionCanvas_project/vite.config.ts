@@ -3,6 +3,6 @@ import motionCanvas from '@motion-canvas/vite-plugin';
 
 export default defineConfig({
   plugins: [
-    motionCanvas(),
+    (motionCanvas as any).default ? (motionCanvas as any).default() : motionCanvas(),
   ],
 });
