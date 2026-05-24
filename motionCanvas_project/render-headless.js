@@ -46,9 +46,11 @@ async function render() {
         args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
 
-    const page = await browser.newPage({
+    const context = await browser.newContext({
         viewport: {width: 1920, height: 1080}
     });
+
+    const page = await context.newPage();
 
     page.on('console', msg => {
         console.log(`BROWSER [${msg.type()}]: ${msg.text()}`);
