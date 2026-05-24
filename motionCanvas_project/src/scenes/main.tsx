@@ -1,4 +1,4 @@
-import {makeScene2D, Video, Rect} from '@motion-canvas/2d';
+import {makeScene2D, Rect} from '@motion-canvas/2d';
 import {all, createRef, waitFor} from '@motion-canvas/core';
 import {TextLayer} from '../components/TextLayer';
 import {Textbox} from '../components/Textbox';
@@ -20,40 +20,39 @@ export default makeScene2D(function* (view) {
 
   // Force view resolution
   view.size({x: width, y: height});
+  view.fill(null); // Ensure background is transparent
 
-  let frameCount = 0;
-  console.log(`🎬 Starting Motion Canvas Engine with ${config.scenes.length} scenes at ${width}x${height}`);
+  console.log(`🎬 Starting Motion Canvas Overlay Engine with ${config.scenes.length} scenes at ${width}x${height}`);
 
   for (let i = 0; i < config.scenes.length; i++) {
     const scene = config.scenes[i];
     console.log(`🎥 Rendering Scene ${i + 1}/${config.scenes.length}: ${scene.id}`);
 
-    const container = createRef<Rect>();
-    view.add(<Rect ref={container} width="100%" height="100%" opacity={0} />);
+    if (isRendering && (window as any).startScene) {
+        yield (window as any).startScene(i, scene.id);
+    }
 
-    // Timing logic
-    const totalFrames = Math.round(scene.duration * 30);
+    const container = createRef<Rect>();
+    view.add(<Rect ref={container} width="100%" height="100%" opacity={0} fill={null} />);
 
     // Run the animation
-    const videoRef = createRef<Video>();
-    const animationRunner = renderScene(container, scene, videoRef);
+    const animationRunner = renderScene(container, scene);
     // @ts-ignore
     const task = yield animationRunner;
 
-    // Ensure video is playing and ready if it exists
-    if (videoRef() && scene.background?.type === 'video') {
-        // Subtle wait for video buffer
-        yield* waitFor(0.1);
-    }
+    // Timing logic
+    const totalFrames = Math.round(scene.duration * 30);
 
     // Manual capture loop
     for(let f=0; f < totalFrames; f++) {
         yield* waitFor(1/30);
         if (isRendering && (window as any).saveFrame) {
-            // Await the capture in the browser's context
-            yield (window as any).saveFrame(frameCount);
+            yield (window as any).saveFrame(f);
         }
-        frameCount++;
+    }
+
+    if (isRendering && (window as any).endScene) {
+        yield (window as any).endScene(i);
     }
 
     container().remove();
@@ -65,30 +64,7 @@ export default makeScene2D(function* (view) {
   }
 });
 
-function* renderScene(container: any, scene: Scene, videoRef: any) {
-  container().add(
-    <Rect width="100%" height="100%" fill="#0a0a0a" zIndex={-2} />
-  );
-
-  if (scene.background) {
-      if (scene.background.type === 'video') {
-          container().add(
-              <Video
-                  ref={videoRef}
-                  src={scene.background.src}
-                  width="100%"
-                  height="100%"
-                  play
-                  opacity={scene.background.opacity ?? 1}
-              />
-          );
-      } else if (scene.background.type === 'color') {
-          container().add(
-              <Rect width="100%" height="100%" fill={scene.background.src} />
-          );
-      }
-  }
-
+function* renderScene(container: any, scene: Scene) {
   const animations = [];
   for (const layer of scene.layers) {
       const startDelay = layer.start ?? 0;

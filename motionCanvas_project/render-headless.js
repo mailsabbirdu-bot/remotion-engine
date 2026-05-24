@@ -67,22 +67,43 @@ async function render() {
         console.error('BROWSER ERROR:', err.message);
     });
 
-    const outDir = path.join(process.cwd(), 'out');
-    if (fs.existsSync(outDir)) fs.rmSync(outDir, {recursive: true});
-    fs.mkdirSync(outDir);
+    const outRoot = path.join(process.cwd(), 'out');
+    if (fs.existsSync(outRoot)) fs.rmSync(outRoot, {recursive: true});
+    fs.mkdirSync(outRoot);
 
-    console.log('🎬 Rendering frames...');
+    let currentSceneDir = '';
+    let currentSceneId = '';
 
-    // Expose capture function - make it wait for completion
+    // Signaling for scenes
+    await page.exposeFunction('startScene', (index, id) => {
+        currentSceneId = id || `scene_${index + 1}`;
+        currentSceneDir = path.join(outRoot, currentSceneId);
+        if (!fs.existsSync(currentSceneDir)) fs.mkdirSync(currentSceneDir);
+        console.log(`🎬 Rendering Scene: ${currentSceneId}`);
+    });
+
     await page.exposeFunction('saveFrame', async (frameNumber) => {
+        if (!currentSceneDir) return;
         const fileName = `${frameNumber.toString().padStart(6, '0')}.png`;
-        const filePath = path.join(outDir, fileName);
+        const filePath = path.join(currentSceneDir, fileName);
 
         const canvas = await page.$('canvas');
         if (canvas) {
-            await canvas.screenshot({path: filePath, omitBackground: false});
-        } else {
-            await page.screenshot({path: filePath});
+            await canvas.screenshot({path: filePath, omitBackground: true});
+        }
+    });
+
+    await page.exposeFunction('endScene', (index) => {
+        console.log(`✅ Scene ${currentSceneId} frames captured. Encoding...`);
+        const videoOutput = path.join(outRoot, `${currentSceneId}.webm`);
+        const framesPattern = path.join(currentSceneDir, '%06d.png');
+
+        try {
+            // Encode scene as WebM with VP9 to preserve transparency (alpha channel)
+            execSync(`ffmpeg -y -framerate 30 -i "${framesPattern}" -c:v libvpx-vp9 -pix_fmt yuva420p -b:v 2M -crf 30 "${videoOutput}"`, { stdio: 'ignore' });
+            console.log(`🚀 Scene Video ready: ${currentSceneId}.webm`);
+        } catch (err) {
+            console.error(`❌ Failed to encode scene ${currentSceneId}:`, err.message);
         }
     });
 
@@ -96,84 +117,16 @@ async function render() {
             console.log('⚠️ Networkidle timeout, proceeding with render...');
         }
 
-        console.log('⏳ Waiting for completion signal from Motion Canvas...');
+        console.log('⏳ Waiting for all scenes to complete...');
         await page.waitForFunction(() => window.finished === true, {timeout: 3600000, polling: 1000});
-        console.log('✅ Render complete!');
-
-        // --- AUDIO MUXING LOGIC ---
-        console.log('🎵 Processing audio tracks from background videos...');
-        const configPath = path.join(process.cwd(), 'motion_canvas.json');
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-
-        const audioSegments = [];
-        const tempDir = path.join(process.cwd(), 'temp_audio');
-        if (fs.existsSync(tempDir)) fs.rmSync(tempDir, {recursive: true});
-        fs.mkdirSync(tempDir);
-
-        for (let i = 0; i < config.scenes.length; i++) {
-            const scene = config.scenes[i];
-            if (scene.background && scene.background.type === 'video') {
-                const videoPath = path.join(process.cwd(), 'public', scene.background.src);
-                if (fs.existsSync(videoPath)) {
-                    const segmentPath = path.join(tempDir, `seg_${i}.wav`);
-                    console.log(`  🔊 Extracting audio from ${scene.background.src} (${scene.duration}s)`);
-                    try {
-                        // Extract audio segment matching scene duration
-                        execSync(`ffmpeg -y -ss 0 -t ${scene.duration} -i "${videoPath}" -vn -acodec pcm_s16le -ar 44100 -ac 2 "${segmentPath}"`, { stdio: 'ignore' });
-                        audioSegments.push(segmentPath);
-                    } catch (err) {
-                        console.warn(`  ⚠️ Failed to extract audio for scene ${i}: ${err.message}`);
-                    }
-                }
-            } else {
-                // Generate silence for scenes without video background
-                const segmentPath = path.join(tempDir, `seg_${i}.wav`);
-                console.log(`  🔇 Generating silence for scene ${i} (${scene.duration}s)`);
-                execSync(`ffmpeg -y -f lavfi -i anullsrc=r=44100:cl=stereo -t ${scene.duration} -acodec pcm_s16le "${segmentPath}"`, { stdio: 'ignore' });
-                audioSegments.push(segmentPath);
-            }
-        }
-
-        if (audioSegments.length > 0) {
-            console.log('  🔀 Concatenating audio segments...');
-            const listPath = path.join(tempDir, 'list.txt');
-            const listContent = audioSegments.map(s => `file '${s}'`).join('\n');
-            fs.writeFileSync(listPath, listContent);
-
-            execSync(`ffmpeg -y -f concat -safe 0 -i "${listPath}" -c copy master_audio.wav`, { stdio: 'ignore' });
-            console.log('✅ Master audio generated!');
-        }
-
-        // --- FINAL ENCODING ---
-        console.log('🎞️ Encoding final video with audio...');
-        const frameCount = fs.readdirSync(outDir).filter(f => f.endsWith('.png')).length;
-        if (frameCount > 0) {
-            let ffmpegCmd = `ffmpeg -y -framerate 30 -i out/%06d.png`;
-            if (fs.existsSync('master_audio.wav')) {
-                ffmpegCmd += ` -i master_audio.wav -c:v libx264 -crf 18 -pix_fmt yuv420p -c:a aac -b:a 192k -shortest video.mp4`;
-            } else {
-                ffmpegCmd += ` -c:v libx264 -crf 18 -pix_fmt yuv420p video.mp4`;
-            }
-
-            console.log(`Running: ${ffmpegCmd}`);
-            execSync(ffmpegCmd, { stdio: 'inherit' });
-            console.log('🚀 SUCCESS! video.mp4 is ready.');
-        } else {
-            console.error('❌ No frames found for encoding.');
-        }
+        console.log('🏁 All rendering and encoding tasks finished!');
 
     } catch (e) {
         console.error('❌ Render failed:', e.message);
         await page.screenshot({path: 'error-screenshot.png'});
-        console.log('📸 Error screenshot saved to error-screenshot.png');
     } finally {
         await browser.close();
         vite.kill();
-        // Cleanup temp files
-        if (fs.existsSync('temp_audio')) fs.rmSync('temp_audio', {recursive: true});
-        // if (fs.existsSync('master_audio.wav')) fs.unlinkSync('master_audio.wav');
-
-        await new Promise(r => setTimeout(r, 2000));
         process.exit(0);
     }
 }
