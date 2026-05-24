@@ -15,8 +15,12 @@ export default makeScene2D(function* (view) {
   const isRendering = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('render') === 'true';
 
   let frameCount = 0;
+  console.log(`🎬 Starting Motion Canvas Engine with ${config.scenes.length} scenes`);
 
-  for (const scene of config.scenes) {
+  for (let i = 0; i < config.scenes.length; i++) {
+    const scene = config.scenes[i];
+    console.log(`🎥 Rendering Scene ${i + 1}/${config.scenes.length}: ${scene.id}`);
+
     yield* renderScene(view, scene, isRendering, () => {
         if (isRendering && (window as any).saveFrame) {
             const canvas = document.querySelector('canvas');
@@ -29,8 +33,9 @@ export default makeScene2D(function* (view) {
     });
   }
 
+  console.log('✅ All scenes rendered!');
   if (typeof window !== 'undefined') {
-      yield* waitFor(1); // Final buffer
+      yield* waitFor(1);
       (window as any).finished = true;
   }
 });
@@ -39,7 +44,6 @@ function* renderScene(view: any, scene: Scene, isRendering: boolean, onFrame: ()
   const container = createRef<Rect>();
   view.add(<Rect ref={container} width="100%" height="100%" opacity={0} />);
 
-  // Background Overlay (Vignette)
   container().add(
       <Rect
         width="100%"
@@ -99,7 +103,7 @@ function* renderScene(view: any, scene: Scene, isRendering: boolean, onFrame: ()
               yield* waitFor(startDelay);
               yield* ShapeLayer(layer, container());
           }());
-      } else if (layer.type === 'image' && layer.id.startsWith('callout')) {
+      } else if (layer.id.startsWith('callout')) {
           animations.push(function* () {
             yield* waitFor(startDelay);
             yield* Callout(layer, container());
