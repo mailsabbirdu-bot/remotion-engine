@@ -1,0 +1,19 @@
+{
+  "name": "motion-canvas-engine",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "vite",
+    "build": "vite build",
+    "serve": "vite preview",
+    "render": "vite build --mode render"
+  },
+  "dependencies": {
+    "@motion-canvas/2d": "^3.11.0",
+    "@motion-canvas/core": "^3.11.0"
+  },
+  "devDependencies": {
+    "@motion-canvas/vite-plugin": "^3.11.0",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.0"
+  }
+}
