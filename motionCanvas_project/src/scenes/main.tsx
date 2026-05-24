@@ -6,6 +6,7 @@ import {DataVisuals} from '../components/DataVisuals';
 import {ShapeLayer} from '../components/ShapeLayer';
 import {Callout} from '../components/Callout';
 import {Counter} from '../components/Counter';
+import {ImageLayer} from '../components/ImageLayer';
 import {MotionCanvasConfig, Scene} from '../types';
 
 import configData from '../../motion_canvas.json';
@@ -21,7 +22,16 @@ export default makeScene2D(function* (view) {
     const scene = config.scenes[i];
     console.log(`🎥 Rendering Scene ${i + 1}/${config.scenes.length}: ${scene.id}`);
 
-    yield* renderScene(view, scene, isRendering, () => {
+    const container = createRef<Rect>();
+    view.add(<Rect ref={container} width="100%" height="100%" opacity={0} />);
+
+    // Capture Loop Wrapper
+    const sceneTask = yield renderScene(container, scene);
+
+    const transitionDur = scene.transition?.duration ?? 1;
+    const totalFrames = Math.round((scene.duration + transitionDur) * 30);
+
+    for(let f=0; f < totalFrames; f++) {
         if (isRendering && (window as any).saveFrame) {
             const canvas = document.querySelector('canvas');
             if (canvas) {
@@ -30,20 +40,19 @@ export default makeScene2D(function* (view) {
             }
         }
         frameCount++;
-    });
+        yield* waitFor(1/30);
+    }
+
+    container().remove();
   }
 
   console.log('✅ All scenes rendered!');
   if (typeof window !== 'undefined') {
-      yield* waitFor(1);
       (window as any).finished = true;
   }
 });
 
-function* renderScene(view: any, scene: Scene, isRendering: boolean, onFrame: () => void) {
-  const container = createRef<Rect>();
-  view.add(<Rect ref={container} width="100%" height="100%" opacity={0} />);
-
+function* renderScene(container: any, scene: Scene) {
   container().add(
       <Rect
         width="100%"
@@ -103,6 +112,11 @@ function* renderScene(view: any, scene: Scene, isRendering: boolean, onFrame: ()
               yield* waitFor(startDelay);
               yield* ShapeLayer(layer, container());
           }());
+      } else if (layer.type === 'image') {
+          animations.push(function* () {
+            yield* waitFor(startDelay);
+            yield* ImageLayer(layer, container());
+          }());
       } else if (layer.id.startsWith('callout')) {
           animations.push(function* () {
             yield* waitFor(startDelay);
@@ -118,15 +132,7 @@ function* renderScene(view: any, scene: Scene, isRendering: boolean, onFrame: ()
 
   const transitionDur = scene.transition?.duration ?? 1;
   yield* container().opacity(1, transitionDur);
-
   yield* all(...animations);
-
-  const totalFrames = Math.round(scene.duration * 30);
-  for(let i=0; i<totalFrames; i++) {
-      yield* waitFor(1/30);
-      onFrame();
-  }
-
+  yield* waitFor(scene.duration - transitionDur); // Wait for remaining duration
   yield* container().opacity(0, transitionDur);
-  container().remove();
 }

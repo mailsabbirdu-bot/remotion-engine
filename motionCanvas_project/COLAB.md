@@ -25,10 +25,13 @@ def run_command(cmd, cwd=None):
     return process.returncode
 
 def setup_and_render():
+    global PROJECT_DIR
     print("📦 Installing system dependencies...")
-    !apt-get update && apt-get install -y ffmpeg build-essential --quiet
+    # Using subprocess for apt-get to avoid syntax issues in some environments, though ! works in Colab
+    run_command("apt-get update && apt-get install -y ffmpeg build-essential --quiet")
 
     if os.path.exists(LOCAL_ROOT):
+        print(f"🧹 Cleaning up {LOCAL_ROOT}...")
         shutil.rmtree(LOCAL_ROOT)
 
     os.makedirs(LOCAL_ROOT, exist_ok=True)
@@ -37,19 +40,23 @@ def setup_and_render():
     run_command(f"git clone {REPO_URL} {LOCAL_ROOT}")
 
     if not os.path.exists(PROJECT_DIR):
-        print(f"❌ Error: Could not find project directory at {PROJECT_DIR}")
-        print("Searching for motionCanvas_project...")
-        # Deep search for the project folder
+        print(f"🔍 Searching for motionCanvas_project in {LOCAL_ROOT}...")
         found = False
         for root, dirs, files in os.walk(LOCAL_ROOT):
             if "motionCanvas_project" in dirs:
-                PROJECT_DIR = os.path.join(root, "motionCanvas_project")
+                PROJECT_DIR = os.path.abspath(os.path.join(root, "motionCanvas_project"))
                 print(f"✅ Found project at: {PROJECT_DIR}")
                 found = True
                 break
+
         if not found:
-            print("❌ Project not found in repo.")
+            print("❌ Error: Could not find motionCanvas_project directory.")
+            # List directory to help debugging
+            run_command(f"ls -R {LOCAL_ROOT}")
             return
+    else:
+        PROJECT_DIR = os.path.abspath(PROJECT_DIR)
+        print(f"✅ Project directory confirmed at: {PROJECT_DIR}")
 
     # Sync Manifest from Drive
     drive_manifest = os.path.join(BASE_DRIVE, "manifests/motion_canvas.json")

@@ -22,7 +22,23 @@ async function render() {
     });
 
     console.log('⏳ Waiting for Vite to be ready...');
-    await new Promise(r => setTimeout(r, 20000));
+    // Poll for the Vite server to be up
+    let viteReady = false;
+    for (let i = 0; i < 30; i++) {
+        try {
+            const res = await fetch(`http://127.0.0.1:${port}`);
+            if (res.ok) {
+                viteReady = true;
+                break;
+            }
+        } catch (e) {}
+        await new Promise(r => setTimeout(r, 1000));
+    }
+    if (!viteReady) {
+        console.warn('⚠️ Vite server did not respond in time, proceeding anyway...');
+    } else {
+        console.log('✅ Vite server is ready!');
+    }
 
     console.log('🌐 Opening browser...');
     const browser = await chromium.launch({
@@ -32,6 +48,14 @@ async function render() {
 
     const page = await browser.newPage({
         viewport: {width: 1920, height: 1080}
+    });
+
+    page.on('console', msg => {
+        console.log(`BROWSER [${msg.type()}]: ${msg.text()}`);
+    });
+
+    page.on('pageerror', err => {
+        console.error('BROWSER ERROR:', err.message);
     });
 
     const outDir = path.join(process.cwd(), 'out');
