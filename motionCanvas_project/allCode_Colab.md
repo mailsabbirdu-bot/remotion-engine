@@ -1,22 +1,28 @@
 # 📜 Motion Canvas Code Audit Tool
 
 Run this cell in Google Colab to display the full project structure and core engine code.
+**Note:** Ensure you have run the setup cell (from COLAB.md) or cloned the repository first.
 
 ```python
 import os
 
 # Search for the project directory in common locations
-possible_paths = [
-    ".",
-    "motionCanvas_project",
-    "/content/motion-canvas-production/motionCanvas_project",
-    "/content/motionCanvas_project"
+possible_roots = [
+    "/content",
+    "/content/motion-canvas-production",
+    "/content/motion-canvas-repo",
+    "."
 ]
 
 PROJECT_ROOT = None
-for p in possible_paths:
-    if os.path.exists(os.path.join(p, "package.json")) and os.path.exists(os.path.join(p, "src")):
-        PROJECT_ROOT = p
+for root in possible_roots:
+    target = os.path.join(root, "motionCanvas_project")
+    if os.path.exists(os.path.join(target, "package.json")):
+        PROJECT_ROOT = target
+        break
+    # Check if we are already inside it
+    if os.path.exists(os.path.join(root, "package.json")) and "motionCanvas_project" in os.path.abspath(root):
+        PROJECT_ROOT = root
         break
 
 core_files = [
@@ -40,10 +46,9 @@ core_files = [
 def audit_project():
     if not PROJECT_ROOT:
         print("❌ Error: Could not find the Motion Canvas project directory.")
-        print("Please ensure you have cloned the repository or are in the correct directory.")
-        # List current directory to help debug
+        print("Please ensure you have run the main Setup/Render cell in COLAB.md first.")
         print(f"\nCurrent Directory: {os.getcwd()}")
-        print("Contents:", os.listdir("."))
+        print("Contents of /content:", os.listdir("/content") if os.path.exists("/content") else "N/A")
         return
 
     print(f"📂 PROJECT DIRECTORY FOUND: {os.path.abspath(PROJECT_ROOT)}")
