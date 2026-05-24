@@ -13,6 +13,7 @@ if not os.path.exists('/content/drive'):
 BASE_DRIVE = "/content/drive/MyDrive/Counterism_Studio_V4"
 LOCAL_ROOT = "/content/motion-canvas-production"
 PROJECT_DIR = os.path.join(LOCAL_ROOT, "motionCanvas_project")
+# REPLACE WITH YOUR ACTUAL REPOSITORY URL
 REPO_URL = "https://github.com/mailsabbirdu-bot/remotion-engine.git"
 
 def run_command(cmd, cwd=None):
@@ -34,6 +35,21 @@ def setup_and_render():
 
     print(f"🛰️ Cloning repository...")
     run_command(f"git clone {REPO_URL} {LOCAL_ROOT}")
+
+    if not os.path.exists(PROJECT_DIR):
+        print(f"❌ Error: Could not find project directory at {PROJECT_DIR}")
+        print("Searching for motionCanvas_project...")
+        # Deep search for the project folder
+        found = False
+        for root, dirs, files in os.walk(LOCAL_ROOT):
+            if "motionCanvas_project" in dirs:
+                PROJECT_DIR = os.path.join(root, "motionCanvas_project")
+                print(f"✅ Found project at: {PROJECT_DIR}")
+                found = True
+                break
+        if not found:
+            print("❌ Project not found in repo.")
+            return
 
     # Sync Manifest from Drive
     drive_manifest = os.path.join(BASE_DRIVE, "manifests/motion_canvas.json")
@@ -58,25 +74,18 @@ def setup_and_render():
                 os.symlink(src, dst)
 
     print("🟢 Installing Node packages & Playwright...")
-    # Clean install
     run_command("npm install", cwd=PROJECT_DIR)
     run_command("npx playwright install chromium", cwd=PROJECT_DIR)
     run_command("npx playwright install-deps", cwd=PROJECT_DIR)
 
     print("🎬 Rendering animation (Headless)...")
-    # Increase memory for node if needed
     run_command("NODE_OPTIONS='--max-old-space-size=4096' node render-headless.js", cwd=PROJECT_DIR)
 
     # Encode to MP4
     print("🎞️ Encoding video...")
     output_video = os.path.join(PROJECT_DIR, "video.mp4")
     if os.path.exists(os.path.join(PROJECT_DIR, "out")):
-        # Check if there are any png files
-        frames = os.listdir(os.path.join(PROJECT_DIR, "out"))
-        if frames:
-            run_command("ffmpeg -y -framerate 30 -i out/%06d.png -c:v libx264 -crf 18 -pix_fmt yuv420p video.mp4", cwd=PROJECT_DIR)
-        else:
-            print("❌ No frames found in out/ folder.")
+        run_command("ffmpeg -y -framerate 30 -i out/%06d.png -c:v libx264 -crf 18 -pix_fmt yuv420p video.mp4", cwd=PROJECT_DIR)
 
     # Export to Drive
     final_destination = os.path.join(BASE_DRIVE, "out/motion_canvas_final.mp4")
@@ -85,7 +94,7 @@ def setup_and_render():
         shutil.copy2(output_video, final_destination)
         print(f"✅ SUCCESS! Video saved to {final_destination}")
     else:
-        print("❌ Render failed. video.mp4 not produced.")
+        print("❌ Render failed. Check logs.")
 
 setup_and_render()
 ```
