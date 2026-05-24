@@ -30,7 +30,7 @@ export default makeScene2D(function* (view) {
   }
 
   if (typeof window !== 'undefined') {
-      yield* waitFor(0.5);
+      yield* waitFor(1); // Final buffer
       (window as any).finished = true;
   }
 });
@@ -38,6 +38,17 @@ export default makeScene2D(function* (view) {
 function* renderScene(view: any, scene: Scene, isRendering: boolean, onFrame: () => void) {
   const container = createRef<Rect>();
   view.add(<Rect ref={container} width="100%" height="100%" opacity={0} />);
+
+  // Background Overlay (Vignette)
+  container().add(
+      <Rect
+        width="100%"
+        height="100%"
+        fill={'radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.4) 100%)'}
+        zIndex={10}
+        opacity={0.8}
+      />
+  );
 
   const videoRef = createRef<Video>();
 
