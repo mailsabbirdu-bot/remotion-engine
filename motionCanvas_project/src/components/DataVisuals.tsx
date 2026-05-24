@@ -18,7 +18,6 @@ function* LineGraph({data, style, animationIn}: Layer, parent: any) {
     const container = createRef<Rect>();
     parent.add(
         <Rect ref={container} x={style?.x ?? 0} y={style?.y ?? 0}>
-            {/* Area Fill */}
             <Line
                 ref={areaRef}
                 points={[...points, [points[points.length-1][0], 300], [points[0][0], 300]]}
@@ -27,7 +26,6 @@ function* LineGraph({data, style, animationIn}: Layer, parent: any) {
                 opacity={0}
             />
 
-            {/* Grid */}
             <Rect width={1000} height={2} fill="rgba(255,255,255,0.05)" y={200} />
             <Rect width={1000} height={2} fill="rgba(255,255,255,0.05)" y={0} />
             <Rect width={1000} height={2} fill="rgba(255,255,255,0.05)" y={-200} />

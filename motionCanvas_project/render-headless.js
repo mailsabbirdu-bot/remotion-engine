@@ -2,21 +2,29 @@ import {chromium} from 'playwright';
 import {spawn} from 'child_process';
 import path from 'path';
 import fs from 'fs';
-import http from 'http';
 
 async function render() {
     const port = 3000;
     const url = `http://127.0.0.1:${port}/?render=true`;
 
     console.log('🚀 Starting Vite server...');
-    const vite = spawn('npx', ['vite', '--port', port.toString(), '--strictPort'], {
+    // We use 'npm run start' which calls 'vite'
+    const vite = spawn('npm', ['run', 'start', '--', '--port', port.toString(), '--host', '127.0.0.1', '--strictPort'], {
         cwd: process.cwd(),
-        shell: true,
-        stdio: 'inherit'
+        shell: true
+    });
+
+    vite.stdout.on('data', (data) => {
+        const str = data.toString();
+        process.stdout.write(`Vite: ${str}`);
+    });
+
+    vite.stderr.on('data', (data) => {
+        process.stderr.write(`Vite Error: ${data.toString()}`);
     });
 
     console.log('⏳ Waiting for Vite to be ready...');
-    await new Promise(r => setTimeout(r, 10000));
+    await new Promise(r => setTimeout(r, 20000));
 
     console.log('🌐 Opening browser...');
     const browser = await chromium.launch({
@@ -41,33 +49,27 @@ async function render() {
     });
 
     try {
-        // Reduced timeout and added retries
-        let success = false;
-        for(let i=0; i<5; i++) {
-            try {
-                await page.goto(url, {waitUntil: 'networkidle', timeout: 30000});
-                success = true;
-                break;
-            } catch (e) {
-                console.log(`Retry ${i+1} connecting to Vite...`);
-                await new Promise(r => setTimeout(r, 2000));
-            }
-        }
+        console.log(`🔗 Navigating to ${url}...`);
+        await page.goto(url, {waitUntil: 'networkidle', timeout: 90000});
 
-        if (!success) throw new Error('Could not connect to Vite server');
-
-        await page.waitForFunction(() => window.finished === true, {timeout: 600000});
+        console.log('⏳ Waiting for completion signal from Motion Canvas...');
+        await page.waitForFunction(() => window.finished === true, {timeout: 900000});
         console.log('✅ Render complete!');
     } catch (e) {
         console.error('❌ Render failed:', e.message);
+        // Take a screenshot of the error page
+        await page.screenshot({path: 'error-screenshot.png'});
+        console.log('📸 Error screenshot saved to error-screenshot.png');
     } finally {
         await browser.close();
         vite.kill();
+        // Give some time for vite to die
+        await new Promise(r => setTimeout(r, 2000));
         process.exit(0);
     }
 }
 
 render().catch(err => {
-    console.error(err);
+    console.error('💥 Fatal Error:', err);
     process.exit(1);
 });

@@ -1,6 +1,4 @@
-# 🚀 Motion Canvas One-Cell Colab Runner (V6)
-
-This cell automates the high-end video production on Google Colab.
+# 🚀 Motion Canvas One-Cell Colab Runner (V7)
 
 ```python
 # @title 🎬 START MOTION CANVAS RENDER
@@ -60,18 +58,25 @@ def setup_and_render():
                 os.symlink(src, dst)
 
     print("🟢 Installing Node packages & Playwright...")
+    # Clean install
     run_command("npm install", cwd=PROJECT_DIR)
     run_command("npx playwright install chromium", cwd=PROJECT_DIR)
     run_command("npx playwright install-deps", cwd=PROJECT_DIR)
 
     print("🎬 Rendering animation (Headless)...")
-    run_command("node render-headless.js", cwd=PROJECT_DIR)
+    # Increase memory for node if needed
+    run_command("NODE_OPTIONS='--max-old-space-size=4096' node render-headless.js", cwd=PROJECT_DIR)
 
     # Encode to MP4
     print("🎞️ Encoding video...")
     output_video = os.path.join(PROJECT_DIR, "video.mp4")
     if os.path.exists(os.path.join(PROJECT_DIR, "out")):
-        run_command("ffmpeg -y -framerate 30 -i out/%06d.png -c:v libx264 -crf 18 -pix_fmt yuv420p video.mp4", cwd=PROJECT_DIR)
+        # Check if there are any png files
+        frames = os.listdir(os.path.join(PROJECT_DIR, "out"))
+        if frames:
+            run_command("ffmpeg -y -framerate 30 -i out/%06d.png -c:v libx264 -crf 18 -pix_fmt yuv420p video.mp4", cwd=PROJECT_DIR)
+        else:
+            print("❌ No frames found in out/ folder.")
 
     # Export to Drive
     final_destination = os.path.join(BASE_DRIVE, "out/motion_canvas_final.mp4")
@@ -80,7 +85,7 @@ def setup_and_render():
         shutil.copy2(output_video, final_destination)
         print(f"✅ SUCCESS! Video saved to {final_destination}")
     else:
-        print("❌ Render failed. Check logs.")
+        print("❌ Render failed. video.mp4 not produced.")
 
 setup_and_render()
 ```
