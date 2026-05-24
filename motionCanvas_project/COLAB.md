@@ -1,4 +1,4 @@
-# 🚀 Motion Canvas Overlay Engine - Colab Runner (V10)
+# 🚀 Motion Canvas Overlay Engine - Colab Runner (V11)
 
 ```python
 # @title 🎬 START MOTION CANVAS OVERLAY RENDER
@@ -58,7 +58,7 @@ def setup_and_render():
     run_command("npx playwright install chromium", cwd=PROJECT_DIR)
     run_command("npx playwright install-deps", cwd=PROJECT_DIR)
 
-    print("🎬 Rendering overlays (Headless)...")
+    print("🎬 Rendering overlays (Production Mode)...")
     out_dir = os.path.join(PROJECT_DIR, "out")
     if os.path.exists(out_dir): shutil.rmtree(out_dir)
 
@@ -80,9 +80,9 @@ def setup_and_render():
                 copied_count += 1
 
         if copied_count > 0:
-            print(f"🏁 SUCCESS! {copied_count} scenes saved to {final_destination_root}")
+            print(f"🏁 SUCCESS! {copied_count} overlays saved to {final_destination_root}")
         else:
-            print("❌ No WebM files found in the output directory.")
+            print("❌ No WebM files found in the output directory. Check FFmpeg logs.")
     else:
         print("❌ Render failed. Check logs.")
 

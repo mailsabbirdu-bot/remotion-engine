@@ -7,8 +7,11 @@ async function render() {
     const port = 3000;
     const url = `http://127.0.0.1:${port}/?render=true&ui=false`;
 
-    console.log('🚀 Starting Vite server...');
-    const vite = spawn('npm', ['run', 'start', '--', '--port', port.toString(), '--host', '127.0.0.1', '--strictPort'], {
+    console.log('🏗️ Building project for production...');
+    execSync('npm run build', {cwd: process.cwd(), stdio: 'inherit'});
+
+    console.log('🚀 Starting preview server...');
+    const vite = spawn('npm', ['run', 'serve', '--', '--port', port.toString(), '--host', '127.0.0.1', '--strictPort'], {
         cwd: process.cwd(),
         shell: true
     });
@@ -21,7 +24,7 @@ async function render() {
         process.stderr.write(`Vite Error: ${data}`);
     });
 
-    console.log('⏳ Waiting for Vite to be ready...');
+    console.log('⏳ Waiting for server to be ready...');
     let viteReady = false;
     for (let i = 0; i < 30; i++) {
         try {
@@ -34,9 +37,9 @@ async function render() {
         await new Promise(r => setTimeout(r, 1000));
     }
     if (!viteReady) {
-        console.warn('⚠️ Vite server did not respond in time, proceeding anyway...');
+        console.warn('⚠️ Server did not respond in time, proceeding anyway...');
     } else {
-        console.log('✅ Vite server is ready!');
+        console.log('✅ Server is ready!');
     }
 
     console.log('🌐 Opening browser...');
@@ -53,7 +56,6 @@ async function render() {
     const context = await browser.newContext({
         viewport: {width: 1920, height: 1080},
         deviceScaleFactor: 1,
-        screen: {width: 1920, height: 1080}
     });
 
     const page = await context.newPage();
@@ -74,34 +76,31 @@ async function render() {
     let currentSceneDir = '';
     let currentSceneId = '';
 
-    // Signaling for scenes
     await page.exposeFunction('startScene', (index, id) => {
         currentSceneId = id || `scene_${index + 1}`;
         currentSceneDir = path.join(outRoot, currentSceneId);
         if (!fs.existsSync(currentSceneDir)) fs.mkdirSync(currentSceneDir);
-        console.log(`🎬 Rendering Scene: ${currentSceneId}`);
     });
 
-    await page.exposeFunction('saveFrame', async (frameNumber) => {
+    await page.exposeFunction('saveFrame', async (frameNumber, dataUrl) => {
         if (!currentSceneDir) return;
+        const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
         const fileName = `${frameNumber.toString().padStart(6, '0')}.png`;
         const filePath = path.join(currentSceneDir, fileName);
-
-        const canvas = await page.$('canvas');
-        if (canvas) {
-            await canvas.screenshot({path: filePath, omitBackground: true});
-        }
+        fs.writeFileSync(filePath, base64Data, 'base64');
     });
 
     await page.exposeFunction('endScene', (index) => {
-        console.log(`✅ Scene ${currentSceneId} frames captured. Encoding...`);
+        console.log(`✅ Scene ${currentSceneId} captured. Encoding...`);
         const videoOutput = path.join(outRoot, `${currentSceneId}.webm`);
         const framesPattern = path.join(currentSceneDir, '%06d.png');
 
         try {
-            // Encode scene as WebM with VP9 to preserve transparency (alpha channel)
-            execSync(`ffmpeg -y -framerate 30 -i "${framesPattern}" -c:v libvpx-vp9 -pix_fmt yuva420p -b:v 2M -crf 30 "${videoOutput}"`, { stdio: 'ignore' });
+            // Encode scene as WebM with VP9 to preserve transparency
+            execSync(`ffmpeg -y -framerate 30 -i "${framesPattern}" -c:v libvpx-vp9 -pix_fmt yuva420p -b:v 4M -crf 15 "${videoOutput}"`, { stdio: 'ignore' });
             console.log(`🚀 Scene Video ready: ${currentSceneId}.webm`);
+            // Cleanup frames to save space
+            fs.rmSync(currentSceneDir, {recursive: true});
         } catch (err) {
             console.error(`❌ Failed to encode scene ${currentSceneId}:`, err.message);
         }
@@ -109,17 +108,11 @@ async function render() {
 
     try {
         console.log(`🔗 Navigating to ${url}...`);
-        await page.goto(url, {waitUntil: 'load', timeout: 120000});
+        await page.goto(url, {waitUntil: 'networkidle', timeout: 120000});
 
-        try {
-            await page.waitForLoadState('networkidle', {timeout: 15000});
-        } catch (e) {
-            console.log('⚠️ Networkidle timeout, proceeding with render...');
-        }
-
-        console.log('⏳ Waiting for all scenes to complete...');
+        console.log('⏳ Rendering overlays...');
         await page.waitForFunction(() => window.finished === true, {timeout: 3600000, polling: 1000});
-        console.log('🏁 All rendering and encoding tasks finished!');
+        console.log('🏁 All tasks finished!');
 
     } catch (e) {
         console.error('❌ Render failed:', e.message);
