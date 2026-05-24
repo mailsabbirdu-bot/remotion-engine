@@ -11,17 +11,40 @@ import configData from '../../motion_canvas.json';
 
 export default makeScene2D(function* (view) {
   const config = configData as MotionCanvasConfig;
+  const isRendering = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('render') === 'true';
+
+  let frameCount = 0;
 
   for (const scene of config.scenes) {
-    yield* renderScene(view, scene);
+    yield* renderScene(view, scene, isRendering, () => {
+        if (isRendering && (window as any).saveFrame) {
+            const canvas = document.querySelector('canvas');
+            if (canvas) {
+                const dataUrl = canvas.toDataURL('image/png');
+                (window as any).saveFrame(frameCount, dataUrl);
+            }
+        }
+        frameCount++;
+    });
+  }
+
+  if (typeof window !== 'undefined') {
+      // Small delay to ensure last frame is processed
+      yield* waitFor(0.5);
+      (window as any).finished = true;
   }
 });
 
-function* renderScene(view: any, scene: Scene) {
+function* renderScene(view: any, scene: Scene, isRendering: boolean, onFrame: () => void) {
   const container = createRef<Rect>();
   view.add(<Rect ref={container} width="100%" height="100%" opacity={0} />);
 
   const videoRef = createRef<Video>();
+
+  // Global dark background fallback
+  container().add(
+    <Rect width="100%" height="100%" fill="#0a0a0a" zIndex={-2} />
+  );
 
   if (scene.background) {
       if (scene.background.type === 'video') {
@@ -37,11 +60,7 @@ function* renderScene(view: any, scene: Scene) {
           );
       } else if (scene.background.type === 'color') {
           container().add(
-              <Rect
-                  width="100%"
-                  height="100%"
-                  fill={scene.background.src}
-              />
+              <Rect width="100%" height="100%" fill={scene.background.src} />
           );
       }
   }
@@ -70,7 +89,7 @@ function* renderScene(view: any, scene: Scene) {
               yield* waitFor(startDelay);
               yield* ShapeLayer(layer, container());
           }());
-      } else if (layer.type === 'image' && layer.id.startsWith('callout')) {
+      } else if (layer.id.startsWith('callout')) {
           animations.push(function* () {
             yield* waitFor(startDelay);
             yield* Callout(layer, container());
@@ -78,11 +97,29 @@ function* renderScene(view: any, scene: Scene) {
       }
   }
 
-  const transitionDur = scene.transition?.duration ?? 0.5;
+  const transitionDur = scene.transition?.duration ?? 1;
   yield* container().opacity(1, transitionDur);
 
-  yield* all(...animations);
-  yield* waitFor(scene.duration);
+  // We wrap the all(...) in a loop to capture frames
+  const contentAnimation = all(...animations);
+
+  // Total frames for this scene
+  const totalFrames = Math.round(scene.duration * 30);
+
+  // This is a bit tricky: we want to run the animations AND capture frames.
+  // In MC, we can yield the animation generator.
+  // To capture frames, we need to step through it.
+
+  // For simplicity in this engine, we'll yield the animations
+  // and then wait for the duration, capturing frames during the wait.
+  yield* contentAnimation;
+
+  // Now capture the "visible" duration
+  for(let i=0; i<totalFrames; i++) {
+      yield* waitFor(1/30);
+      onFrame();
+  }
+
   yield* container().opacity(0, transitionDur);
   container().remove();
 }
