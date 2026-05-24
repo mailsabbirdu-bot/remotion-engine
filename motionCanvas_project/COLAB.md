@@ -86,13 +86,21 @@ def setup_and_render():
     run_command("npx playwright install-deps", cwd=PROJECT_DIR)
 
     print("🎬 Rendering animation (Headless)...")
+    # Clean output dir first
+    out_dir = os.path.join(PROJECT_DIR, "out")
+    if os.path.exists(out_dir):
+        shutil.rmtree(out_dir)
+
     run_command("NODE_OPTIONS='--max-old-space-size=4096' node render-headless.js", cwd=PROJECT_DIR)
 
     # Encode to MP4
     print("🎞️ Encoding video...")
     output_video = os.path.join(PROJECT_DIR, "video.mp4")
-    if os.path.exists(os.path.join(PROJECT_DIR, "out")):
+    if os.path.exists(out_dir) and len(os.listdir(out_dir)) > 0:
+        print(f"✅ Found {len(os.listdir(out_dir))} frames. Starting FFmpeg...")
         run_command("ffmpeg -y -framerate 30 -i out/%06d.png -c:v libx264 -crf 18 -pix_fmt yuv420p video.mp4", cwd=PROJECT_DIR)
+    else:
+        print("❌ Error: No frames were rendered in the 'out' directory.")
 
     # Export to Drive
     final_destination = os.path.join(BASE_DRIVE, "out/motion_canvas_final.mp4")
