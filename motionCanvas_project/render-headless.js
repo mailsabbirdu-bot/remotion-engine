@@ -87,8 +87,8 @@ async function render() {
         }
 
         console.log('⏳ Waiting for completion signal from Motion Canvas...');
-        // Increased timeout to 20 minutes for large projects
-        await page.waitForFunction(() => window.finished === true, {timeout: 1200000, polling: 1000});
+        // Increased timeout to 60 minutes for very large projects in Colab
+        await page.waitForFunction(() => window.finished === true, {timeout: 3600000, polling: 1000});
         console.log('✅ Render complete!');
     } catch (e) {
         console.error('❌ Render failed:', e.message);

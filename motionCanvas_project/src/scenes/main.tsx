@@ -24,6 +24,17 @@ export default makeScene2D(function* (view) {
   let frameCount = 0;
   console.log(`🎬 Starting Motion Canvas Engine with ${config.scenes.length} scenes at ${width}x${height}`);
 
+  if (isRendering) {
+      // Ensure canvas element is properly sized in the DOM
+      const canvas = document.querySelector('canvas');
+      if (canvas) {
+          canvas.width = width;
+          canvas.height = height;
+          canvas.style.width = `${width}px`;
+          canvas.style.height = `${height}px`;
+      }
+  }
+
   for (let i = 0; i < config.scenes.length; i++) {
     const scene = config.scenes[i];
     console.log(`🎥 Rendering Scene ${i + 1}/${config.scenes.length}: ${scene.id}`);
@@ -31,18 +42,20 @@ export default makeScene2D(function* (view) {
     const container = createRef<Rect>();
     view.add(<Rect ref={container} width="100%" height="100%" opacity={0} />);
 
-    // Capture Loop Wrapper
-    yield* renderScene(container, scene);
-
-    // The duration in config should be the total time this scene is active
+    // Timing logic
     const totalFrames = Math.round(scene.duration * 30);
 
+    // We run the animation
+    const animationRunner = renderScene(container, scene);
+    const task = yield animationRunner;
+
+    // Manual capture loop
     for(let f=0; f < totalFrames; f++) {
         if (isRendering && (window as any).saveFrame) {
             const canvas = document.querySelector('canvas');
             if (canvas) {
                 if (f === 0) {
-                    console.log(`Canvas dimensions: ${canvas.width}x${canvas.height}`);
+                    console.log(`Canvas dimensions for ${scene.id}: ${canvas.width}x${canvas.height}`);
                 }
                 const dataUrl = canvas.toDataURL('image/png');
                 yield (window as any).saveFrame(frameCount, dataUrl);
@@ -66,7 +79,7 @@ function* renderScene(container: any, scene: Scene) {
       <Rect
         width="100%"
         height="100%"
-        fill={'rgba(0,0,0,0.2)'}
+        fill={'rgba(0,0,0,0.01)'} // Minimal overlay
         zIndex={10}
       />
   );
@@ -139,10 +152,9 @@ function* renderScene(container: any, scene: Scene) {
   }
 
   const transitionDur = scene.transition?.duration ?? 0.5;
-  yield* container().opacity(1, transitionDur);
-  yield* all(...animations);
 
-  // Wait for the total scene duration minus the initial transition
-  const remainingWait = Math.max(0, scene.duration - transitionDur);
-  yield* waitFor(remainingWait);
+  yield* all(
+      container().opacity(1, transitionDur),
+      all(...animations)
+  );
 }
