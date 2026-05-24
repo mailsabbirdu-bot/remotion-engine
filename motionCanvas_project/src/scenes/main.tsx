@@ -1,5 +1,5 @@
 import {makeScene2D, Rect} from '@motion-canvas/2d';
-import {all, createRef, waitFor} from '@motion-canvas/core';
+import {all, createRef, waitFor, spawn} from '@motion-canvas/core';
 import {TextLayer} from '../components/TextLayer';
 import {Textbox} from '../components/Textbox';
 import {DataVisuals} from '../components/DataVisuals';
@@ -18,37 +18,54 @@ export default makeScene2D(function* (view) {
   const width = config.width || 1920;
   const height = config.height || 1080;
 
-  // Force view resolution
+  // Force strict resolution
   view.size({x: width, y: height});
-  view.fill(null); // Ensure background is transparent
+  view.fill(null);
 
-  console.log(`🎬 Starting Motion Canvas Overlay Engine with ${config.scenes.length} scenes at ${width}x${height}`);
+  console.log(`🎬 Overlay Engine: ${config.scenes.length} scenes at ${width}x${height}`);
+
+  if (isRendering) {
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+        canvas.width = width;
+        canvas.height = height;
+    }
+  }
 
   for (let i = 0; i < config.scenes.length; i++) {
     const scene = config.scenes[i];
-    console.log(`🎥 Rendering Scene ${i + 1}/${config.scenes.length}: ${scene.id}`);
 
     if (isRendering && (window as any).startScene) {
         yield (window as any).startScene(i, scene.id);
     }
 
     const container = createRef<Rect>();
-    view.add(<Rect ref={container} width="100%" height="100%" opacity={0} fill={null} />);
-
-    // Run the animation
-    const animationRunner = renderScene(container, scene);
-    // @ts-ignore
-    const task = yield animationRunner;
+    view.add(<Rect ref={container} width={width} height={height} opacity={0} fill={null} />);
 
     // Timing logic
     const totalFrames = Math.round(scene.duration * 30);
 
-    // Manual capture loop
+    // Start scene animations and fade in container concurrently
+    const transitionDur = scene.transition?.duration ?? 0.5;
+    yield* spawn(function*() {
+        yield* all(
+            renderScene(container, scene),
+            container().opacity(1, transitionDur)
+        );
+    }());
+
+    // Frame capture loop - capturing from the very first frame of the scene
     for(let f=0; f < totalFrames; f++) {
-        yield* waitFor(1/30);
         if (isRendering && (window as any).saveFrame) {
-            yield (window as any).saveFrame(f);
+            const canvas = document.querySelector('canvas');
+            if (canvas) {
+                const dataUrl = canvas.toDataURL('image/png');
+                yield (window as any).saveFrame(f, dataUrl);
+            }
         }
+        yield* waitFor(1/30);
     }
 
     if (isRendering && (window as any).endScene) {
@@ -58,7 +75,6 @@ export default makeScene2D(function* (view) {
     container().remove();
   }
 
-  console.log('✅ All scenes rendered!');
   if (typeof window !== 'undefined') {
       (window as any).finished = true;
   }
@@ -107,10 +123,5 @@ function* renderScene(container: any, scene: Scene) {
       }
   }
 
-  const transitionDur = scene.transition?.duration ?? 0.5;
-
-  yield* all(
-      container().opacity(1, transitionDur),
-      all(...animations)
-  );
+  yield* all(...animations);
 }
