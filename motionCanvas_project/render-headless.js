@@ -47,10 +47,13 @@ async function render() {
     });
 
     const context = await browser.newContext({
-        viewport: {width: 1920, height: 1080}
+        viewport: {width: 1920, height: 1080},
+        deviceScaleFactor: 1,
+        screen: {width: 1920, height: 1080}
     });
 
     const page = await context.newPage();
+    page.setDefaultTimeout(0); // Disable timeout for long-running renders
 
     page.on('console', msg => {
         console.log(`BROWSER [${msg.type()}]: ${msg.text()}`);
@@ -74,11 +77,18 @@ async function render() {
 
     try {
         console.log(`🔗 Navigating to ${url}...`);
-        await page.goto(url, {waitUntil: 'networkidle', timeout: 90000});
+        await page.goto(url, {waitUntil: 'load', timeout: 120000});
+
+        // Skip networkidle if it times out, as Vite might keep some connections open
+        try {
+            await page.waitForLoadState('networkidle', {timeout: 15000});
+        } catch (e) {
+            console.log('⚠️ Networkidle timeout, proceeding with render...');
+        }
 
         console.log('⏳ Waiting for completion signal from Motion Canvas...');
         // Increased timeout to 20 minutes for large projects
-        await page.waitForFunction(() => window.finished === true, {timeout: 1200000});
+        await page.waitForFunction(() => window.finished === true, {timeout: 1200000, polling: 1000});
         console.log('✅ Render complete!');
     } catch (e) {
         console.error('❌ Render failed:', e.message);
