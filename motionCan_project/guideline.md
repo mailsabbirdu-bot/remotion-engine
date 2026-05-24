@@ -1,0 +1,39 @@
+# 🎨 Master Motion Canvas Guideline (V2)
+
+This guide helps you fill the `motion_canvas.json` for high-end, sequential storytelling.
+
+## 🌟 Engine Principles
+- **Sequential Flow**: Scenes play one after another. No overlaps.
+- **Timing**: Use `duration` (seconds) to control how long a scene stays visible.
+- **Coordinates**: `(0,0)` is the exact center of the screen.
+
+## 🎬 Scene Object
+- `id`: Unique name.
+- `duration`: Visible length in seconds.
+- `background`:
+    - `type`: "video", "image", "color".
+    - `src`: Path (e.g., "renders/scene_01.mp4").
+- `transition`: `{"type": "fade", "duration": 1}`. (Applied at start and end).
+
+## 💎 Storyteller Layers
+
+### 1. Text Layer (`type: "text"`)
+- `content`: Supports multi-line Bengali/English text.
+- `style`: `fontSize`, `fontWeight`, `color`, `shadowBlur`.
+- `animationIn`: "fade", "slide-up", "zoom", "typewriter".
+
+### 2. Textbox Layer (`type: "textbox"`)
+Sleek accent-lined boxes for locations or facts.
+- `style`: `width`, `height`, `fill` (bg color), `stroke` (accent line color).
+
+### 3. Data Visuals (`type: "graph"` or `"chart"`)
+- `data`: Array of numbers (for bar charts) or `[x,y]` pairs (for graphs).
+- `style`: `fill` or `stroke`.
+
+### 4. Callout Layer (`type: "image"` with `id: "callout_..."`)
+Points to a specific spot in the background.
+- `content`: The label text.
+- `style`: `x`, `y` (the destination of the line), `color`.
+
+## 🛠️ Folder Structure
+Place all stock footage in the `public/renders/` folder of the project.
