@@ -6,12 +6,6 @@
     {
       "id": "scene_01_intro",
       "duration": 10,
-      "background": {
-        "type": "video",
-        "src": "renders/scene_01.mp4",
-        "opacity": 0.8
-      },
-      "transition": { "type": "fade", "duration": 1 },
       "layers": [
         {
           "id": "hook_text",
@@ -28,10 +22,6 @@
     {
       "id": "scene_02_catalyst",
       "duration": 12,
-      "background": {
-        "type": "video",
-        "src": "renders/scene_02.mp4"
-      },
       "layers": [
         {
           "id": "location_box",
@@ -56,7 +46,6 @@
     {
         "id": "scene_03_impact",
         "duration": 15,
-        "background": { "type": "video", "src": "renders/scene_03.mp4" },
         "layers": [
           {
             "id": "stats_chart",
@@ -79,7 +68,6 @@
       {
         "id": "scene_04_geology",
         "duration": 15,
-        "background": { "type": "video", "src": "renders/scene_04.mp4" },
         "layers": [
           {
             "id": "callout_fault",
@@ -102,7 +90,6 @@
       {
         "id": "scene_05_outro",
         "duration": 10,
-        "background": { "type": "video", "src": "renders/scene_05.mp4" },
         "layers": [
           {
             "id": "final_warning",
