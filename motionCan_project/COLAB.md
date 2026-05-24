@@ -10,12 +10,17 @@ if not os.path.exists('/content/drive'):
     drive.mount('/content/drive')
 
 # --- CONFIG ---
+# 1. Path to your project on Google Drive (where manifest is and where results will go)
 BASE_DRIVE = "/content/drive/MyDrive/Counterism_Studio_V4"
+
+# 2. Local working directory in Colab
 LOCAL_ROOT = "/content/motion-canvas-production"
-# We'll search for the project directory after cloning
+
+# 3. The name of the project folder to search for
 PROJECT_NAME = "motionCan_project"
-# REPO_URL = "https://github.com/your-username/your-repo.git"
-# By default, we will try to find the project in the current environment if cloning fails or is skipped.
+
+# 4. Your repository URL.
+# If empty, the script will search for PROJECT_NAME in the current Colab environment.
 REPO_URL = ""
 
 def run_command(cmd, cwd=None):
@@ -28,8 +33,8 @@ def run_command(cmd, cwd=None):
 
 def setup_and_render():
     print("📦 Installing system dependencies...")
-    # Added libraries required for Playwright/Chromium on Colab
-    run_command("apt-get update && apt-get install -y ffmpeg build-essential libatspi-2.0-0 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxext6 libxfixes3 libxrandr2 libgbm1 libasound2 libpango-1.0-0 libcairo2 --quiet")
+    # Added libraries required for Playwright/Chromium on Colab (Ubuntu 22.04 Jammy)
+    run_command("apt-get update && apt-get install -y ffmpeg build-essential libatspi0 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxext6 libxfixes3 libxrandr2 libgbm1 libasound2 libpango-1.0-0 libcairo2 --quiet")
 
     if os.path.exists(LOCAL_ROOT):
         print(f"🧹 Cleaning up {LOCAL_ROOT}...")
@@ -41,17 +46,24 @@ def setup_and_render():
         print(f"🛰️ Cloning repository...")
         run_command(f"git clone {REPO_URL} {LOCAL_ROOT}")
     else:
-        print("⚠️ REPO_URL not set. Skipping clone. Ensure files are present in /content.")
+        print("⚠️ REPO_URL not set. Skipping clone. Searching current environment...")
 
     # Search for project directory
     project_dir = ""
-    for root, dirs, files in os.walk(LOCAL_ROOT):
-        if PROJECT_NAME in dirs:
-            project_dir = os.path.abspath(os.path.join(root, PROJECT_NAME))
-            break
+    # Search in LOCAL_ROOT first, then in current directory and /content
+    search_paths = [LOCAL_ROOT, os.getcwd(), "/content"]
+    for sp in search_paths:
+        if not os.path.exists(sp): continue
+        for root, dirs, files in os.walk(sp):
+            if PROJECT_NAME in dirs:
+                project_dir = os.path.abspath(os.path.join(root, PROJECT_NAME))
+                break
+        if project_dir: break
 
     if not project_dir:
-        print(f"❌ Could not find {PROJECT_NAME} in repository.")
+        print(f"❌ Could not find {PROJECT_NAME} in repository or current environment.")
+        print(f"DEBUG: Current directory is {os.getcwd()}")
+        print(f"DEBUG: Contents of /content: {os.listdir('/content')}")
         return
 
     print(f"✅ Project directory: {project_dir}")
