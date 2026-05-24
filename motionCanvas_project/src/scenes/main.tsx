@@ -57,9 +57,8 @@ function* renderScene(container: any, scene: Scene) {
       <Rect
         width="100%"
         height="100%"
-        fill={'radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.4) 100%)'}
+        fill={'rgba(0,0,0,0.2)'}
         zIndex={10}
-        opacity={0.8}
       />
   );
 
