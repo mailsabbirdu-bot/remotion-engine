@@ -5,6 +5,7 @@ import {Textbox} from '../components/Textbox';
 import {DataVisuals} from '../components/DataVisuals';
 import {ShapeLayer} from '../components/ShapeLayer';
 import {Callout} from '../components/Callout';
+import {Counter} from '../components/Counter';
 import {MotionCanvasConfig, Scene} from '../types';
 
 import configData from '../../motion_canvas.json';
@@ -29,7 +30,6 @@ export default makeScene2D(function* (view) {
   }
 
   if (typeof window !== 'undefined') {
-      // Small delay to ensure last frame is processed
       yield* waitFor(0.5);
       (window as any).finished = true;
   }
@@ -41,7 +41,6 @@ function* renderScene(view: any, scene: Scene, isRendering: boolean, onFrame: ()
 
   const videoRef = createRef<Video>();
 
-  // Global dark background fallback
   container().add(
     <Rect width="100%" height="100%" fill="#0a0a0a" zIndex={-2} />
   );
@@ -89,10 +88,15 @@ function* renderScene(view: any, scene: Scene, isRendering: boolean, onFrame: ()
               yield* waitFor(startDelay);
               yield* ShapeLayer(layer, container());
           }());
-      } else if (layer.id.startsWith('callout')) {
+      } else if (layer.type === 'image' && layer.id.startsWith('callout')) {
           animations.push(function* () {
             yield* waitFor(startDelay);
             yield* Callout(layer, container());
+        }());
+      } else if (layer.id.startsWith('counter')) {
+        animations.push(function* () {
+            yield* waitFor(startDelay);
+            yield* Counter(layer, container());
         }());
       }
   }
@@ -100,21 +104,9 @@ function* renderScene(view: any, scene: Scene, isRendering: boolean, onFrame: ()
   const transitionDur = scene.transition?.duration ?? 1;
   yield* container().opacity(1, transitionDur);
 
-  // We wrap the all(...) in a loop to capture frames
-  const contentAnimation = all(...animations);
+  yield* all(...animations);
 
-  // Total frames for this scene
   const totalFrames = Math.round(scene.duration * 30);
-
-  // This is a bit tricky: we want to run the animations AND capture frames.
-  // In MC, we can yield the animation generator.
-  // To capture frames, we need to step through it.
-
-  // For simplicity in this engine, we'll yield the animations
-  // and then wait for the duration, capturing frames during the wait.
-  yield* contentAnimation;
-
-  // Now capture the "visible" duration
   for(let i=0; i<totalFrames; i++) {
       yield* waitFor(1/30);
       onFrame();
