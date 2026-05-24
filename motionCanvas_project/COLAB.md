@@ -1,11 +1,11 @@
-# 🚀 Motion Canvas One-Cell Colab Runner (V5)
+# 🚀 Motion Canvas Sequential Engine (V6)
 
-This cell automates the entire video production pipeline on Google Colab.
+This cell automates the high-end video production on Google Colab.
 
 ```python
 # @title 🎬 START MOTION CANVAS RENDER
 from google.colab import drive
-import os, shutil, subprocess
+import os, shutil, subprocess, time
 
 # 1. Mount Drive
 if not os.path.exists('/content/drive'):
@@ -13,9 +13,11 @@ if not os.path.exists('/content/drive'):
 
 # --- CONFIG ---
 BASE_DRIVE = "/content/drive/MyDrive/Counterism_Studio_V4"
-REPO_URL = "https://github.com/mailsabbirdu-bot/remotion-engine.git" # REPLACE WITH YOUR REPO URL
-LOCAL_REPO = "/content/motion-canvas-repo"
-PROJECT_DIR = os.path.join(LOCAL_REPO, "motionCanvas_project")
+LOCAL_ROOT = "/content/motion-canvas-production"
+PROJECT_DIR = os.path.join(LOCAL_ROOT, "motionCanvas_project")
+
+# IMPORTANT: Ensure your latest code is pushed to this repo
+REPO_URL = "https://github.com/mailsabbirdu-bot/remotion-engine.git"
 
 def run_command(cmd, cwd=None):
     print(f"Executing: {cmd}")
@@ -27,18 +29,15 @@ def run_command(cmd, cwd=None):
 
 def setup_and_render():
     print("📦 Installing system dependencies...")
-    # Basic dependencies. Playwright will install the rest.
-    !apt-get update && apt-get install -y ffmpeg build-essential --quiet
+    !apt-get update && apt-get install -y ffmpeg build-essential libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libasound2 libxshmfence1 libpangocairo-1.0-0 libpango-1.0-0 libxkbcommon0 libatspi-2.0-0 --quiet
 
-    if os.path.exists(LOCAL_REPO):
-        shutil.rmtree(LOCAL_REPO)
+    if os.path.exists(LOCAL_ROOT):
+        shutil.rmtree(LOCAL_ROOT)
 
-    print(f"🛰️ Cloning repository: {REPO_URL}")
-    run_command(f"git clone {REPO_URL} {LOCAL_REPO}")
+    os.makedirs(LOCAL_ROOT, exist_ok=True)
 
-    if not os.path.exists(PROJECT_DIR):
-        print(f"❌ Error: Could not find {PROJECT_DIR}. check your REPO_URL and folder structure.")
-        return
+    print(f"🛰️ Cloning repository...")
+    run_command(f"git clone {REPO_URL} {LOCAL_ROOT}")
 
     # Sync Manifest from Drive
     drive_manifest = os.path.join(BASE_DRIVE, "manifests/motion_canvas.json")
@@ -63,20 +62,21 @@ def setup_and_render():
                 os.symlink(src, dst)
 
     print("🟢 Installing Node packages & Playwright...")
-    # We install dependencies and then let playwright handle the browser-specific libs
     run_command("npm install", cwd=PROJECT_DIR)
-    print("🎭 Installing Playwright browsers and dependencies...")
     run_command("npx playwright install chromium", cwd=PROJECT_DIR)
     run_command("npx playwright install-deps", cwd=PROJECT_DIR)
 
     print("🎬 Rendering animation (Headless)...")
+    # node render-headless.js
     run_command("node render-headless.js", cwd=PROJECT_DIR)
 
     # Encode to MP4
     print("🎞️ Encoding video...")
     output_video = os.path.join(PROJECT_DIR, "video.mp4")
     # ffmpeg -y -framerate 30 -i out/%06d.png -c:v libx264 -pix_fmt yuv420p video.mp4
-    run_command("ffmpeg -y -framerate 30 -i out/%06d.png -c:v libx264 -pix_fmt yuv420p video.mp4", cwd=PROJECT_DIR)
+    # Ensure frames exist
+    if os.path.exists(os.path.join(PROJECT_DIR, "out")):
+        run_command("ffmpeg -y -framerate 30 -i out/%06d.png -c:v libx264 -crf 18 -pix_fmt yuv420p video.mp4", cwd=PROJECT_DIR)
 
     # Export to Drive
     final_destination = os.path.join(BASE_DRIVE, "out/motion_canvas_final.mp4")
@@ -85,7 +85,7 @@ def setup_and_render():
         shutil.copy2(output_video, final_destination)
         print(f"✅ SUCCESS! Video saved to {final_destination}")
     else:
-        print("❌ Render failed. video.mp4 not produced.")
+        print("❌ Render failed. Check logs above.")
 
 setup_and_render()
 ```
