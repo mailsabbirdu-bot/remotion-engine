@@ -5,24 +5,114 @@
   "scenes": [
     {
       "id": "scene_01_intro",
-      "duration": 2,
+      "duration": 10,
       "background": {
-        "type": "color",
-        "src": "#ff0000",
-        "opacity": 1
+        "type": "video",
+        "src": "renders/scene_01.mp4",
+        "opacity": 0.8
       },
+      "transition": { "type": "fade", "duration": 1 },
       "layers": [
         {
           "id": "hook_text",
           "type": "text",
-          "content": "TEST RENDER",
-          "start": 0.5,
+          "content": "ঢাকা। এই প্ল্যানেটের অন্যতম ক্রাউডেড একটা মেগাসিটি।",
+          "start": 2,
           "style": {
-            "x": 0, "y": 0, "fontSize": 80, "color": "#ffffff"
+            "x": 0, "y": 0, "fontSize": 80, "fontWeight": 800, "color": "#ffffff", "shadowBlur": 20
           },
-          "animationIn": { "type": "fade", "duration": 1 }
+          "animationIn": { "type": "slide-up", "duration": 1.5 }
         }
       ]
-    }
+    },
+    {
+      "id": "scene_02_catalyst",
+      "duration": 12,
+      "background": {
+        "type": "video",
+        "src": "renders/scene_02.mp4"
+      },
+      "layers": [
+        {
+          "id": "location_box",
+          "type": "textbox",
+          "content": "মাধবদী, নরসিংদী | ৫.৭ মাত্রা",
+          "start": 1,
+          "style": {
+            "x": -500, "y": 350, "width": 650, "height": 90, "fill": "rgba(231, 76, 60, 0.9)", "stroke": "#ffffff", "fontSize": 35
+          },
+          "animationIn": { "type": "slide-right", "duration": 1 }
+        },
+        {
+            "id": "alert_text",
+            "type": "text",
+            "content": "৩টি আফটারশক",
+            "start": 4,
+            "style": { "x": 0, "y": -300, "fontSize": 100, "fontWeight": 900, "color": "#e74c3c" },
+            "animationIn": { "type": "zoom", "duration": 1 }
+        }
+      ]
+    },
+    {
+        "id": "scene_03_impact",
+        "duration": 15,
+        "background": { "type": "video", "src": "renders/scene_03.mp4" },
+        "layers": [
+          {
+            "id": "stats_chart",
+            "type": "chart",
+            "start": 2,
+            "data": [50, 150, 300, 450, 500],
+            "style": { "x": 0, "y": 100, "fill": "#f1c40f" },
+            "animationIn": { "type": "fade", "duration": 2 }
+          },
+          {
+            "id": "stats_label",
+            "type": "text",
+            "content": "৫০০+ আহত এবং ইউনিভার্সিটি বন্ধ",
+            "start": 1,
+            "style": { "x": 0, "y": -350, "fontSize": 60, "fontWeight": 700, "color": "#f1c40f" },
+            "animationIn": { "type": "slide-up", "duration": 1 }
+          }
+        ]
+      },
+      {
+        "id": "scene_04_geology",
+        "duration": 15,
+        "background": { "type": "video", "src": "renders/scene_04.mp4" },
+        "layers": [
+          {
+            "id": "callout_fault",
+            "type": "image",
+            "content": "মেগাথ্রাস্ট ফল্ট লাইন",
+            "start": 3,
+            "style": { "x": 400, "y": -250, "color": "#00d2ff" },
+            "animationIn": { "type": "fade", "duration": 1.5 }
+          },
+          {
+            "id": "plates_label",
+            "type": "text",
+            "content": "ইন্ডিয়ান এবং ইউরেশিয়ান প্লেটের সংঘর্ষ",
+            "start": 1,
+            "style": { "x": 0, "y": 400, "fontSize": 50, "color": "#ffffff", "fill": "rgba(0,0,0,0.5)" },
+            "animationIn": { "type": "fade", "duration": 1 }
+          }
+        ]
+      },
+      {
+        "id": "scene_05_outro",
+        "duration": 10,
+        "background": { "type": "video", "src": "renders/scene_05.mp4" },
+        "layers": [
+          {
+            "id": "final_warning",
+            "type": "text",
+            "content": "প্রকৃতি কিন্তু বাংলাদেশকে তার ফাইনাল ওয়ার্নিংটা দিয়ে দিয়েছে।",
+            "start": 2,
+            "style": { "x": 0, "y": 0, "fontSize": 70, "fontWeight": 800, "color": "#ffffff" },
+            "animationIn": { "type": "typewriter", "duration": 4 }
+          }
+        ]
+      }
   ]
 }

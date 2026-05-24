@@ -15,8 +15,14 @@ export default makeScene2D(function* (view) {
   const config = configData as MotionCanvasConfig;
   const isRendering = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('render') === 'true';
 
+  const width = config.width || 1920;
+  const height = config.height || 1080;
+
+  // Force view resolution
+  view.size({x: width, y: height});
+
   let frameCount = 0;
-  console.log(`🎬 Starting Motion Canvas Engine with ${config.scenes.length} scenes`);
+  console.log(`🎬 Starting Motion Canvas Engine with ${config.scenes.length} scenes at ${width}x${height}`);
 
   for (let i = 0; i < config.scenes.length; i++) {
     const scene = config.scenes[i];
@@ -26,17 +32,20 @@ export default makeScene2D(function* (view) {
     view.add(<Rect ref={container} width="100%" height="100%" opacity={0} />);
 
     // Capture Loop Wrapper
-    const sceneTask = yield renderScene(container, scene);
+    yield* renderScene(container, scene);
 
-    const transitionDur = scene.transition?.duration ?? 1;
-    const totalFrames = Math.round((scene.duration + transitionDur) * 30);
+    // The duration in config should be the total time this scene is active
+    const totalFrames = Math.round(scene.duration * 30);
 
     for(let f=0; f < totalFrames; f++) {
         if (isRendering && (window as any).saveFrame) {
             const canvas = document.querySelector('canvas');
             if (canvas) {
+                if (f === 0) {
+                    console.log(`Canvas dimensions: ${canvas.width}x${canvas.height}`);
+                }
                 const dataUrl = canvas.toDataURL('image/png');
-                (window as any).saveFrame(frameCount, dataUrl);
+                yield (window as any).saveFrame(frameCount, dataUrl);
             }
         }
         frameCount++;
@@ -129,9 +138,11 @@ function* renderScene(container: any, scene: Scene) {
       }
   }
 
-  const transitionDur = scene.transition?.duration ?? 1;
+  const transitionDur = scene.transition?.duration ?? 0.5;
   yield* container().opacity(1, transitionDur);
   yield* all(...animations);
-  yield* waitFor(scene.duration - transitionDur); // Wait for remaining duration
-  yield* container().opacity(0, transitionDur);
+
+  // Wait for the total scene duration minus the initial transition
+  const remainingWait = Math.max(0, scene.duration - transitionDur);
+  yield* waitFor(remainingWait);
 }
