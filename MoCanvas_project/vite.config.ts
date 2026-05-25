@@ -1,6 +1,5 @@
 import {defineConfig} from 'vite';
 import motionCanvas from '@motion-canvas/vite-plugin';
-import path from 'path';
 
 export default defineConfig({
   plugins: [
@@ -16,11 +15,4 @@ export default defineConfig({
     host: '0.0.0.0',
     strictPort: true,
   },
-  build: {
-    rollupOptions: {
-        input: {
-            index: path.resolve(__dirname, 'index.html'),
-        },
-    }
-  }
 });
