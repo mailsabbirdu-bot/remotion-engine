@@ -14,12 +14,5 @@ export default defineConfig({
     port: 3000,
     host: '0.0.0.0',
     strictPort: true,
-  },
-  build: {
-    rollupOptions: {
-        input: {
-            index: 'index.html',
-        }
-    }
   }
 });
