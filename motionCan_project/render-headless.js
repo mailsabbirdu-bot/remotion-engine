@@ -5,7 +5,8 @@ import fs from 'fs';
 
 async function render() {
     const port = 3000;
-    const url = `http://127.0.0.1:${port}/?render=true&ui=false`;
+    // Using localhost instead of 127.0.0.1 for better compatibility with Vite's default binding
+    const url = `http://localhost:${port}/?render=true&ui=false`;
 
     console.log('🏗️ Building project for production...');
     try {
@@ -36,17 +37,19 @@ async function render() {
     let viteReady = false;
     for (let i = 0; i < 60; i++) {
         try {
-            const res = await fetch(`http://127.0.0.1:${port}`);
+            const res = await fetch(`http://localhost:${port}`);
             if (res.ok) {
                 viteReady = true;
                 break;
             }
-        } catch (e) {}
+        } catch (e) {
+            // console.log(`...waiting (${e.message})`);
+        }
         await new Promise(r => setTimeout(r, 1000));
     }
 
     if (!viteReady) {
-        console.error('❌ Server failed to respond at http://127.0.0.1:3000');
+        console.error(`❌ Server failed to respond at http://localhost:${port}`);
         vite.kill();
         process.exit(1);
     }
