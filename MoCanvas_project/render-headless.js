@@ -10,7 +10,6 @@ if (dns.setDefaultResultOrder) {
 
 async function render() {
     const port = 3000;
-    // Navigation URL - target root in dev mode
     const url = `http://localhost:${port}/?render=true&ui=false`;
 
     console.log('🚀 Step 1: Starting Vite Development Server...');
@@ -100,7 +99,6 @@ async function render() {
     try {
         console.log(`🔗 Step 3: Connecting to local server...`);
         let success = false;
-        // Give Vite a moment to start
         await new Promise(r => setTimeout(r, 5000));
 
         for (let i = 0; i < 60; i++) {
@@ -125,7 +123,6 @@ async function render() {
 
         console.log('🎬 Step 4: Rendering sequence...');
 
-        // Progress monitor
         let lastLog = Date.now();
         const progressCheck = setInterval(async () => {
             if (Date.now() - lastLog > 60000) {

@@ -11,6 +11,23 @@ import configData from '../../master_motion.json';
 
 console.log('🚀 [ENGINE] Module Loaded. Initializing scene...');
 
+/**
+ * Robust wait helper to handle async bridge calls in Motion Canvas generators.
+ * Prevents tight-loop deadlocks by allowing the browser event loop to breathe.
+ */
+function* bridgeSync(callPromise: Promise<any>) {
+    let done = false;
+    let error = null;
+    callPromise.then(() => { done = true; }).catch((e) => { error = e; });
+
+    let safety = 0;
+    while (!done && !error && safety < 1000) {
+        safety++;
+        yield; // Allow event loop to process microtasks
+    }
+    if (error) throw error;
+}
+
 export default makeScene2D(function* (view) {
   const config = configData as MotionCanvasConfig;
   const isRendering = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('render') === 'true';
@@ -28,7 +45,6 @@ export default makeScene2D(function* (view) {
   if (isRendering) {
       (window as any).finished = false;
       console.log('⏳ [ENGINE] Waiting for Headless Bridge...');
-      // Bridge check with safety timeout
       let bridgeAttempts = 0;
       while (!(window as any).startScene && bridgeAttempts < 300) {
           bridgeAttempts++;
@@ -48,9 +64,7 @@ export default makeScene2D(function* (view) {
 
     if (isRendering) {
         console.log(`🎬 [SCENE] Requesting Start: ${scene.id}`);
-        let sceneStarted = false;
-        (window as any).startScene(i, scene.id).then(() => { sceneStarted = true; });
-        while (!sceneStarted) yield;
+        yield* bridgeSync((window as any).startScene(i, scene.id));
         console.log(`🎬 [SCENE] Start Confirmed: ${scene.id}`);
     }
 
@@ -85,19 +99,15 @@ export default makeScene2D(function* (view) {
             const canvas = document.querySelector('canvas');
             if (canvas) {
                 const dataUrl = canvas.toDataURL('image/png');
-                let frameSaved = false;
-                (window as any).saveFrame(scene.id, f, dataUrl).then(() => { frameSaved = true; });
-                while (!frameSaved) yield;
-                if (f % 30 === 0) console.log(`🎞️ [FRAME] Scene ${scene.id}: ${f}/${totalFrames}`);
+                yield* bridgeSync((window as any).saveFrame(scene.id, f, dataUrl));
+                if (f % 60 === 0) console.log(`🎞️ [FRAME] Scene ${scene.id}: ${f}/${totalFrames}`);
             }
         }
         yield* waitFor(1/config.fps);
     }
 
     if (isRendering) {
-        let sceneEnded = false;
-        (window as any).endScene(scene.id).then(() => { sceneEnded = true; });
-        while (!sceneEnded) yield;
+        yield* bridgeSync((window as any).endScene(scene.id));
     }
 
     container().remove();
