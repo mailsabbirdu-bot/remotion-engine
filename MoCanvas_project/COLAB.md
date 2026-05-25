@@ -13,8 +13,8 @@ if not os.path.exists('/content/drive'):
 BASE_DRIVE = "/content/drive/MyDrive/Counterism_Studio_V4"
 LOCAL_ROOT = "/content/mocanvas-production"
 PROJECT_NAME = "MoCanvas_project"
-# If you have a repo, put it here. Otherwise, it will search locally.
-REPO_URL = ""
+# Repository URL for the engine
+REPO_URL = "https://github.com/mailsabbirdu-bot/remotion-engine.git"
 
 def print_progress(step, percentage, message=""):
     bar_length = 30
