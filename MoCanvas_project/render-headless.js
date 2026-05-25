@@ -115,9 +115,13 @@ async function render() {
     try {
         console.log(`🔗 Step 4: Connecting to local server...`);
         let success = false;
+        // Give Vite a moment to breathe after starting
+        await new Promise(r => setTimeout(r, 5000));
+
         for (let i = 0; i < 60; i++) {
             try {
-                const response = await page.goto(url, {waitUntil: 'networkidle', timeout: 10000});
+                // Using 'domcontentloaded' or 'load' can be safer than 'networkidle' if some assets are slow or missing
+                const response = await page.goto(url, {waitUntil: 'load', timeout: 15000});
                 if (response && response.status() === 200) {
                     success = true;
                     console.log('✅ Page loaded successfully.');
@@ -125,7 +129,7 @@ async function render() {
                 }
                 console.log(`...waiting (status: ${response ? response.status() : 'none'})`);
             } catch (e) {
-                console.log(`...waiting for server (attempt ${i+1}/60)`);
+                console.log(`...waiting for server (attempt ${i+1}/60) - ${e.message}`);
                 await new Promise(r => setTimeout(r, 2000));
             }
         }
