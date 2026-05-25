@@ -13,13 +13,13 @@ export default defineConfig({
   preview: {
     port: 3000,
     host: '0.0.0.0',
+    strictPort: true,
   },
   build: {
     rollupOptions: {
-        input: 'index.html',
-    },
-    outDir: 'dist',
-    assetsDir: 'assets',
-    emptyOutDir: true
+        input: {
+            main: 'index.html',
+        }
+    }
   }
 });
