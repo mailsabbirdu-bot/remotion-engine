@@ -7,7 +7,7 @@ async function render() {
     const port = 3000;
     const url = `http://127.0.0.1:${port}/?render=true&ui=false`;
 
-    console.log('🏗️ Building project...');
+    console.log('🏗️ Building project for production...');
     try {
         execSync('npm run build', {cwd: process.cwd(), stdio: 'inherit'});
     } catch (err) {
@@ -16,16 +16,23 @@ async function render() {
     }
 
     console.log('🚀 Starting preview server...');
-    const vite = spawn('npm', ['run', 'serve', '--', '--port', port.toString(), '--host', '127.0.0.1', '--strictPort'], {
+    const vite = spawn('npm', ['run', 'serve', '--', '--port', port.toString(), '--host', '0.0.0.0', '--strictPort'], {
         cwd: process.cwd(),
         shell: true
+    });
+
+    vite.stdout.on('data', (data) => {
+        const line = data.toString();
+        if (line.includes('Local:') || line.includes('Network:')) {
+            console.log(`Vite: ${line.trim()}`);
+        }
     });
 
     vite.stderr.on('data', (data) => {
         process.stderr.write(`Vite Error: ${data}`);
     });
 
-    console.log('⏳ Waiting for server to respond...');
+    console.log('⏳ Waiting for server to be ready...');
     let viteReady = false;
     for (let i = 0; i < 60; i++) {
         try {
@@ -39,22 +46,27 @@ async function render() {
     }
 
     if (!viteReady) {
-        console.error('❌ Server failed to start.');
+        console.error('❌ Server failed to respond at http://127.0.0.1:3000');
         vite.kill();
         process.exit(1);
     }
-    console.log('✅ Server is ready!');
+    console.log('✅ Server is responsive!');
 
-    console.log('🌐 Launching Browser...');
+    console.log('🌐 Launching Headless Browser...');
     const browser = await chromium.launch({
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-gpu',
+            '--autoplay-policy=no-user-gesture-required'
+        ]
     });
 
     const page = await browser.newPage();
     page.setDefaultTimeout(0);
 
-    // Capture ALL browser console logs
+    // Relay browser logs to terminal
     page.on('console', msg => {
         console.log(`[BROWSER]: ${msg.text()}`);
     });
@@ -67,9 +79,9 @@ async function render() {
     if (fs.existsSync(outRoot)) fs.rmSync(outRoot, {recursive: true});
     fs.mkdirSync(outRoot);
 
-    // EXPOSE FUNCTIONS BEFORE GOTO
+    // EXPOSE BRIDGE FUNCTIONS
     await page.exposeFunction('startScene', (index, id) => {
-        console.log(`🎬 Scene Start: ${id} (Index: ${index})`);
+        console.log(`🎬 Scene [${index+1}] Start: ${id}`);
         const sceneDir = path.join(outRoot, id);
         if (!fs.existsSync(sceneDir)) fs.mkdirSync(sceneDir);
         return true;
@@ -83,32 +95,36 @@ async function render() {
     });
 
     await page.exposeFunction('endScene', (id) => {
-        console.log(`✅ Scene Captured: ${id}. Encoding to WebM...`);
+        console.log(`✅ Scene Captured: ${id}. Encoding...`);
         const sceneDir = path.join(outRoot, id);
         const videoOutput = path.join(outRoot, `${id}.webm`);
         const framesPattern = path.join(sceneDir, '%06d.png');
 
         try {
+            // yuva420p + VP9 = transparency
             execSync(`ffmpeg -y -framerate 30 -i "${framesPattern}" -c:v libvpx-vp9 -pix_fmt yuva420p -b:v 4M -crf 15 "${videoOutput}"`, { stdio: 'ignore' });
-            console.log(`🚀 Video Exported: ${videoOutput}`);
+            console.log(`🚀 scene video saved: ${id}.webm`);
             fs.rmSync(sceneDir, {recursive: true});
         } catch (err) {
-            console.error(`❌ FFmpeg Error for ${id}:`, err.message);
+            console.error(`❌ FFmpeg failed for ${id}:`, err.message);
         }
         return true;
     });
 
     try {
         console.log(`🔗 Navigating to ${url}...`);
-        await page.goto(url, {waitUntil: 'load'});
+        await page.goto(url, {waitUntil: 'load', timeout: 60000});
 
-        console.log('⏳ Waiting for "window.finished" signal...');
+        console.log('⏳ Stabilizing bundle...');
+        await new Promise(r => setTimeout(r, 5000));
+
+        console.log('🎬 Rendering sequence...');
         await page.waitForFunction(() => window.finished === true, {timeout: 0, polling: 500});
         console.log('🏁 Rendering sequence complete.');
 
     } catch (e) {
         console.error('❌ Headless Render Failed:', e.message);
-        await page.screenshot({path: 'error-screenshot.png'});
+        await page.screenshot({path: 'render-error.png'});
     } finally {
         await browser.close();
         vite.kill();

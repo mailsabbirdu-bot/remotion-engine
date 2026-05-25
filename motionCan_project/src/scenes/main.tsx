@@ -22,22 +22,23 @@ export default makeScene2D(function* (view) {
   view.size({x: width, y: height});
   view.fill(null);
 
-  console.log(`🎬 Overlay Engine Started: ${config.scenes.length} scenes at ${width}x${height}`);
+  console.log(`🎬 Engine Init: ${config.scenes.length} scenes at ${width}x${height}`);
 
   if (isRendering) {
       (window as any).finished = false;
-      console.log('⏳ Waiting for bridge functions...');
-
-      // Busy wait until bridge functions are injected by Playwright
-      while (!(window as any).startScene || !(window as any).saveFrame || !(window as any).endScene) {
-          yield* waitFor(0.1);
+      console.log('⏳ Syncing with Headless Renderer...');
+      // Wait for injection
+      for (let j = 0; j < 5; j++) yield;
+      while (!(window as any).startScene) {
+          console.log('...waiting for bridge...');
+          yield* waitFor(0.2);
       }
-      console.log('✅ Bridge functions detected!');
+      console.log('✅ Bridge established!');
   }
 
   for (let i = 0; i < config.scenes.length; i++) {
     const scene = config.scenes[i];
-    console.log(`🎬 Rendering Scene ${i + 1}/${config.scenes.length}: ${scene.id}`);
+    console.log(`📸 Scene [${i+1}/${config.scenes.length}]: ${scene.id}`);
 
     if (isRendering) {
         let done = false;
@@ -60,7 +61,7 @@ export default makeScene2D(function* (view) {
                 container().add(<Video ref={videoRef} src={scene.background.src} width={width} height={height} play={true} />);
             }
         } catch (e) {
-            console.error(`❌ Background error in ${scene.id}:`, e);
+            console.error(`❌ BG Error in ${scene.id}:`, e);
         }
     }
 
@@ -96,11 +97,11 @@ export default makeScene2D(function* (view) {
     }
 
     container().remove();
-    console.log(`✅ Scene Complete: ${scene.id}`);
+    console.log(`✅ Scene Finished: ${scene.id}`);
   }
 
   if (isRendering) {
-      console.log('🏁 All tasks finished, signalling renderer...');
+      console.log('🏁 All sequences completed successfully.');
       (window as any).finished = true;
   }
 });
