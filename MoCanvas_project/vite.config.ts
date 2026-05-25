@@ -5,6 +5,12 @@ export default defineConfig({
   plugins: [
     (motionCanvas as any).default(),
   ],
+  resolve: {
+    dedupe: [
+        '@motion-canvas/core',
+        '@motion-canvas/2d',
+    ],
+  },
   base: './',
   server: {
     port: 3000,
