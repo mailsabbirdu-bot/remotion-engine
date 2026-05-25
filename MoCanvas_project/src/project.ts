@@ -1,8 +1,13 @@
 import {makeProject} from '@motion-canvas/core';
 import main from './scenes/main?scene';
+import configData from '../master_motion.json';
+import {MotionCanvasConfig} from './types';
 
-console.log('🚀 [PROJECT] Initializing config...');
+const config = configData as MotionCanvasConfig;
+
+console.log('🚀 [INDEX] Initializing Motion Canvas project...');
+
 export default makeProject({
   scenes: [main],
-  size: {x: 1920, y: 1080},
+  size: {x: config.width || 1920, y: config.height || 1080},
 });
