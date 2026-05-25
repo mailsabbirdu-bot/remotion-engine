@@ -30,7 +30,7 @@ export default makeScene2D(function* (view) {
       console.log('⏳ [ENGINE] Waiting for Headless Bridge...');
       // Bridge check with safety timeout
       let bridgeAttempts = 0;
-      while (!(window as any).startScene && bridgeAttempts < 200) {
+      while (!(window as any).startScene && bridgeAttempts < 300) {
           bridgeAttempts++;
           yield* waitFor(0.1);
       }
@@ -48,9 +48,9 @@ export default makeScene2D(function* (view) {
 
     if (isRendering) {
         console.log(`🎬 [SCENE] Requesting Start: ${scene.id}`);
-        let done = false;
-        (window as any).startScene(i, scene.id).then(() => { done = true; });
-        while (!done) yield;
+        let sceneStarted = false;
+        (window as any).startScene(i, scene.id).then(() => { sceneStarted = true; });
+        while (!sceneStarted) yield;
         console.log(`🎬 [SCENE] Start Confirmed: ${scene.id}`);
     }
 
@@ -85,9 +85,9 @@ export default makeScene2D(function* (view) {
             const canvas = document.querySelector('canvas');
             if (canvas) {
                 const dataUrl = canvas.toDataURL('image/png');
-                let done = false;
-                (window as any).saveFrame(scene.id, f, dataUrl).then(() => { done = true; });
-                while (!done) yield;
+                let frameSaved = false;
+                (window as any).saveFrame(scene.id, f, dataUrl).then(() => { frameSaved = true; });
+                while (!frameSaved) yield;
                 if (f % 30 === 0) console.log(`🎞️ [FRAME] Scene ${scene.id}: ${f}/${totalFrames}`);
             }
         }
@@ -95,15 +95,16 @@ export default makeScene2D(function* (view) {
     }
 
     if (isRendering) {
-        let done = false;
-        (window as any).endScene(scene.id).then(() => { done = true; });
-        while (!done) yield;
+        let sceneEnded = false;
+        (window as any).endScene(scene.id).then(() => { sceneEnded = true; });
+        while (!sceneEnded) yield;
     }
 
     container().remove();
   }
 
   if (isRendering) {
+      console.log('🏁 [ENGINE] Sequence Complete. Signaling finished...');
       (window as any).finished = true;
   }
 });
