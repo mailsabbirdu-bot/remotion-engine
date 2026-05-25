@@ -61,6 +61,7 @@ async function render() {
         const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
         const filePath = path.join(outRoot, sceneId, `${frameNumber.toString().padStart(6, '0')}.png`);
         fs.writeFileSync(filePath, base64Data, 'base64');
+        if (frameNumber % 60 === 0) console.log(`[DISK]: Saved frame ${frameNumber} for ${sceneId}`);
         return true;
     });
 
