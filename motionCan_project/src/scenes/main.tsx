@@ -27,11 +27,9 @@ export default makeScene2D(function* (view) {
   if (isRendering) {
       (window as any).finished = false;
       console.log('⏳ Waiting for bridge functions...');
-      // Busy wait for 10 frames to ensure Playwright has time to inject functions if needed
-      for (let j = 0; j < 10; j++) yield;
 
+      // Busy wait until bridge functions are injected by Playwright
       while (!(window as any).startScene || !(window as any).saveFrame || !(window as any).endScene) {
-          console.log('...still waiting for bridge...');
           yield* waitFor(0.1);
       }
       console.log('✅ Bridge functions detected!');

@@ -103,7 +103,7 @@ async function render() {
         await page.goto(url, {waitUntil: 'load'});
 
         console.log('⏳ Waiting for "window.finished" signal...');
-        await page.waitForFunction(() => (window as any).finished === true, {timeout: 0, polling: 500});
+        await page.waitForFunction(() => window.finished === true, {timeout: 0, polling: 500});
         console.log('🏁 Rendering sequence complete.');
 
     } catch (e) {

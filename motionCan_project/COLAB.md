@@ -1,4 +1,4 @@
-# 🚀 Motion Canvas Overlay Engine - Colab Runner (V13)
+# 🚀 Motion Canvas Overlay Engine - Colab Runner (V14)
 
 ```python
 # @title 🎬 START MOTION CANVAS OVERLAY RENDER
@@ -33,7 +33,6 @@ def run_command(cmd, cwd=None):
 def setup_and_render():
     print("📦 Installing system dependencies...")
     # Updated library list for Ubuntu 22.04 (Jammy)
-    # Using libatspi-dev and at-spi2-core instead of specific versioned libatspi
     run_command("apt-get update && apt-get install -y ffmpeg build-essential at-spi2-core libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxext6 libxfixes3 libxrandr2 libgbm1 libasound2 libpango-1.0-0 libcairo2 --quiet")
 
     if os.path.exists(LOCAL_ROOT):
