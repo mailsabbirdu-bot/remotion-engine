@@ -24,10 +24,12 @@ export default makeScene2D(function* (view) {
 
   if (isRendering) {
       (window as any).finished = false;
+      console.log('⏳ [ENGINE] Waiting for Headless Bridge...');
       // Bridge check
       while (!(window as any).startScene) {
           yield* waitFor(0.1);
       }
+      console.log('✅ [ENGINE] Bridge Connected!');
   }
 
   for (let i = 0; i < config.scenes.length; i++) {
@@ -35,9 +37,11 @@ export default makeScene2D(function* (view) {
     console.log(`📸 Scene [${i+1}/${config.scenes.length}]: ${scene.id}`);
 
     if (isRendering) {
+        console.log(`🎬 [SCENE] Requesting Start: ${scene.id}`);
         let done = false;
         (window as any).startScene(i, scene.id).then(() => { done = true; });
         while (!done) yield;
+        console.log(`🎬 [SCENE] Start Confirmed: ${scene.id}`);
     }
 
     const container = createRef<Rect>();
@@ -74,6 +78,7 @@ export default makeScene2D(function* (view) {
                 let done = false;
                 (window as any).saveFrame(scene.id, f, dataUrl).then(() => { done = true; });
                 while (!done) yield;
+                if (f % 30 === 0) console.log(`🎞️ [FRAME] Scene ${scene.id}: ${f}/${totalFrames}`);
             }
         }
         yield* waitFor(1/config.fps);

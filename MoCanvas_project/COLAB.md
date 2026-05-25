@@ -29,19 +29,30 @@ def run_command(cmd, cwd=None, step_info=None):
     if step_info:
         print(f"\n▶️ {step_info}")
 
-    process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=cwd, universal_newlines=True)
+    # Use unbuffered output
+    process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               cwd=cwd, universal_newlines=True, bufsize=1)
 
     for line in process.stdout:
         # Simple heuristic for progress if applicable
-        if "Scene" in line and "/" in line:
+        if "[FRAME]" in line:
             try:
-                parts = line.split("[")[1].split("]")[0].split("/")
+                # 🎞️ [FRAME] Scene scene_id: 30/300
+                parts = line.split(": ")[1].split("/")
                 curr, total = int(parts[0]), int(parts[1])
                 print_progress(4, int((curr/total)*100), line.strip())
             except:
                 print(f"  {line.strip()}")
+        elif "Scene" in line and "/" in line and "[" in line:
+             try:
+                parts = line.split("[")[1].split("]")[0].split("/")
+                curr, total = int(parts[0]), int(parts[1])
+                print_progress(4, int((curr/total)*100), line.strip())
+             except:
+                print(f"  {line.strip()}")
         else:
             print(f"  {line.strip()}")
+            sys.stdout.flush() # Force flush
 
     process.wait()
     return process.returncode
