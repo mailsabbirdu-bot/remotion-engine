@@ -84,15 +84,17 @@ async function render() {
     try {
         console.log(`🔗 Step 4: Connecting to local server...`);
         let success = false;
-        for (let i = 0; i < 60; i++) {
+        for (let i = 0; i < 120; i++) {
             try {
-                const response = await page.goto(url, {waitUntil: 'networkidle', timeout: 5000});
+                const response = await page.goto(url, {waitUntil: 'networkidle', timeout: 10000});
                 if (response && response.status() === 200) {
                     success = true;
                     break;
                 }
+                console.log(`...waiting (status: ${response ? response.status() : 'none'})`);
             } catch (e) {
-                await new Promise(r => setTimeout(r, 1000));
+                console.log(`...waiting for server (attempt ${i+1}/120)`);
+                await new Promise(r => setTimeout(r, 2000));
             }
         }
 
