@@ -7,7 +7,7 @@ async function render() {
     const port = 3000;
     const url = `http://127.0.0.1:${port}/?render=true&ui=false`;
 
-    console.log('🏗️ Building project for production...');
+    console.log('🏗️ Building project...');
     try {
         execSync('npm run build', {cwd: process.cwd(), stdio: 'inherit'});
     } catch (err) {
@@ -21,15 +21,11 @@ async function render() {
         shell: true
     });
 
-    vite.stdout.on('data', (data) => {
-        // process.stdout.write(`Vite: ${data}`);
-    });
-
     vite.stderr.on('data', (data) => {
         process.stderr.write(`Vite Error: ${data}`);
     });
 
-    console.log('⏳ Waiting for server to be ready...');
+    console.log('⏳ Waiting for server to respond...');
     let viteReady = false;
     for (let i = 0; i < 60; i++) {
         try {
@@ -41,97 +37,78 @@ async function render() {
         } catch (e) {}
         await new Promise(r => setTimeout(r, 1000));
     }
+
     if (!viteReady) {
-        console.error('❌ Server did not respond in time. Exiting.');
+        console.error('❌ Server failed to start.');
         vite.kill();
         process.exit(1);
-    } else {
-        console.log('✅ Server is ready!');
     }
+    console.log('✅ Server is ready!');
 
-    console.log('🌐 Opening browser...');
+    console.log('🌐 Launching Browser...');
     const browser = await chromium.launch({
         headless: true,
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--autoplay-policy=no-user-gesture-required',
-            '--disable-web-security',
-            '--disable-gpu'
-        ]
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
     });
 
-    const context = await browser.newContext({
-        viewport: {width: 1920, height: 1080},
-        deviceScaleFactor: 1,
-    });
+    const page = await browser.newPage();
+    page.setDefaultTimeout(0);
 
-    const page = await context.newPage();
-    page.setDefaultTimeout(0); // Disable timeout for long renders
-
+    // Capture ALL browser console logs
     page.on('console', msg => {
-        const text = msg.text();
-        if (text.includes('🎬') || text.includes('✅') || text.includes('🚀')) {
-             console.log(`BROWSER: ${text}`);
-        }
+        console.log(`[BROWSER]: ${msg.text()}`);
     });
 
     page.on('pageerror', err => {
-        console.error('BROWSER ERROR:', err.message);
+        console.error('❌ [BROWSER ERROR]:', err.message);
     });
 
     const outRoot = path.join(process.cwd(), 'out');
     if (fs.existsSync(outRoot)) fs.rmSync(outRoot, {recursive: true});
     fs.mkdirSync(outRoot);
 
-    let currentSceneDir = '';
-    let currentSceneId = '';
-
+    // EXPOSE FUNCTIONS BEFORE GOTO
     await page.exposeFunction('startScene', (index, id) => {
-        currentSceneId = id || `scene_${index + 1}`;
-        currentSceneDir = path.join(outRoot, currentSceneId);
-        if (!fs.existsSync(currentSceneDir)) fs.mkdirSync(currentSceneDir);
-        console.log(`📸 Capturing Scene: ${currentSceneId}...`);
+        console.log(`🎬 Scene Start: ${id} (Index: ${index})`);
+        const sceneDir = path.join(outRoot, id);
+        if (!fs.existsSync(sceneDir)) fs.mkdirSync(sceneDir);
+        return true;
     });
 
-    await page.exposeFunction('saveFrame', async (frameNumber, dataUrl) => {
-        if (!currentSceneDir) return;
+    await page.exposeFunction('saveFrame', async (sceneId, frameNumber, dataUrl) => {
         const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
-        const fileName = `${frameNumber.toString().padStart(6, '0')}.png`;
-        const filePath = path.join(currentSceneDir, fileName);
+        const filePath = path.join(outRoot, sceneId, `${frameNumber.toString().padStart(6, '0')}.png`);
         fs.writeFileSync(filePath, base64Data, 'base64');
+        return true;
     });
 
-    await page.exposeFunction('endScene', (index) => {
-        console.log(`✅ Scene ${currentSceneId} captured. Encoding...`);
-        const videoOutput = path.join(outRoot, `${currentSceneId}.webm`);
-        const framesPattern = path.join(currentSceneDir, '%06d.png');
+    await page.exposeFunction('endScene', (id) => {
+        console.log(`✅ Scene Captured: ${id}. Encoding to WebM...`);
+        const sceneDir = path.join(outRoot, id);
+        const videoOutput = path.join(outRoot, `${id}.webm`);
+        const framesPattern = path.join(sceneDir, '%06d.png');
 
         try {
-            // Encode scene as WebM with VP9 to preserve transparency
-            // Using -auto-alt-ref 0 to fix some transparency issues in certain players if needed, but yuva420p is key.
             execSync(`ffmpeg -y -framerate 30 -i "${framesPattern}" -c:v libvpx-vp9 -pix_fmt yuva420p -b:v 4M -crf 15 "${videoOutput}"`, { stdio: 'ignore' });
-            console.log(`🚀 Scene Video ready: ${videoOutput}`);
-            // Cleanup frames to save space
-            fs.rmSync(currentSceneDir, {recursive: true});
+            console.log(`🚀 Video Exported: ${videoOutput}`);
+            fs.rmSync(sceneDir, {recursive: true});
         } catch (err) {
-            console.error(`❌ Failed to encode scene ${currentSceneId}:`, err.message);
+            console.error(`❌ FFmpeg Error for ${id}:`, err.message);
         }
+        return true;
     });
 
     try {
         console.log(`🔗 Navigating to ${url}...`);
-        await page.goto(url, {waitUntil: 'networkidle', timeout: 120000});
+        await page.goto(url, {waitUntil: 'load'});
 
-        console.log('⏳ Rendering overlays... (This may take a while)');
-        await page.waitForFunction(() => window.finished === true, {timeout: 0, polling: 2000});
-        console.log('🏁 All scenes rendered successfully!');
+        console.log('⏳ Waiting for "window.finished" signal...');
+        await page.waitForFunction(() => (window as any).finished === true, {timeout: 0, polling: 500});
+        console.log('🏁 Rendering sequence complete.');
 
     } catch (e) {
-        console.error('❌ Render failed:', e.message);
-        const screenshotPath = path.join(process.cwd(), 'error-screenshot.png');
-        await page.screenshot({path: screenshotPath});
-        console.log(`📸 Error screenshot saved to ${screenshotPath}`);
+        console.error('❌ Headless Render Failed:', e.message);
+        await page.screenshot({path: 'error-screenshot.png'});
     } finally {
         await browser.close();
         vite.kill();
@@ -140,6 +117,6 @@ async function render() {
 }
 
 render().catch(err => {
-    console.error('💥 Fatal Error:', err);
+    console.error('💥 Fatal Renderer Error:', err);
     process.exit(1);
 });

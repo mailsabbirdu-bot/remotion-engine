@@ -1,4 +1,4 @@
-# 🚀 Motion Canvas Overlay Engine - Colab Runner (V12)
+# 🚀 Motion Canvas Overlay Engine - Colab Runner (V13)
 
 ```python
 # @title 🎬 START MOTION CANVAS OVERLAY RENDER
@@ -20,8 +20,7 @@ LOCAL_ROOT = "/content/motion-canvas-production"
 PROJECT_NAME = "motionCan_project"
 
 # 4. Your repository URL.
-# If empty, the script will search for PROJECT_NAME in the current Colab environment.
-REPO_URL = ""
+REPO_URL = "https://github.com/mailsabbirdu-bot/remotion-engine.git"
 
 def run_command(cmd, cwd=None):
     print(f"Executing: {cmd}")
@@ -33,8 +32,9 @@ def run_command(cmd, cwd=None):
 
 def setup_and_render():
     print("📦 Installing system dependencies...")
-    # Added libraries required for Playwright/Chromium on Colab (Ubuntu 22.04 Jammy)
-    run_command("apt-get update && apt-get install -y ffmpeg build-essential libatspi0 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxext6 libxfixes3 libxrandr2 libgbm1 libasound2 libpango-1.0-0 libcairo2 --quiet")
+    # Updated library list for Ubuntu 22.04 (Jammy)
+    # Using libatspi-dev and at-spi2-core instead of specific versioned libatspi
+    run_command("apt-get update && apt-get install -y ffmpeg build-essential at-spi2-core libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxext6 libxfixes3 libxrandr2 libgbm1 libasound2 libpango-1.0-0 libcairo2 --quiet")
 
     if os.path.exists(LOCAL_ROOT):
         print(f"🧹 Cleaning up {LOCAL_ROOT}...")
@@ -45,12 +45,9 @@ def setup_and_render():
     if REPO_URL:
         print(f"🛰️ Cloning repository...")
         run_command(f"git clone {REPO_URL} {LOCAL_ROOT}")
-    else:
-        print("⚠️ REPO_URL not set. Skipping clone. Searching current environment...")
 
     # Search for project directory
     project_dir = ""
-    # Search in LOCAL_ROOT first, then in current directory and /content
     search_paths = [LOCAL_ROOT, os.getcwd(), "/content"]
     for sp in search_paths:
         if not os.path.exists(sp): continue
@@ -62,15 +59,11 @@ def setup_and_render():
 
     if not project_dir:
         print(f"❌ Could not find {PROJECT_NAME} in repository or current environment.")
-        print(f"DEBUG: Current directory is {os.getcwd()}")
-        print(f"DEBUG: Contents of /content: {os.listdir('/content')}")
         return
 
     print(f"✅ Project directory: {project_dir}")
 
     # Sync Manifest from Drive
-    # The user wants to use motion_canvas.json.
-    # Usually it's stored in a specific place on Drive.
     drive_manifest = os.path.join(BASE_DRIVE, "manifests/motion_canvas.json")
     local_manifest = os.path.join(project_dir, "motion_canvas.json")
     if os.path.exists(drive_manifest):
@@ -82,14 +75,13 @@ def setup_and_render():
     print("🟢 Installing Node packages & Playwright...")
     run_command("npm install", cwd=project_dir)
     run_command("npx playwright install chromium", cwd=project_dir)
-    # playwright install-deps is covered by our manual apt-get, but good to have
     run_command("npx playwright install-deps", cwd=project_dir)
 
     print("🎬 Rendering overlays (Production Mode)...")
     out_dir = os.path.join(project_dir, "out")
     if os.path.exists(out_dir): shutil.rmtree(out_dir)
 
-    # Increase Node memory limit for stability
+    # Use 'npm run render' which calls 'node render-headless.js'
     run_command("NODE_OPTIONS='--max-old-space-size=4096' npm run render", cwd=project_dir)
 
     # Export to Drive
