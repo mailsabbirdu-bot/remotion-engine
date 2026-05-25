@@ -130,6 +130,14 @@ def setup_and_render():
     run_command("npx playwright install-deps", cwd=project_dir)
     print_progress(3, 100, "Node environment ready")
 
+    # Verify Build
+    dist_index = os.path.join(project_dir, "dist/index.html")
+    print(f"\n🔍 Verifying build at {project_dir}/dist...")
+    run_command("npm run build", cwd=project_dir)
+    if not os.path.exists(dist_index):
+        print(f"⚠️ Build verification failed (index.html not found in dist). Attempting local build...")
+        run_command("npx vite build", cwd=project_dir)
+
     # Step 4: Render
     print("\n🎬 Starting Production Render...")
     out_dir = os.path.join(project_dir, "out")

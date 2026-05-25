@@ -11,7 +11,7 @@ if (dns.setDefaultResultOrder) {
 async function render() {
     const port = 3000;
     // Navigation URL
-    const url = `http://127.0.0.1:${port}/index.html?render=true&ui=false`;
+    const url = `http://localhost:${port}/?render=true&ui=false`;
 
     console.log('🏗️  Step 1: Building project for production...');
     try {
