@@ -5,7 +5,7 @@ import {MotionCanvasConfig} from './types';
 
 const config = configData as MotionCanvasConfig;
 
-console.log('🚀 [INDEX] Defining Motion Canvas project...');
+console.log('🚀 [PROJECT] Defining Motion Canvas project...');
 
 export default makeProject({
   scenes: [main],
