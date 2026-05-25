@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "start": "vite",
+    "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
     "render": "node render-headless.js"
