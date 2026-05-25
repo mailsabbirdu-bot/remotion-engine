@@ -2,12 +2,16 @@ import {chromium} from 'playwright';
 import {spawn, execSync} from 'child_process';
 import path from 'path';
 import fs from 'fs';
-import http from 'http';
+import dns from 'dns';
+
+// Ensure Node.js prefers IPv4 to avoid connection issues with 127.0.0.1/localhost
+if (dns.setDefaultResultOrder) {
+    dns.setDefaultResultOrder('ipv4first');
+}
 
 async function render() {
     const port = 3000;
-    const host = '127.0.0.1'; // Force IPv4
-    const url = `http://${host}:${port}/?render=true&ui=false`;
+    const url = `http://127.0.0.1:${port}/?render=true&ui=false`;
 
     console.log('🏗️ Building project for production...');
     try {
@@ -18,7 +22,7 @@ async function render() {
     }
 
     console.log('🚀 Starting preview server...');
-    const vite = spawn('npm', ['run', 'serve', '--', '--port', port.toString(), '--host', host, '--strictPort'], {
+    const vite = spawn('npm', ['run', 'serve', '--', '--port', port.toString(), '--host', '0.0.0.0', '--strictPort'], {
         cwd: process.cwd(),
         shell: true
     });
@@ -31,39 +35,8 @@ async function render() {
     });
 
     vite.stderr.on('data', (data) => {
-        // console.log(`Vite Server Log: ${data}`);
+        // console.log(`Vite Log: ${data}`);
     });
-
-    console.log(`⏳ Waiting for server to be ready at ${url}...`);
-    let viteReady = false;
-    // Wait up to 2 minutes
-    for (let i = 0; i < 120; i++) {
-        try {
-            await new Promise((resolve, reject) => {
-                const req = http.get(`http://${host}:${port}`, (res) => {
-                    if (res.statusCode === 200) {
-                        viteReady = true;
-                        resolve();
-                    } else {
-                        reject(new Error(`Status: ${res.statusCode}`));
-                    }
-                });
-                req.on('error', reject);
-                req.end();
-            });
-            if (viteReady) break;
-        } catch (e) {
-            // console.log(`...waiting (${e.message})`);
-        }
-        await new Promise(r => setTimeout(r, 1000));
-    }
-
-    if (!viteReady) {
-        console.error(`❌ Server failed to respond at http://${host}:${port} after 120s`);
-        vite.kill();
-        process.exit(1);
-    }
-    console.log('✅ Server is responsive!');
 
     console.log('🌐 Launching Headless Browser...');
     const browser = await chromium.launch({
@@ -79,6 +52,7 @@ async function render() {
     const page = await browser.newPage();
     page.setDefaultTimeout(0);
 
+    // Proxy browser logs
     page.on('console', msg => {
         console.log(`[BROWSER]: ${msg.text()}`);
     });
@@ -91,6 +65,7 @@ async function render() {
     if (fs.existsSync(outRoot)) fs.rmSync(outRoot, {recursive: true});
     fs.mkdirSync(outRoot);
 
+    // EXPOSE BRIDGE FUNCTIONS
     await page.exposeFunction('startScene', (index, id) => {
         console.log(`🎬 Scene [${index+1}] Start: ${id}`);
         const sceneDir = path.join(outRoot, id);
@@ -123,18 +98,34 @@ async function render() {
 
     try {
         console.log(`🔗 Navigating to ${url}...`);
-        await page.goto(url, {waitUntil: 'load', timeout: 90000});
+
+        // Robust navigation retry loop
+        let success = false;
+        for (let i = 0; i < 20; i++) {
+            try {
+                await page.goto(url, {waitUntil: 'networkidle', timeout: 10000});
+                success = true;
+                break;
+            } catch (e) {
+                console.log(`...waiting for server to respond (attempt ${i+1}/20)`);
+                await new Promise(r => setTimeout(r, 2000));
+            }
+        }
+
+        if (!success) {
+            throw new Error(`Failed to connect to Vite server at ${url} after 20 attempts.`);
+        }
 
         console.log('⏳ Stabilizing bundle...');
-        await new Promise(r => setTimeout(r, 5000));
+        await new Promise(r => setTimeout(r, 3000));
 
         console.log('🎬 Rendering sequence...');
         await page.waitForFunction(() => window.finished === true, {timeout: 0, polling: 500});
-        console.log('🏁 Rendering sequence complete.');
+        console.log('🏁 All sequences complete.');
 
     } catch (e) {
-        console.error('❌ Headless Render Failed:', e.message);
-        await page.screenshot({path: 'render-error.png'});
+        console.error('❌ Render Failed:', e.message);
+        await page.screenshot({path: 'render-error-final.png'});
     } finally {
         await browser.close();
         vite.kill();
@@ -143,6 +134,6 @@ async function render() {
 }
 
 render().catch(err => {
-    console.error('💥 Fatal Renderer Error:', err);
+    console.error('💥 Fatal Error:', err);
     process.exit(1);
 });
