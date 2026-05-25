@@ -9,6 +9,8 @@ import {MotionCanvasConfig, Scene} from '../types';
 
 import configData from '../../master_motion.json';
 
+console.log('🚀 [ENGINE] Module Loaded. Initializing scene...');
+
 export default makeScene2D(function* (view) {
   const config = configData as MotionCanvasConfig;
   const isRendering = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('render') === 'true';
@@ -25,9 +27,16 @@ export default makeScene2D(function* (view) {
   if (isRendering) {
       (window as any).finished = false;
       console.log('⏳ [ENGINE] Waiting for Headless Bridge...');
-      // Bridge check
-      while (!(window as any).startScene) {
+      // Bridge check with safety timeout
+      let bridgeAttempts = 0;
+      while (!(window as any).startScene && bridgeAttempts < 200) {
+          bridgeAttempts++;
           yield* waitFor(0.1);
+      }
+
+      if (!(window as any).startScene) {
+          console.error('❌ [ENGINE] Bridge Timeout! StartScene function not found.');
+          return;
       }
       console.log('✅ [ENGINE] Bridge Connected!');
   }

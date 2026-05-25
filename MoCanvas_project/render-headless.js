@@ -10,6 +10,7 @@ if (dns.setDefaultResultOrder) {
 
 async function render() {
     const port = 3000;
+    // Navigation URL
     const url = `http://127.0.0.1:${port}/index.html?render=true&ui=false`;
 
     console.log('🏗️  Step 1: Building project for production...');
@@ -36,14 +37,44 @@ async function render() {
     console.log('🌐 Step 3: Launching Headless Browser...');
     const browser = await chromium.launch({
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-gpu',
+            '--autoplay-policy=no-user-gesture-required',
+            '--disable-web-security'
+        ]
     });
 
-    const page = await browser.newPage();
+    const page = await browser.newPage({
+        viewport: { width: 1920, height: 1080 },
+        deviceScaleFactor: 1
+    });
     page.setDefaultTimeout(0);
+
+    // Asset tracing
+    page.on('request', request => {
+        if (request.url().includes('localhost') || request.url().includes('127.0.0.1')) {
+            // console.log(`🔍 [REQ]: ${request.url()}`);
+        }
+    });
+
+    page.on('requestfailed', request => {
+        console.error(`❌ [REQ FAILED]: ${request.url()} - ${request.failure()?.errorText}`);
+    });
+
+    page.on('response', response => {
+        if (response.status() >= 400) {
+            console.error(`❌ [RES ERR]: ${response.url()} status ${response.status()}`);
+        }
+    });
 
     page.on('console', msg => {
         console.log(`[BROWSER]: ${msg.text()}`);
+    });
+
+    page.on('pageerror', err => {
+        console.error('❌ [BROWSER FATAL]:', err.message);
     });
 
     const outRoot = path.join(process.cwd(), 'out');
@@ -72,7 +103,6 @@ async function render() {
         const framesPattern = path.join(sceneDir, '%06d.png');
 
         try {
-            // Encode with transparency (vp9 yuva420p)
             execSync(`ffmpeg -y -framerate 30 -i "${framesPattern}" -c:v libvpx-vp9 -pix_fmt yuva420p -b:v 4M -crf 15 "${videoOutput}"`, { stdio: 'ignore' });
             console.log(`🚀 [SUCCESS] Video saved: ${id}.webm`);
             fs.rmSync(sceneDir, {recursive: true});
@@ -85,28 +115,48 @@ async function render() {
     try {
         console.log(`🔗 Step 4: Connecting to local server...`);
         let success = false;
-        for (let i = 0; i < 120; i++) {
+        for (let i = 0; i < 60; i++) {
             try {
                 const response = await page.goto(url, {waitUntil: 'networkidle', timeout: 10000});
                 if (response && response.status() === 200) {
                     success = true;
+                    console.log('✅ Page loaded successfully.');
                     break;
                 }
                 console.log(`...waiting (status: ${response ? response.status() : 'none'})`);
             } catch (e) {
-                console.log(`...waiting for server (attempt ${i+1}/120)`);
+                console.log(`...waiting for server (attempt ${i+1}/60)`);
                 await new Promise(r => setTimeout(r, 2000));
             }
         }
 
-        if (!success) throw new Error(`Server at ${url} not reachable.`);
+        if (!success) {
+            await page.screenshot({path: 'connection-failure.png'});
+            throw new Error(`Server at ${url} not reachable.`);
+        }
 
         console.log('🎬 Step 5: Rendering sequence...');
-        await page.waitForFunction(() => window.finished === true, {timeout: 0, polling: 500});
+
+        // Progress monitor
+        let lastLog = Date.now();
+        const progressCheck = setInterval(async () => {
+            if (Date.now() - lastLog > 60000) {
+                console.log('⚠️ [STUCK MONITOR]: No progress for 60s. Taking emergency screenshot...');
+                await page.screenshot({path: 'stuck-screenshot.png'});
+                lastLog = Date.now();
+            }
+        }, 30000);
+
+        await page.waitForFunction(() => window.finished === true, {timeout: 0, polling: 1000});
+        clearInterval(progressCheck);
         console.log('🏁 All renders complete.');
 
     } catch (e) {
         console.error('❌ Render Process Failed:', e.message);
+        try {
+            await page.screenshot({path: 'fatal-error-screenshot.png'});
+            console.log('📸 Fatal error screenshot saved.');
+        } catch(ssErr) {}
     } finally {
         await browser.close();
         vite.kill();
