@@ -10,19 +10,11 @@ if (dns.setDefaultResultOrder) {
 
 async function render() {
     const port = 3000;
-    // Navigation URL - simplified to the root
+    // Navigation URL - target root in dev mode
     const url = `http://localhost:${port}/?render=true&ui=false`;
 
-    console.log('🏗️  Step 1: Building project for production...');
-    try {
-        execSync('npm run build', {cwd: process.cwd(), stdio: 'inherit'});
-    } catch (err) {
-        console.error('❌ Build failed:', err.message);
-        process.exit(1);
-    }
-
-    console.log('🚀 Step 2: Starting preview server...');
-    const vite = spawn('npm', ['run', 'serve', '--', '--port', port.toString(), '--host', '0.0.0.0', '--strictPort'], {
+    console.log('🚀 Step 1: Starting Vite Development Server...');
+    const vite = spawn('npm', ['run', 'start', '--', '--port', port.toString(), '--host', '0.0.0.0', '--strictPort'], {
         cwd: process.cwd(),
         shell: true
     });
@@ -34,7 +26,7 @@ async function render() {
         }
     });
 
-    console.log('🌐 Step 3: Launching Headless Browser...');
+    console.log('🌐 Step 2: Launching Headless Browser...');
     const browser = await chromium.launch({
         headless: true,
         args: [
@@ -52,15 +44,8 @@ async function render() {
     });
     page.setDefaultTimeout(0);
 
-    // Asset tracing
-    page.on('request', request => {
-        if (request.url().includes('localhost') || request.url().includes('127.0.0.1')) {
-            // console.log(`🔍 [REQ]: ${request.url()}`);
-        }
-    });
-
     page.on('requestfailed', request => {
-        console.error(`❌ [REQ FAILED]: ${request.url()} - ${request.failure()?.errorText}`);
+        // console.error(`❌ [REQ FAILED]: ${request.url()} - ${request.failure()?.errorText}`);
     });
 
     page.on('response', response => {
@@ -113,9 +98,9 @@ async function render() {
     });
 
     try {
-        console.log(`🔗 Step 4: Connecting to local server...`);
+        console.log(`🔗 Step 3: Connecting to local server...`);
         let success = false;
-        // Give Vite a moment to breathe
+        // Give Vite a moment to start
         await new Promise(r => setTimeout(r, 5000));
 
         for (let i = 0; i < 60; i++) {
@@ -138,7 +123,7 @@ async function render() {
             throw new Error(`Server at ${url} not reachable.`);
         }
 
-        console.log('🎬 Step 5: Rendering sequence...');
+        console.log('🎬 Step 4: Rendering sequence...');
 
         // Progress monitor
         let lastLog = Date.now();
@@ -150,7 +135,6 @@ async function render() {
             }
         }, 30000);
 
-        // Wait for the engine to signal it's finished
         await page.waitForFunction(() => window.finished === true, {timeout: 0, polling: 1000});
         clearInterval(progressCheck);
         console.log('🏁 All renders complete.');
