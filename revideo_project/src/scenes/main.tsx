@@ -40,7 +40,7 @@ export default makeScene2D(function* (view) {
   view.size({x: width, y: height});
   view.fill(null);
 
-  console.log(`🎬 MoCanvas Init: ${config.scenes.length} scenes`);
+  console.log(`🎬 Revideo Init: ${config.scenes.length} scenes`);
 
   if (isRendering) {
       (window as any).finished = false;
