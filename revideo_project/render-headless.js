@@ -72,7 +72,9 @@ async function render() {
         return true;
     });
 
+    let lastLog = Date.now();
     await page.exposeFunction('saveFrame', async (sceneId, frameNumber, dataUrl) => {
+        lastLog = Date.now();
         const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
         const filePath = path.join(outRoot, sceneId, `${frameNumber.toString().padStart(6, '0')}.png`);
         fs.writeFileSync(filePath, base64Data, 'base64');
@@ -123,16 +125,21 @@ async function render() {
 
         console.log('🎬 Step 4: Rendering sequence...');
 
-        let lastLog = Date.now();
         const progressCheck = setInterval(async () => {
             if (Date.now() - lastLog > 60000) {
                 console.log('⚠️ [STUCK MONITOR]: No progress for 60s. Taking emergency screenshot...');
-                await page.screenshot({path: 'stuck-screenshot.png'});
+                try {
+                    if (!page.isClosed()) {
+                        await page.screenshot({path: 'stuck-screenshot.png'});
+                    }
+                } catch (ssErr) {}
                 lastLog = Date.now();
             }
         }, 30000);
 
-        await page.waitForFunction(() => window.finished === true, {timeout: 0, polling: 1000});
+        await page.waitForFunction(() => {
+            return (window).finished === true;
+        }, {timeout: 0, polling: 1000});
         clearInterval(progressCheck);
         console.log('🏁 All renders complete.');
 

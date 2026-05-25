@@ -5,7 +5,7 @@ import {MotionCanvasConfig} from './types';
 
 const config = configData as MotionCanvasConfig;
 
-console.log('🚀 [MAIN] Defining MoCanvas project...');
+console.log('🚀 [MAIN] Defining Revideo project...');
 
 const project = makeProject({
   scenes: [main],
