@@ -68,10 +68,12 @@ def setup_and_render():
     search_locations = [
         os.getcwd(),
         LOCAL_ROOT,
-        os.path.join(BASE_DRIVE, "projects"), # common user pattern
-        "/content"
+        os.path.join(BASE_DRIVE, "projects"),
+        "/content",
+        "/content/drive/MyDrive" # Scan entire drive as last resort
     ]
 
+    # Priority 1: Direct name match
     for loc in search_locations:
         if not os.path.exists(loc): continue
         if os.path.basename(loc) == PROJECT_NAME:
@@ -82,11 +84,12 @@ def setup_and_render():
             project_dir = potential
             break
 
+    # Priority 2: Marker file match (master_motion.json)
     if not project_dir:
-        # Fallback to walk if not found in immediate locations
+        print_progress(2, 30, "Project folder name not found. Searching for marker file...")
         for root, dirs, files in os.walk("/content"):
-            if PROJECT_NAME in dirs:
-                project_dir = os.path.abspath(os.path.join(root, PROJECT_NAME))
+            if "master_motion.json" in files and "render-headless.js" in files:
+                project_dir = root
                 break
 
     if not project_dir:
