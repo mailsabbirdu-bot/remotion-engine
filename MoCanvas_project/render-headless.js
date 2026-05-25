@@ -10,8 +10,8 @@ if (dns.setDefaultResultOrder) {
 
 async function render() {
     const port = 3000;
-    // Navigation URL
-    const url = `http://localhost:${port}/index.html?render=true&ui=false`;
+    // Navigation URL - simplified to the root
+    const url = `http://localhost:${port}/?render=true&ui=false`;
 
     console.log('🏗️  Step 1: Building project for production...');
     try {
@@ -115,12 +115,11 @@ async function render() {
     try {
         console.log(`🔗 Step 4: Connecting to local server...`);
         let success = false;
-        // Give Vite a moment to breathe after starting
+        // Give Vite a moment to breathe
         await new Promise(r => setTimeout(r, 5000));
 
         for (let i = 0; i < 60; i++) {
             try {
-                // Using 'domcontentloaded' or 'load' can be safer than 'networkidle' if some assets are slow or missing
                 const response = await page.goto(url, {waitUntil: 'load', timeout: 15000});
                 if (response && response.status() === 200) {
                     success = true;
@@ -151,6 +150,7 @@ async function render() {
             }
         }, 30000);
 
+        // Wait for the engine to signal it's finished
         await page.waitForFunction(() => window.finished === true, {timeout: 0, polling: 1000});
         clearInterval(progressCheck);
         console.log('🏁 All renders complete.');
