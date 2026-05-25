@@ -1,8 +1,9 @@
 import {chromium} from 'playwright';
-import {spawn, execSync} from 'child_process';
+import {spawn} from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import dns from 'dns';
+import { execSync } from 'child_process';
 
 if (dns.setDefaultResultOrder) {
     dns.setDefaultResultOrder('ipv4first');
@@ -10,19 +11,11 @@ if (dns.setDefaultResultOrder) {
 
 async function render() {
     const port = 3000;
-    // Navigation URL
-    const url = `http://localhost:${port}/index.html?render=true&ui=false`;
+    // Targeting dev server for stability on Colab
+    const url = `http://localhost:${port}/?render=true&ui=false`;
 
-    console.log('🏗️  Step 1: Building project for production...');
-    try {
-        execSync('npm run build', {cwd: process.cwd(), stdio: 'inherit'});
-    } catch (err) {
-        console.error('❌ Build failed:', err.message);
-        process.exit(1);
-    }
-
-    console.log('🚀 Step 2: Starting preview server...');
-    const vite = spawn('npm', ['run', 'serve', '--', '--port', port.toString(), '--host', '0.0.0.0', '--strictPort'], {
+    console.log('🚀 Step 1: Starting Vite Dev Server...');
+    const vite = spawn('npm', ['run', 'start', '--', '--port', port.toString(), '--host', '0.0.0.0', '--strictPort'], {
         cwd: process.cwd(),
         shell: true
     });
@@ -34,7 +27,7 @@ async function render() {
         }
     });
 
-    console.log('🌐 Step 3: Launching Headless Browser...');
+    console.log('🌐 Step 2: Launching Headless Browser...');
     const browser = await chromium.launch({
         headless: true,
         args: [
@@ -52,29 +45,13 @@ async function render() {
     });
     page.setDefaultTimeout(0);
 
-    // Asset tracing
-    page.on('request', request => {
-        if (request.url().includes('localhost') || request.url().includes('127.0.0.1')) {
-            // console.log(`🔍 [REQ]: ${request.url()}`);
+    // Tracing and Logging
+    page.on('console', msg => console.log(`[BROWSER]: ${msg.text()}`));
+    page.on('pageerror', err => console.error('❌ [BROWSER ERROR]:', err.message));
+    page.on('requestfailed', req => {
+        if (!req.url().includes('favicon')) {
+            console.error(`❌ [REQ FAILED]: ${req.url()} - ${req.failure()?.errorText}`);
         }
-    });
-
-    page.on('requestfailed', request => {
-        console.error(`❌ [REQ FAILED]: ${request.url()} - ${request.failure()?.errorText}`);
-    });
-
-    page.on('response', response => {
-        if (response.status() >= 400) {
-            console.error(`❌ [RES ERR]: ${response.url()} status ${response.status()}`);
-        }
-    });
-
-    page.on('console', msg => {
-        console.log(`[BROWSER]: ${msg.text()}`);
-    });
-
-    page.on('pageerror', err => {
-        console.error('❌ [BROWSER FATAL]:', err.message);
     });
 
     const outRoot = path.join(process.cwd(), 'out');
@@ -97,7 +74,7 @@ async function render() {
     });
 
     await page.exposeFunction('endScene', (id) => {
-        console.log(`✅ [RENDER] Scene Captured: ${id}. Encoding to transparent WebM...`);
+        console.log(`✅ [RENDER] Scene Captured: ${id}. Encoding...`);
         const sceneDir = path.join(outRoot, id);
         const videoOutput = path.join(outRoot, `${id}.webm`);
         const framesPattern = path.join(sceneDir, '%06d.png');
@@ -113,36 +90,30 @@ async function render() {
     });
 
     try {
-        console.log(`🔗 Step 4: Connecting to local server...`);
+        console.log(`🔗 Step 3: Connecting to Dev Server...`);
         let success = false;
         for (let i = 0; i < 60; i++) {
             try {
                 const response = await page.goto(url, {waitUntil: 'networkidle', timeout: 10000});
                 if (response && response.status() === 200) {
                     success = true;
-                    console.log('✅ Page loaded successfully.');
+                    console.log('✅ App loaded successfully in Dev Mode.');
                     break;
                 }
-                console.log(`...waiting (status: ${response ? response.status() : 'none'})`);
             } catch (e) {
-                console.log(`...waiting for server (attempt ${i+1}/60)`);
                 await new Promise(r => setTimeout(r, 2000));
             }
         }
 
-        if (!success) {
-            await page.screenshot({path: 'connection-failure.png'});
-            throw new Error(`Server at ${url} not reachable.`);
-        }
+        if (!success) throw new Error(`Could not reach Vite server at ${url}.`);
 
-        console.log('🎬 Step 5: Rendering sequence...');
+        console.log('🎬 Step 4: Rendering sequence...');
 
-        // Progress monitor
         let lastLog = Date.now();
         const progressCheck = setInterval(async () => {
             if (Date.now() - lastLog > 60000) {
-                console.log('⚠️ [STUCK MONITOR]: No progress for 60s. Taking emergency screenshot...');
-                await page.screenshot({path: 'stuck-screenshot.png'});
+                console.log('⚠️ [STUCK MONITOR]: No frame activity for 60s.');
+                await page.screenshot({path: 'stuck-debug.png'});
                 lastLog = Date.now();
             }
         }, 30000);
@@ -152,11 +123,8 @@ async function render() {
         console.log('🏁 All renders complete.');
 
     } catch (e) {
-        console.error('❌ Render Process Failed:', e.message);
-        try {
-            await page.screenshot({path: 'fatal-error-screenshot.png'});
-            console.log('📸 Fatal error screenshot saved.');
-        } catch(ssErr) {}
+        console.error('❌ Render Failed:', e.message);
+        await page.screenshot({path: 'fatal-error.png'});
     } finally {
         await browser.close();
         vite.kill();

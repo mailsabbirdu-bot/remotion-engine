@@ -1,25 +1,6 @@
 # MoCanvas Project Source Code
 
-## MoCanvas_project/public/index.html
-
-```
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MoCanvas Engine</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/index.ts"></script>
-  </body>
-</html>
-
-```
-
-## MoCanvas_project/src/components/DataVisuals.tsx
+## ./src/components/DataVisuals.tsx
 
 ```
 import {Rect, Txt} from '@motion-canvas/2d';
@@ -98,7 +79,7 @@ export function* DataVisuals(layer: Layer, parent: any) {
 
 ```
 
-## MoCanvas_project/src/components/TextLayer.tsx
+## ./src/components/TextLayer.tsx
 
 ```
 import {Txt} from '@motion-canvas/2d';
@@ -162,7 +143,7 @@ export function* TextLayer(layer: Layer, parent: any) {
 
 ```
 
-## MoCanvas_project/src/components/ImageLayer.tsx
+## ./src/components/ImageLayer.tsx
 
 ```
 import {Img} from '@motion-canvas/2d';
@@ -203,7 +184,7 @@ export function* ImageLayer(layer: Layer, parent: any) {
 
 ```
 
-## MoCanvas_project/src/components/Callout.tsx
+## ./src/components/Callout.tsx
 
 ```
 import {Rect, Txt, Line} from '@motion-canvas/2d';
@@ -268,7 +249,7 @@ export function* Callout(layer: Layer, parent: any) {
 
 ```
 
-## MoCanvas_project/src/components/Textbox.tsx
+## ./src/components/Textbox.tsx
 
 ```
 import {Rect, Txt} from '@motion-canvas/2d';
@@ -372,7 +353,7 @@ export function* Textbox(layer: Layer, parent: any) {
 
 ```
 
-## MoCanvas_project/src/scenes/main.meta
+## ./src/scenes/main.meta
 
 ```
 {
@@ -382,7 +363,7 @@ export function* Textbox(layer: Layer, parent: any) {
 }
 ```
 
-## MoCanvas_project/src/scenes/main.tsx
+## ./src/scenes/main.tsx
 
 ```
 import {makeScene2D, Rect, Video, Img} from '@motion-canvas/2d';
@@ -533,16 +514,34 @@ function* renderLayers(container: any, scene: Scene) {
 
 ```
 
-## MoCanvas_project/src/index.ts
+## ./src/index.ts
 
 ```
-import {bootstrap} from "@motion-canvas/core";
-import project from "./project";
-bootstrap(project);
+import {makeProject} from "@motion-canvas/core";
+import main from "./scenes/main?scene";
+import configData from "../master_motion.json";
+import {MotionCanvasConfig} from "./types";
+
+const config = configData as MotionCanvasConfig;
+
+console.log("🚀 [ENGINE] Initializing MoCanvas project...");
+
+export default makeProject({
+  scenes: [main],
+  size: {x: config.width || 1920, y: config.height || 1080},
+});
 
 ```
 
-## MoCanvas_project/src/types.ts
+## ./src/project.meta
+
+```
+{
+  "version": 0
+}
+```
+
+## ./src/types.ts
 
 ```
 export interface StyleProps {
@@ -609,33 +608,15 @@ export interface MotionCanvasConfig {
 
 ```
 
-## MoCanvas_project/src/project.ts
-
-```
-import {makeProject} from '@motion-canvas/core';
-import main from './scenes/main?scene';
-import configData from '../master_motion.json';
-import {MotionCanvasConfig} from './types';
-
-const config = configData as MotionCanvasConfig;
-
-console.log('🚀 [INDEX] Defining Motion Canvas project...');
-
-export default makeProject({
-  scenes: [main],
-  size: {x: config.width || 1920, y: config.height || 1080},
-});
-
-```
-
-## MoCanvas_project/render-headless.js
+## ./render-headless.js
 
 ```
 import {chromium} from 'playwright';
-import {spawn, execSync} from 'child_process';
+import {spawn} from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import dns from 'dns';
+import { execSync } from 'child_process';
 
 if (dns.setDefaultResultOrder) {
     dns.setDefaultResultOrder('ipv4first');
@@ -643,19 +624,11 @@ if (dns.setDefaultResultOrder) {
 
 async function render() {
     const port = 3000;
-    // Navigation URL
-    const url = `http://localhost:${port}/index.html?render=true&ui=false`;
+    // Targeting dev server for stability on Colab
+    const url = `http://localhost:${port}/?render=true&ui=false`;
 
-    console.log('🏗️  Step 1: Building project for production...');
-    try {
-        execSync('npm run build', {cwd: process.cwd(), stdio: 'inherit'});
-    } catch (err) {
-        console.error('❌ Build failed:', err.message);
-        process.exit(1);
-    }
-
-    console.log('🚀 Step 2: Starting preview server...');
-    const vite = spawn('npm', ['run', 'serve', '--', '--port', port.toString(), '--host', '0.0.0.0', '--strictPort'], {
+    console.log('🚀 Step 1: Starting Vite Dev Server...');
+    const vite = spawn('npm', ['run', 'start', '--', '--port', port.toString(), '--host', '0.0.0.0', '--strictPort'], {
         cwd: process.cwd(),
         shell: true
     });
@@ -667,7 +640,7 @@ async function render() {
         }
     });
 
-    console.log('🌐 Step 3: Launching Headless Browser...');
+    console.log('🌐 Step 2: Launching Headless Browser...');
     const browser = await chromium.launch({
         headless: true,
         args: [
@@ -685,29 +658,13 @@ async function render() {
     });
     page.setDefaultTimeout(0);
 
-    // Asset tracing
-    page.on('request', request => {
-        if (request.url().includes('localhost') || request.url().includes('127.0.0.1')) {
-            // console.log(`🔍 [REQ]: ${request.url()}`);
+    // Tracing and Logging
+    page.on('console', msg => console.log(`[BROWSER]: ${msg.text()}`));
+    page.on('pageerror', err => console.error('❌ [BROWSER ERROR]:', err.message));
+    page.on('requestfailed', req => {
+        if (!req.url().includes('favicon')) {
+            console.error(`❌ [REQ FAILED]: ${req.url()} - ${req.failure()?.errorText}`);
         }
-    });
-
-    page.on('requestfailed', request => {
-        console.error(`❌ [REQ FAILED]: ${request.url()} - ${request.failure()?.errorText}`);
-    });
-
-    page.on('response', response => {
-        if (response.status() >= 400) {
-            console.error(`❌ [RES ERR]: ${response.url()} status ${response.status()}`);
-        }
-    });
-
-    page.on('console', msg => {
-        console.log(`[BROWSER]: ${msg.text()}`);
-    });
-
-    page.on('pageerror', err => {
-        console.error('❌ [BROWSER FATAL]:', err.message);
     });
 
     const outRoot = path.join(process.cwd(), 'out');
@@ -730,7 +687,7 @@ async function render() {
     });
 
     await page.exposeFunction('endScene', (id) => {
-        console.log(`✅ [RENDER] Scene Captured: ${id}. Encoding to transparent WebM...`);
+        console.log(`✅ [RENDER] Scene Captured: ${id}. Encoding...`);
         const sceneDir = path.join(outRoot, id);
         const videoOutput = path.join(outRoot, `${id}.webm`);
         const framesPattern = path.join(sceneDir, '%06d.png');
@@ -746,36 +703,30 @@ async function render() {
     });
 
     try {
-        console.log(`🔗 Step 4: Connecting to local server...`);
+        console.log(`🔗 Step 3: Connecting to Dev Server...`);
         let success = false;
         for (let i = 0; i < 60; i++) {
             try {
                 const response = await page.goto(url, {waitUntil: 'networkidle', timeout: 10000});
                 if (response && response.status() === 200) {
                     success = true;
-                    console.log('✅ Page loaded successfully.');
+                    console.log('✅ App loaded successfully in Dev Mode.');
                     break;
                 }
-                console.log(`...waiting (status: ${response ? response.status() : 'none'})`);
             } catch (e) {
-                console.log(`...waiting for server (attempt ${i+1}/60)`);
                 await new Promise(r => setTimeout(r, 2000));
             }
         }
 
-        if (!success) {
-            await page.screenshot({path: 'connection-failure.png'});
-            throw new Error(`Server at ${url} not reachable.`);
-        }
+        if (!success) throw new Error(`Could not reach Vite server at ${url}.`);
 
-        console.log('🎬 Step 5: Rendering sequence...');
+        console.log('🎬 Step 4: Rendering sequence...');
 
-        // Progress monitor
         let lastLog = Date.now();
         const progressCheck = setInterval(async () => {
             if (Date.now() - lastLog > 60000) {
-                console.log('⚠️ [STUCK MONITOR]: No progress for 60s. Taking emergency screenshot...');
-                await page.screenshot({path: 'stuck-screenshot.png'});
+                console.log('⚠️ [STUCK MONITOR]: No frame activity for 60s.');
+                await page.screenshot({path: 'stuck-debug.png'});
                 lastLog = Date.now();
             }
         }, 30000);
@@ -785,11 +736,8 @@ async function render() {
         console.log('🏁 All renders complete.');
 
     } catch (e) {
-        console.error('❌ Render Process Failed:', e.message);
-        try {
-            await page.screenshot({path: 'fatal-error-screenshot.png'});
-            console.log('📸 Fatal error screenshot saved.');
-        } catch(ssErr) {}
+        console.error('❌ Render Failed:', e.message);
+        await page.screenshot({path: 'fatal-error.png'});
     } finally {
         await browser.close();
         vite.kill();
@@ -804,7 +752,7 @@ render().catch(err => {
 
 ```
 
-## MoCanvas_project/guideline.md
+## ./guideline.md
 
 ```
 # MoCanvas JSON Guideline
@@ -849,7 +797,7 @@ render().catch(err => {
 
 ```
 
-## MoCanvas_project/master_motion.json
+## ./master_motion.json
 
 ```
 {
@@ -1033,36 +981,25 @@ render().catch(err => {
 
 ```
 
-## MoCanvas_project/vite.config.ts
+## ./vite.config.ts
 
 ```
-import {defineConfig} from 'vite';
-import motionCanvas from '@motion-canvas/vite-plugin';
+import {defineConfig} from "vite";
+import motionCanvas from "@motion-canvas/vite-plugin";
 
 export default defineConfig({
   plugins: [
     (motionCanvas as any).default(),
   ],
-  base: './',
   server: {
     port: 3000,
-    host: '0.0.0.0',
+    host: "0.0.0.0",
   },
-  preview: {
-    port: 3000,
-    host: '0.0.0.0',
-    strictPort: true,
-  },
-  build: {
-    rollupOptions: {
-        input: 'index.html',
-    }
-  }
 });
 
 ```
 
-## MoCanvas_project/COLAB.md
+## ./COLAB.md
 
 ```
 # 🚀 MoCanvas Overlay Engine - Colab Runner
@@ -1197,16 +1134,8 @@ def setup_and_render():
     run_command("npx playwright install-deps", cwd=project_dir)
     print_progress(3, 100, "Node environment ready")
 
-    # Verify Build
-    dist_index = os.path.join(project_dir, "dist/index.html")
-    print(f"\n🔍 Verifying build at {project_dir}/dist...")
-    run_command("npm run build", cwd=project_dir)
-    if not os.path.exists(dist_index):
-        print(f"⚠️ Build verification failed (index.html not found in dist). Attempting local build...")
-        run_command("npx vite build", cwd=project_dir)
-
     # Step 4: Render
-    print("\n🎬 Starting Production Render...")
+    print("\n🎬 Starting Render Engine (Dev Mode for Stability)...")
     out_dir = os.path.join(project_dir, "out")
     if os.path.exists(out_dir): shutil.rmtree(out_dir)
 
@@ -1238,7 +1167,7 @@ if __name__ == "__main__":
 
 ```
 
-## MoCanvas_project/project_summary.md
+## ./project_summary.md
 
 ```
 # MoCanvas Project Summary
@@ -1258,7 +1187,7 @@ Renders are saved to: `Counterism_Studio_V4/renders/overlays/motion_canvas` on G
 
 ```
 
-## MoCanvas_project/tsconfig.json
+## ./tsconfig.json
 
 ```
 {
@@ -1288,7 +1217,26 @@ Renders are saved to: `Counterism_Studio_V4/renders/overlays/motion_canvas` on G
 
 ```
 
-## MoCanvas_project/package.json
+## ./index.html
+
+```
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MoCanvas Engine</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/index.ts"></script>
+  </body>
+</html>
+
+```
+
+## ./package.json
 
 ```
 {
