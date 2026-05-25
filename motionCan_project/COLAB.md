@@ -1,4 +1,4 @@
-# 🚀 Motion Canvas Overlay Engine - Colab Runner (V16)
+# 🚀 Motion Canvas Overlay Engine - Colab Runner (V17)
 
 ```python
 # @title 🎬 START MOTION CANVAS OVERLAY RENDER
@@ -72,7 +72,7 @@ def setup_and_render():
     out_dir = os.path.join(project_dir, "out")
     if os.path.exists(out_dir): shutil.rmtree(out_dir)
 
-    # Execute render
+    # Use render script with increased memory
     run_command("NODE_OPTIONS='--max-old-space-size=4096' npm run render", cwd=project_dir)
 
     # Export to Drive
