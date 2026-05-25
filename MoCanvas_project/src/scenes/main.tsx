@@ -14,6 +14,7 @@ console.log('🚀 [ENGINE] Module Loaded. Initializing scene...');
 export default makeScene2D(function* (view) {
   const config = configData as MotionCanvasConfig;
   const isRendering = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('render') === 'true';
+  console.log(`🔍 [ENGINE] Render mode: ${isRendering} | URL: ${window.location.search}`);
 
   const width = config.width || 1920;
   const height = config.height || 1080;
