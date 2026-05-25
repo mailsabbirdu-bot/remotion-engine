@@ -65,13 +65,33 @@ def setup_and_render():
 
     # Find Project
     project_dir = ""
-    for root, dirs, files in os.walk("/content"):
-        if PROJECT_NAME in dirs:
-            project_dir = os.path.abspath(os.path.join(root, PROJECT_NAME))
+    search_locations = [
+        os.getcwd(),
+        LOCAL_ROOT,
+        os.path.join(BASE_DRIVE, "projects"), # common user pattern
+        "/content"
+    ]
+
+    for loc in search_locations:
+        if not os.path.exists(loc): continue
+        if os.path.basename(loc) == PROJECT_NAME:
+            project_dir = loc
+            break
+        potential = os.path.join(loc, PROJECT_NAME)
+        if os.path.exists(potential):
+            project_dir = potential
             break
 
     if not project_dir:
-        print(f"\n❌ FAILED: Could not find {PROJECT_NAME} folder.")
+        # Fallback to walk if not found in immediate locations
+        for root, dirs, files in os.walk("/content"):
+            if PROJECT_NAME in dirs:
+                project_dir = os.path.abspath(os.path.join(root, PROJECT_NAME))
+                break
+
+    if not project_dir:
+        print(f"\n❌ FAILED: Could not find '{PROJECT_NAME}' folder.")
+        print(f"💡 TIP: Ensure you have cloned the repository or uploaded the '{PROJECT_NAME}' folder to Colab.")
         return
 
     print_progress(2, 50, f"Found project at {project_dir}")
