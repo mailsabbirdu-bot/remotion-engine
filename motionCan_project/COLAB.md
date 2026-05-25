@@ -1,4 +1,4 @@
-# 🚀 Motion Canvas Overlay Engine - Colab Runner (V15)
+# 🚀 Motion Canvas Overlay Engine - Colab Runner (V16)
 
 ```python
 # @title 🎬 START MOTION CANVAS OVERLAY RENDER
@@ -10,16 +10,9 @@ if not os.path.exists('/content/drive'):
     drive.mount('/content/drive')
 
 # --- CONFIG ---
-# 1. Path to your project on Google Drive (where manifest is and where results will go)
 BASE_DRIVE = "/content/drive/MyDrive/Counterism_Studio_V4"
-
-# 2. Local working directory in Colab
 LOCAL_ROOT = "/content/motion-canvas-production"
-
-# 3. The name of the project folder to search for
 PROJECT_NAME = "motionCan_project"
-
-# 4. Your repository URL.
 REPO_URL = "https://github.com/mailsabbirdu-bot/remotion-engine.git"
 
 def run_command(cmd, cwd=None):
@@ -32,7 +25,6 @@ def run_command(cmd, cwd=None):
 
 def setup_and_render():
     print("📦 Installing system dependencies...")
-    # Clean dependency install for Playwright on Colab Ubuntu 22.04
     run_command("apt-get update && apt-get install -y ffmpeg build-essential --quiet")
 
     if os.path.exists(LOCAL_ROOT):
@@ -74,14 +66,13 @@ def setup_and_render():
     print("🟢 Installing Node packages & Playwright...")
     run_command("npm install", cwd=project_dir)
     run_command("npx playwright install chromium", cwd=project_dir)
-    # playwright install-deps is the most reliable way to get missing libraries on Jammy
     run_command("npx playwright install-deps", cwd=project_dir)
 
     print("🎬 Rendering overlays (Production Mode)...")
     out_dir = os.path.join(project_dir, "out")
     if os.path.exists(out_dir): shutil.rmtree(out_dir)
 
-    # Execute render script
+    # Execute render
     run_command("NODE_OPTIONS='--max-old-space-size=4096' npm run render", cwd=project_dir)
 
     # Export to Drive

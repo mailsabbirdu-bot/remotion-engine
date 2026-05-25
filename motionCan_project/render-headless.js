@@ -2,11 +2,12 @@ import {chromium} from 'playwright';
 import {spawn, execSync} from 'child_process';
 import path from 'path';
 import fs from 'fs';
+import http from 'http';
 
 async function render() {
     const port = 3000;
-    // Using localhost instead of 127.0.0.1 for better compatibility with Vite's default binding
-    const url = `http://localhost:${port}/?render=true&ui=false`;
+    const host = '127.0.0.1'; // Force IPv4
+    const url = `http://${host}:${port}/?render=true&ui=false`;
 
     console.log('🏗️ Building project for production...');
     try {
@@ -17,7 +18,7 @@ async function render() {
     }
 
     console.log('🚀 Starting preview server...');
-    const vite = spawn('npm', ['run', 'serve', '--', '--port', port.toString(), '--host', '0.0.0.0', '--strictPort'], {
+    const vite = spawn('npm', ['run', 'serve', '--', '--port', port.toString(), '--host', host, '--strictPort'], {
         cwd: process.cwd(),
         shell: true
     });
@@ -30,18 +31,27 @@ async function render() {
     });
 
     vite.stderr.on('data', (data) => {
-        process.stderr.write(`Vite Error: ${data}`);
+        // console.log(`Vite Server Log: ${data}`);
     });
 
-    console.log('⏳ Waiting for server to be ready...');
+    console.log(`⏳ Waiting for server to be ready at ${url}...`);
     let viteReady = false;
-    for (let i = 0; i < 60; i++) {
+    // Wait up to 2 minutes
+    for (let i = 0; i < 120; i++) {
         try {
-            const res = await fetch(`http://localhost:${port}`);
-            if (res.ok) {
-                viteReady = true;
-                break;
-            }
+            await new Promise((resolve, reject) => {
+                const req = http.get(`http://${host}:${port}`, (res) => {
+                    if (res.statusCode === 200) {
+                        viteReady = true;
+                        resolve();
+                    } else {
+                        reject(new Error(`Status: ${res.statusCode}`));
+                    }
+                });
+                req.on('error', reject);
+                req.end();
+            });
+            if (viteReady) break;
         } catch (e) {
             // console.log(`...waiting (${e.message})`);
         }
@@ -49,7 +59,7 @@ async function render() {
     }
 
     if (!viteReady) {
-        console.error(`❌ Server failed to respond at http://localhost:${port}`);
+        console.error(`❌ Server failed to respond at http://${host}:${port} after 120s`);
         vite.kill();
         process.exit(1);
     }
@@ -69,7 +79,6 @@ async function render() {
     const page = await browser.newPage();
     page.setDefaultTimeout(0);
 
-    // Relay browser logs to terminal
     page.on('console', msg => {
         console.log(`[BROWSER]: ${msg.text()}`);
     });
@@ -82,7 +91,6 @@ async function render() {
     if (fs.existsSync(outRoot)) fs.rmSync(outRoot, {recursive: true});
     fs.mkdirSync(outRoot);
 
-    // EXPOSE BRIDGE FUNCTIONS
     await page.exposeFunction('startScene', (index, id) => {
         console.log(`🎬 Scene [${index+1}] Start: ${id}`);
         const sceneDir = path.join(outRoot, id);
@@ -104,7 +112,6 @@ async function render() {
         const framesPattern = path.join(sceneDir, '%06d.png');
 
         try {
-            // yuva420p + VP9 = transparency
             execSync(`ffmpeg -y -framerate 30 -i "${framesPattern}" -c:v libvpx-vp9 -pix_fmt yuva420p -b:v 4M -crf 15 "${videoOutput}"`, { stdio: 'ignore' });
             console.log(`🚀 scene video saved: ${id}.webm`);
             fs.rmSync(sceneDir, {recursive: true});
@@ -116,7 +123,7 @@ async function render() {
 
     try {
         console.log(`🔗 Navigating to ${url}...`);
-        await page.goto(url, {waitUntil: 'load', timeout: 60000});
+        await page.goto(url, {waitUntil: 'load', timeout: 90000});
 
         console.log('⏳ Stabilizing bundle...');
         await new Promise(r => setTimeout(r, 5000));
