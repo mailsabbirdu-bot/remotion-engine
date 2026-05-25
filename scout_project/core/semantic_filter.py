@@ -5,66 +5,54 @@ CACHE = {}
 
 
 def emb(text):
-
     if text not in CACHE:
         CACHE[text] = SEMANTIC_MODEL.encode(
             text,
             convert_to_tensor=True
         )
-
     return CACHE[text]
 
 
 def semantic_filter(scene, candidates):
-
     query = scene["text"]
+    required = scene["scout_config"].get("must_have_required", [])
+    optional = scene["scout_config"].get("must_have_optional", [])
+    negative = scene.get("negative_prompts", [])
 
-    required = scene["scout_config"].get(
-        "must_have_required",
-        []
-    )
+    q_full = query + " " + " ".join(required + optional)
+    q_emb = emb(q_full)
 
-    optional = scene["scout_config"].get(
-        "must_have_optional",
-        []
-    )
-
-    q = query + " " + " ".join(required + optional)
-
-    q_emb = emb(q)
+    survivors = []
 
     for c in candidates:
-
         meta = (
             c.get("title", "") + " " +
             c.get("description", "")
-        )
+        ).lower()
+
+        # Mandatory Negative Filter: Reject if metadata matches any negative prompt
+        if any(neg.lower() in meta for neg in negative):
+            continue
 
         m_emb = emb(meta)
+        base_score = util.cos_sim(q_emb, m_emb).item()
 
-        score = util.cos_sim(q_emb, m_emb).item()
-
+        # Keyword Bonus
         bonus = 0
-
         for r in required:
-            if r.lower() in meta.lower():
-                bonus += 0.25
+            if r.lower() in meta:
+                bonus += 0.50 # Increased weight for accuracy
 
         for o in optional:
-            if o.lower() in meta.lower():
-                bonus += 0.08
+            if o.lower() in meta:
+                bonus += 0.15
 
-        penalty = 0
+        c["semantic_score"] = base_score + bonus
+        survivors.append(c)
 
-        for neg in scene.get("negative_prompts", []):
-            if neg.lower() in meta.lower():
-                penalty += 0.3
-
-        c["semantic_score"] = score + bonus - penalty
-
-    candidates.sort(
+    survivors.sort(
         key=lambda x: x["semantic_score"],
         reverse=True
     )
 
-    return candidates[:20]
+    return survivors[:30]
