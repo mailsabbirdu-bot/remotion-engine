@@ -1,0 +1,244 @@
+# 🚀 Automated Remotion Engine for Colab
+
+This guide provides the absolute most stable "One-Click" experience for rendering your video on Google Colab.
+
+## 🎬 Automated Render Cell
+
+Copy and paste the following into a Colab code cell and run it:
+
+```python
+# @title 🚀 Start Automated Render
+from google.colab import drive
+import os
+import shutil
+import glob
+
+# 1. Mount Google Drive
+if not os.path.exists('/content/drive'):
+    print("🛰️ Mounting Google Drive...")
+    drive.mount('/content/drive')
+
+# --- CONFIGURATION ---
+# The main workspace folder in Google Drive:
+BASE_DRIVE_PATH = "/content/drive/MyDrive/Counterism_Studio_V4" # @param {type:"string"}
+REPO_PATH_LOCAL = "/content/remotion-repo"
+PROJECT_PATH_LOCAL = os.path.join(REPO_PATH_LOCAL, "remotion_Ultra")
+REPO_URL = "https://github.com/mailsabbirdu-bot/remotion-engine.git" # @param {type:"string"}
+
+# Folder where your scene videos/renders are:
+ASSET_SOURCE_DRIVE = f"{BASE_DRIVE_PATH}/renders" # @param {type:"string"}
+
+def setup_and_run():
+    # 2. Setup Local Environment
+    print("📦 Installing system dependencies...")
+    !apt-get install -y ffmpeg --quiet
+    !pip install opencv-python --quiet
+
+    print("📦 Initializing local SSD...")
+    if os.path.exists(REPO_PATH_LOCAL):
+        shutil.rmtree(REPO_PATH_LOCAL)
+
+    print(f"🛰️ Cloning engine from GitHub...")
+    !git clone {REPO_URL} {REPO_PATH_LOCAL}
+
+    # 3. AGGRESSIVE ASSET MIRRORING
+    print("🚚 Mirroring assets to public root...")
+    public_path = os.path.join(PROJECT_PATH_LOCAL, "public")
+    os.makedirs(public_path, exist_ok=True)
+
+    asset_count = 0
+    # Copy background renders
+    if os.path.exists(ASSET_SOURCE_DRIVE):
+        for item in os.listdir(ASSET_SOURCE_DRIVE):
+            s = os.path.join(ASSET_SOURCE_DRIVE, item)
+            if os.path.isfile(s):
+                try:
+                    shutil.copy2(s, os.path.join(public_path, item))
+                    asset_count += 1
+                except Exception as e:
+                    print(f"⚠️ Could not copy asset {item}: {e}")
+
+    # Filter for font extensions in the Drive project folder
+    fonts_to_copy = [f for f in glob.glob(f"{BASE_DRIVE_PATH}/**/*.*", recursive=True)
+                     if f.lower().endswith(('.ttf', '.otf', '.woff', '.woff2'))]
+
+    # Also check the specific renders folder
+    fonts_to_copy += [os.path.join(ASSET_SOURCE_DRIVE, f) for f in os.listdir(ASSET_SOURCE_DRIVE)
+                      if os.path.isfile(os.path.join(ASSET_SOURCE_DRIVE, f)) and f.lower().endswith(('.ttf', '.otf'))]
+
+    copied_fonts = []
+    for f in fonts_to_copy:
+        fname = os.path.basename(f)
+        try:
+            shutil.copy2(f, os.path.join(public_path, fname))
+            if fname not in copied_fonts:
+                copied_fonts.append(fname)
+                asset_count += 1
+        except Exception as e:
+            print(f"⚠️ Could not copy font {fname}: {e}")
+
+    print(f"✅ Mirrored {asset_count} assets to /public")
+
+    # Clean up empty placeholder files
+    for f in os.listdir(public_path):
+        fpath = os.path.join(public_path, f)
+        if os.path.isfile(fpath) and os.path.getsize(fpath) == 0:
+            os.remove(fpath)
+
+    # 4. CONFIG SEARCH & DURATION AUTO-FIX
+    print("🔍 Searching for configuration in Drive...")
+    found_config = None
+    config_patterns = [
+        f"{BASE_DRIVE_PATH}/master_remotion.json",
+        f"{BASE_DRIVE_PATH}/master_render.json",
+        f"{BASE_DRIVE_PATH}/**/master_remotion.json",
+        f"{BASE_DRIVE_PATH}/**/master_render.json"
+    ]
+
+    for pattern in config_patterns:
+        matches = glob.glob(pattern, recursive=True)
+        if matches:
+            found_config = matches[0]
+            break
+
+    if found_config:
+        print(f"✅ Found config: {found_config}")
+        import json
+        import re
+        import cv2
+
+        def get_video_frame_count(file_path):
+            """Returns accurate frame count using ffprobe duration * fps."""
+            import subprocess
+            try:
+                # Get duration
+                cmd_dur = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', file_path]
+                duration = float(subprocess.check_output(cmd_dur).decode('utf-8').strip())
+
+                # Get FPS
+                cmd_fps = ['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=r_frame_rate', '-of', 'default=noprint_wrappers=1:nokey=1', file_path]
+                fps_raw = subprocess.check_output(cmd_fps).decode('utf-8').strip()
+                if '/' in fps_raw:
+                    num, den = fps_raw.split('/')
+                    fps = float(num) / float(den)
+                else:
+                    fps = float(fps_raw)
+
+                return int(round(duration * fps))
+            except:
+                pass
+
+            # Alternative: count packets (slow but accurate for some files)
+            try:
+                cmd = ['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-count_packets', '-show_entries', 'stream=nb_read_packets', '-of', 'csv=p=0', file_path]
+                output = subprocess.check_output(cmd).decode('utf-8').strip()
+                if output: return int(output)
+            except: pass
+
+            # Fallback to CV2
+            try:
+                cap = cv2.VideoCapture(file_path)
+                if cap.isOpened():
+                    frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                    cap.release()
+                    return frames
+            except:
+                return None
+
+        try:
+            with open(found_config, 'r') as f:
+                data = json.load(f)
+
+            # Auto-fix asset names & DURATIONS
+            scenes = data.get('scenes', data.get('Scenes', []))
+            timing_log = []
+            total_project_frames = 0
+            fps = data.get('fps', 30)
+
+            for i, scene in enumerate(scenes):
+                orig_dur = scene.get('duration', 0)
+                src = scene.get('src', '')
+                if src and isinstance(src, str) and src.startswith('scene_') and src.endswith('.mp4'):
+                    match = re.match(r'scene_(\d+)\.mp4', src)
+                    if match:
+                        num = match.group(1).zfill(2)
+                        src = f"scene_SC_{num}.mp4"
+                        scene['src'] = src
+                        if 'background' in scene:
+                            scene['background']['src'] = src
+
+                # Update duration from actual video file
+                asset_path = os.path.join(public_path, src)
+                detected_dur = orig_dur
+                if os.path.exists(asset_path):
+                    frames = get_video_frame_count(asset_path)
+                    if frames:
+                        detected_dur = frames
+                        scene['duration'] = frames
+                        # Sync all text layers to full scene duration
+                        layers = scene.get('layers', scene.get('Layers', []))
+                        for layer in layers:
+                            if layer.get('type') == 'text':
+                                layer['duration'] = frames
+
+                trans_dur = (scene.get('transition', {}).get('duration', 0)) if i < len(scenes) - 1 else 0
+                prev_trans_dur = (scenes[i-1].get('transition', {}).get('duration', 0)) if i > 0 else 0
+                seq_dur = prev_trans_dur + detected_dur + trans_dur
+
+                timing_log.append({
+                    'id': scene.get('Id', scene.get('id', f'scene_{i+1}')),
+                    'original': orig_dur,
+                    'detected': detected_dur,
+                    'transition_out': trans_dur,
+                    'transition_in_offset': prev_trans_dur,
+                    'total_seq': seq_dur
+                })
+                total_project_frames += (detected_dur + trans_dur)
+
+            target_json = os.path.join(PROJECT_PATH_LOCAL, "src/master_remotion.json")
+            with open(target_json, 'w') as f:
+                json.dump(data, f, indent=2)
+
+            print(f"✅ Fixed and copied config to {target_json}")
+            print("\n" + "="*80)
+            print(f"📊 TOTAL DISCLOSURE: TIMING & DURATION REPORT (FPS: {fps})")
+            print("="*80)
+            print(f"{'Scene ID':<15} | {'Orig':<6} | {'Detected':<8} | {'In-Off':<6} | {'Out-Tr':<6} | {'Total Seq'}")
+            print("-"*80)
+            for entry in timing_log:
+                print(f"{entry['id']:<15} | {entry['original']:<6} | {entry['detected']:<8} | {entry['transition_in_offset']:<6} | {entry['transition_out']:<6} | {entry['total_seq']} frames")
+            print("="*80)
+            print(f"🎬 PROJECT TOTAL: {total_project_frames} frames ({total_project_frames/fps:.2f} seconds)")
+            print("="*80 + "\n")
+
+        except Exception as e:
+            print(f"❌ Error processing config: {e}")
+            shutil.copy2(found_config, os.path.join(PROJECT_PATH_LOCAL, "src/master_remotion.json"))
+    else:
+        print("⚠️ No config found in Drive! Using default from GitHub.")
+
+    # 5. Build and Render
+    %cd {PROJECT_PATH_LOCAL}
+    if not os.path.exists("node_modules"):
+        print("🟢 Installing dependencies...")
+        !rm -f package-lock.json
+        !npm install --no-audit --no-fund --quiet
+    else:
+        print("⚡ node_modules exists, skipping install.")
+
+    print("🟢 Ensuring browser...")
+    !npm run ensure
+
+    print("🎬 Rendering overlays...")
+    !npm run render-overlays
+
+    print("\n✅ SUCCESS! All overlays should be in your Drive under renders/overlays/remotion")
+
+setup_and_run()
+```
+
+## 📝 Critical: Font Mismatch?
+If you still see "Sohid Osman Hadi" in logs but wanted another font:
+1. Open your `master_remotion.json` (or `master_render.json`) in Google Drive.
+2. Check the `"banglaFont"` value. **It must be exactly the name of your .ttf file without the extension.**
+3. Example: If you have `MyCustomFont.ttf`, the JSON must say `"banglaFont": "MyCustomFont"`.
