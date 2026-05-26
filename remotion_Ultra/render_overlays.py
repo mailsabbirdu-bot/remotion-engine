@@ -34,6 +34,20 @@ def get_video_frame_count(file_path):
         print(f"⚠️ Error getting frame count for {file_path}: {e}")
         return None
 
+def check_transparency(file_path):
+    """Verifies if the video has an alpha channel using ffprobe."""
+    try:
+        cmd = [
+            'ffprobe', '-v', 'error', '-select_streams', 'v:0',
+            '-show_entries', 'stream=pix_fmt', '-of', 'csv=p=0', file_path
+        ]
+        pix_fmt = subprocess.check_output(cmd).decode('utf-8').strip()
+        has_alpha = 'alpha' in pix_fmt or pix_fmt.endswith('a') or 'yuva' in pix_fmt
+        return has_alpha, pix_fmt
+    except Exception as e:
+        print(f"⚠️ Error checking transparency for {file_path}: {e}")
+        return False, "unknown"
+
 def run_render():
     # 1. Load Master JSON
     if not os.path.exists(MASTER_JSON_PATH):
@@ -122,7 +136,14 @@ def run_render():
         try:
             subprocess.run(cmd, check=True)
 
-            # 4. Copy to Drive
+            # 4. Verify Transparency
+            has_alpha, pix_fmt = check_transparency(output_file)
+            if has_alpha:
+                print(f"✨ TRANSPARENCY VERIFIED: {scene_id} has alpha channel ({pix_fmt})")
+            else:
+                print(f"❌ TRANSPARENCY FAILED: {scene_id} is OPAQUE ({pix_fmt})")
+
+            # 5. Copy to Drive
             drive_output = os.path.join(OUTPUT_DRIVE_DIR, f"{scene_id}.webm")
             shutil.copy2(output_file, drive_output)
             print(f"✅ Saved to Drive: {drive_output}")
