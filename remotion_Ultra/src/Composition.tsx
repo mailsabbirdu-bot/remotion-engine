@@ -13,7 +13,7 @@ interface MainCompositionProps {
 
 export const MainComposition: React.FC<MainCompositionProps> = ({ data }) => {
   return (
-    <AbsoluteFill style={{ backgroundColor: 'transparent' }}>
+    <AbsoluteFill>
       <TransitionHandler
         scenes={data.scenes}
         banglaFontFamily={data.banglaFont}
