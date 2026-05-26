@@ -37,14 +37,24 @@ def get_video_frame_count(file_path):
 def check_transparency(file_path):
     """Verifies if the video has an alpha channel using ffprobe."""
     try:
-        cmd = [
+        # Check pixel format
+        cmd_pix = [
             'ffprobe', '-v', 'error', '-select_streams', 'v:0',
             '-show_entries', 'stream=pix_fmt', '-of', 'csv=p=0', file_path
         ]
-        pix_fmt = subprocess.check_output(cmd).decode('utf-8').strip()
-        # Common alpha formats: yuva420p, yuva444p, etc.
-        has_alpha = 'yuva' in pix_fmt or 'alpha' in pix_fmt
-        return has_alpha, pix_fmt
+        pix_fmt = subprocess.check_output(cmd_pix).decode('utf-8').strip()
+
+        # Check for alpha_mode tag (common in VP9 WebM)
+        cmd_tag = [
+            'ffprobe', '-v', 'error', '-select_streams', 'v:0',
+            '-show_entries', 'stream_tags=alpha_mode', '-of', 'csv=p=0', file_path
+        ]
+        alpha_mode = subprocess.check_output(cmd_tag).decode('utf-8').strip()
+
+        # WebM with VP9 often reports yuv420p but has a separate alpha plane signaled by alpha_mode: 1
+        has_alpha = 'yuva' in pix_fmt or 'alpha' in pix_fmt or alpha_mode == '1'
+
+        return has_alpha, f"{pix_fmt} (alpha_mode={alpha_mode})"
     except Exception as e:
         print(f"⚠️ Error checking transparency for {file_path}: {e}")
         return False, "unknown"
@@ -63,15 +73,19 @@ def run_render():
     # 1. Load Master JSON
     if not os.path.exists(MASTER_JSON_PATH):
         print(f"❌ Master JSON not found at {MASTER_JSON_PATH}")
+        print(f"📝 ACTION REQUIRED: Please copy 'remotion_ultra.json' from this project to your Google Drive as 'remotion_ultra_gdrive.json'")
+
         # Fallback to local if drive one missing (for first setup)
         fallback = os.path.join(PROJECT_DIR, "remotion_ultra.json")
         if os.path.exists(fallback):
-            print(f"ℹ️ Using local fallback: {fallback}")
+            print(f"ℹ️ Attempting local fallback for initial run: {fallback}")
             with open(fallback, 'r') as f:
                 data = json.load(f)
         else:
+            print("❌ No local manifest found. Rendering aborted.")
             return
     else:
+        print(f"✅ Using Google Drive manifest: {MASTER_JSON_PATH}")
         with open(MASTER_JSON_PATH, 'r') as f:
             data = json.load(f)
 
@@ -164,3 +178,11 @@ def run_render():
 
 if __name__ == "__main__":
     run_render()
+    print("\n" + "="*80)
+    print("🏁 RENDER SEQUENCE COMPLETE")
+    print("="*80)
+    print("💡 NOTE ON TRANSPARENCY:")
+    print("   WebM (VP9) files use a special 'alpha_mode' to signal transparency.")
+    print("   If your video player shows a black background, try importing the file into")
+    print("   Adobe Premiere, DaVinci Resolve, or After Effects to verify the alpha channel.")
+    print("="*80 + "\n")
