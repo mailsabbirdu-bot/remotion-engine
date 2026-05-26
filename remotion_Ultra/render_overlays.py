@@ -108,6 +108,7 @@ def run_render():
             output_file,
             "--codec=vp9",
             "--pixel-format=yuva420p",
+            "--image-format=png",
             "--concurrency=1",
             "--bundle-cache=false"
         ]
