@@ -155,7 +155,8 @@ def run_render():
             "--pixel-format=yuva420p",
             "--image-format=png",
             "--concurrency=1",
-            "--bundle-cache=false"
+            "--bundle-cache=false",
+            "--chromium-flags=\"--transparent-canvas-visual --disable-gpu\""
         ]
 
         try:
