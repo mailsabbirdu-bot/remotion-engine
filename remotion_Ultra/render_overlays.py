@@ -42,7 +42,8 @@ def check_transparency(file_path):
             '-show_entries', 'stream=pix_fmt', '-of', 'csv=p=0', file_path
         ]
         pix_fmt = subprocess.check_output(cmd).decode('utf-8').strip()
-        has_alpha = 'alpha' in pix_fmt or pix_fmt.endswith('a') or 'yuva' in pix_fmt
+        # Common alpha formats: yuva420p, yuva444p, etc.
+        has_alpha = 'yuva' in pix_fmt or 'alpha' in pix_fmt
         return has_alpha, pix_fmt
     except Exception as e:
         print(f"⚠️ Error checking transparency for {file_path}: {e}")
