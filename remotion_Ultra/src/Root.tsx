@@ -70,7 +70,8 @@ export const RemotionRoot: React.FC = () => {
 
       {/* Individual Scene Compositions for Overlays */}
       {scenes.map((scene: any, index: number) => {
-        const sceneId = scene.Id || scene.id || `scene_${index + 1}`;
+        const rawId = scene.Id || scene.id || `scene-${index + 1}`;
+        const sceneId = rawId.replace(/_/g, '-');
         return (
           <Composition
             key={sceneId}

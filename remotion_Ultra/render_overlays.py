@@ -92,7 +92,8 @@ def run_render():
 
     # 3. Render each scene
     for i, scene in enumerate(scenes):
-        scene_id = scene.get('Id', scene.get('id', f'scene_{i+1}'))
+        raw_id = scene.get('Id', scene.get('id', f'scene-{i+1}'))
+        scene_id = raw_id.replace('_', '-')
         output_file = os.path.join(PROJECT_DIR, f"out/{scene_id}.webm")
         os.makedirs(os.path.join(PROJECT_DIR, "out"), exist_ok=True)
 
