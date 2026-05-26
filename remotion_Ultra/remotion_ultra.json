@@ -1,0 +1,71 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "banglaFont": "FN Mahin Dui Dashok Italic",
+  "englishFont": "Audiowide-Regular",
+  "scenes": [
+    {
+      "Id": "scene_1",
+      "src": "scene_1.mp4",
+      "Layers": [
+        {
+          "id": "text_layer_1",
+          "type": "text",
+          "content": "ঢাকা: পৃথিবীর অন্যতম ঘনবসতিপূর্ণ মেগাসিটি।",
+          "start": 0,
+          "style": {
+            "color": "#ffffff",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-up"
+          },
+          "animationOut": {
+            "type": "fade-out"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rect",
+            "color": "rgba(0, 0, 0, 0.75)"
+          }
+        }
+      ]
+    },
+    {
+      "Id": "scene_2",
+      "src": "scene_2.mp4",
+      "Layers": [
+        {
+          "id": "text_layer_2",
+          "type": "text",
+          "content": "দুই কোটিরও বেশি মানুষের অবিরাম লড়াই।",
+          "start": 0,
+          "style": {
+            "color": "#f1c40f",
+            "fontSize": 60
+          },
+          "animationIn": {
+            "type": "fade-in"
+          },
+          "animationOut": {
+            "type": "fade-out"
+          },
+          "textAnimation": {
+            "mode": "word",
+            "duration": 40
+          },
+          "textbox": {
+            "enabled": true,
+            "type": "rounded-rect",
+            "color": "rgba(20, 20, 20, 0.6)"
+          }
+        }
+      ]
+    }
+  ]
+}
