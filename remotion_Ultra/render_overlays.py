@@ -49,6 +49,16 @@ def check_transparency(file_path):
         print(f"⚠️ Error checking transparency for {file_path}: {e}")
         return False, "unknown"
 
+def run_ffprobe_detailed(file_path):
+    """Prints detailed stream info for diagnostic purposes."""
+    try:
+        cmd = ['ffprobe', '-v', 'error', '-show_streams', '-show_format', '-of', 'json', file_path]
+        output = subprocess.check_output(cmd).decode('utf-8')
+        print(f"🔍 DEBUG: ffprobe details for {os.path.basename(file_path)}:")
+        print(output)
+    except:
+        pass
+
 def run_render():
     # 1. Load Master JSON
     if not os.path.exists(MASTER_JSON_PATH):
@@ -143,6 +153,7 @@ def run_render():
                 print(f"✨ TRANSPARENCY VERIFIED: {scene_id} has alpha channel ({pix_fmt})")
             else:
                 print(f"❌ TRANSPARENCY FAILED: {scene_id} is OPAQUE ({pix_fmt})")
+                run_ffprobe_detailed(output_file)
 
             # 5. Copy to Drive
             drive_output = os.path.join(OUTPUT_DRIVE_DIR, f"{scene_id}.webm")
