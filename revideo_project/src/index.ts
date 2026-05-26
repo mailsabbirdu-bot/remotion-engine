@@ -1,4 +1,4 @@
 import {bootstrap} from '@motion-canvas/core';
-import project from './main';
+import project from './project';
 
 bootstrap(project);

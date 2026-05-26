@@ -13,7 +13,6 @@ console.log('🚀 [ENGINE] Module Loaded. Initializing scene...');
 
 /**
  * Robust wait helper to handle async bridge calls in Motion Canvas generators.
- * Prevents tight-loop deadlocks by allowing the browser event loop to breathe.
  */
 function* bridgeSync(callPromise: Promise<any>) {
     let done = false;
@@ -23,7 +22,7 @@ function* bridgeSync(callPromise: Promise<any>) {
     let safety = 0;
     while (!done && !error && safety < 1000) {
         safety++;
-        yield; // Allow event loop to process microtasks
+        yield;
     }
     if (error) throw error;
 }
@@ -31,16 +30,13 @@ function* bridgeSync(callPromise: Promise<any>) {
 export default makeScene2D(function* (view) {
   const config = configData as MotionCanvasConfig;
   const isRendering = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('render') === 'true';
-  console.log(`🔍 [ENGINE] Render mode: ${isRendering} | URL: ${window.location.search}`);
+  console.log(`🔍 [ENGINE] Render mode: ${isRendering} | Scenes: ${config.scenes.length}`);
 
   const width = config.width || 1920;
   const height = config.height || 1080;
 
-  // Force strict resolution
   view.size({x: width, y: height});
   view.fill(null);
-
-  console.log(`🎬 Revideo Init: ${config.scenes.length} scenes`);
 
   if (isRendering) {
       (window as any).finished = false;
@@ -52,7 +48,7 @@ export default makeScene2D(function* (view) {
       }
 
       if (!(window as any).startScene) {
-          console.error('❌ [ENGINE] Bridge Timeout! StartScene function not found.');
+          console.error('❌ [ENGINE] Bridge Timeout!');
           return;
       }
       console.log('✅ [ENGINE] Bridge Connected!');
@@ -63,9 +59,7 @@ export default makeScene2D(function* (view) {
     console.log(`📸 Scene [${i+1}/${config.scenes.length}]: ${scene.id}`);
 
     if (isRendering) {
-        console.log(`🎬 [SCENE] Requesting Start: ${scene.id}`);
         yield* bridgeSync((window as any).startScene(i, scene.id));
-        console.log(`🎬 [SCENE] Start Confirmed: ${scene.id}`);
     }
 
     const container = createRef<Rect>();
@@ -100,7 +94,7 @@ export default makeScene2D(function* (view) {
             if (canvas) {
                 const dataUrl = canvas.toDataURL('image/png');
                 yield* bridgeSync((window as any).saveFrame(scene.id, f, dataUrl));
-                if (f % 60 === 0) console.log(`🎞️ [FRAME] Scene ${scene.id}: ${f}/${totalFrames}`);
+                if (f % 60 === 0) console.log(`🎞️ [FRAME] ${scene.id}: ${f}/${totalFrames}`);
             }
         }
         yield* waitFor(1/config.fps);
@@ -114,7 +108,7 @@ export default makeScene2D(function* (view) {
   }
 
   if (isRendering) {
-      console.log('🏁 [ENGINE] Sequence Complete. Signaling finished...');
+      console.log('🏁 [ENGINE] Sequence Complete.');
       (window as any).finished = true;
   }
 });

@@ -5,11 +5,9 @@ import {MotionCanvasConfig} from './types';
 
 const config = configData as MotionCanvasConfig;
 
-console.log('🚀 [MAIN] Defining Revideo project...');
+console.log('🚀 [PROJECT] Defining Revideo project...');
 
-const project = makeProject({
+export default makeProject({
   scenes: [main],
   size: {x: config.width || 1920, y: config.height || 1080},
 });
-
-export default project;
