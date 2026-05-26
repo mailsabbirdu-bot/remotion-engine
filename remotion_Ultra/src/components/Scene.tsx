@@ -45,7 +45,7 @@ export const Scene: React.FC<SceneProps> = ({
   const activeFrame = Math.min(Math.max(0, frame - offset), contentDuration - 1);
 
   return (
-    <AbsoluteFill>
+    <AbsoluteFill style={{ backgroundColor: 'transparent' }}>
       {showBackground && (
         <Freeze frame={activeFrame}>
           {scene.background.type === 'video' && (

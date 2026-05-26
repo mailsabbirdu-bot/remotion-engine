@@ -14,7 +14,7 @@ export const SceneComposition: React.FC<SceneCompositionProps> = ({
   englishFontFamily
 }) => {
   return (
-    <AbsoluteFill>
+    <AbsoluteFill style={{ backgroundColor: 'transparent' }}>
       <Scene
         scene={scene}
         banglaFontFamily={banglaFontFamily}
