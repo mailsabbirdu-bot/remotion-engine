@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [
     (motionCanvas as any).default({
         project: [
-            './src/main.ts',
+            './src/project.ts',
         ]
     }),
   ],
