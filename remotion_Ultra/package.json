@@ -1,0 +1,29 @@
+{
+  "name": "remotion-ultra",
+  "version": "1.0.0",
+  "description": "Remotion project for transparent overlay rendering",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "remotion preview src/index.ts",
+    "build": "remotion bundle src/index.ts out/bundle.js",
+    "render": "remotion render src/index.ts Main out/video.mp4 --concurrency=1 --bundle-cache=false",
+    "render-overlays": "python3 render_overlays.py",
+    "typecheck": "tsc",
+    "ensure": "remotion browser ensure"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.459",
+    "@remotion/google-fonts": "4.0.459",
+    "@remotion/transitions": "4.0.459",
+    "lucide-react": "^0.400.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "remotion": "4.0.459"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "typescript": "^5.0.0"
+  },
+  "license": "ISC"
+}
