@@ -89,8 +89,10 @@ def setup_and_run():
     print("🔍 Searching for configuration in Drive...")
     found_config = None
     config_patterns = [
+        f"{BASE_DRIVE_PATH}/remotion_ultra_gdrive.json",
         f"{BASE_DRIVE_PATH}/master_remotion.json",
         f"{BASE_DRIVE_PATH}/master_render.json",
+        f"{BASE_DRIVE_PATH}/**/remotion_ultra_gdrive.json",
         f"{BASE_DRIVE_PATH}/**/master_remotion.json",
         f"{BASE_DRIVE_PATH}/**/master_render.json"
     ]

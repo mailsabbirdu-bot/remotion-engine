@@ -6,7 +6,8 @@ import re
 
 # --- CONFIGURATION ---
 BASE_DRIVE_PATH = "/content/drive/MyDrive/Counterism_Studio_V4"
-MASTER_JSON_PATH = os.path.join(BASE_DRIVE_PATH, "master_remotion.json")
+# The engine will always render according to the remotion_ultra_gdrive.json from the google drive
+MASTER_JSON_PATH = os.path.join(BASE_DRIVE_PATH, "remotion_ultra_gdrive.json")
 ASSET_SOURCE_DRIVE = os.path.join(BASE_DRIVE_PATH, "renders")
 OUTPUT_DRIVE_DIR = os.path.join(BASE_DRIVE_PATH, "renders/overlays/remotion")
 
@@ -37,10 +38,17 @@ def run_render():
     # 1. Load Master JSON
     if not os.path.exists(MASTER_JSON_PATH):
         print(f"❌ Master JSON not found at {MASTER_JSON_PATH}")
-        return
-
-    with open(MASTER_JSON_PATH, 'r') as f:
-        data = json.load(f)
+        # Fallback to local if drive one missing (for first setup)
+        fallback = os.path.join(PROJECT_DIR, "remotion_ultra.json")
+        if os.path.exists(fallback):
+            print(f"ℹ️ Using local fallback: {fallback}")
+            with open(fallback, 'r') as f:
+                data = json.load(f)
+        else:
+            return
+    else:
+        with open(MASTER_JSON_PATH, 'r') as f:
+            data = json.load(f)
 
     scenes = data.get('scenes', data.get('Scenes', []))
     fps = data.get('fps', 30)
@@ -53,11 +61,9 @@ def run_render():
         src = scene.get('src', '')
         if not src: continue
 
-        # Handle naming convention (scene_1.mp4 -> scene_SC_01.mp4 if necessary)
-        # But mostly we just need to find the file in ASSET_SOURCE_DRIVE
         asset_path = os.path.join(ASSET_SOURCE_DRIVE, src)
 
-        # Fallback search if exact name not found (e.g. scene_SC_01.mp4 vs scene_1.mp4)
+        # Fallback search
         if not os.path.exists(asset_path):
             match = re.search(r'scene_(\d+)', src)
             if match:
@@ -67,17 +73,17 @@ def run_render():
                 if os.path.exists(alt_path):
                     asset_path = alt_path
                     scene['src'] = alt_src
-                    if 'background' in scene:
-                        scene['background']['src'] = alt_src
 
         if os.path.exists(asset_path):
-            # Mirror to public for Remotion to see
             shutil.copy2(asset_path, os.path.join(PUBLIC_DIR, os.path.basename(asset_path)))
 
-            # Update duration
             frames = get_video_frame_count(asset_path)
             if frames:
                 scene['duration'] = frames
+                # Ensure background object exists for the engine but is empty or points to src
+                if 'background' not in scene:
+                    scene['background'] = {'type': 'video', 'src': scene['src']}
+
                 # Sync text layers
                 layers = scene.get('layers', scene.get('Layers', []))
                 for layer in layers:
@@ -85,6 +91,8 @@ def run_render():
                         layer['duration'] = frames
         else:
             print(f"⚠️ Warning: Asset {src} not found in {ASSET_SOURCE_DRIVE}")
+            if 'duration' not in scene:
+                scene['duration'] = 150 # Default fallback
 
     # Save updated JSON locally for the render process
     with open(LOCAL_MASTER_JSON, 'w') as f:
@@ -99,8 +107,6 @@ def run_render():
 
         print(f"🎬 Rendering Scene: {scene_id} ({scene.get('duration')} frames)...")
 
-        # Remotion command for transparent WebM (VP9)
-        # --codec=vp9 and --pixel-format=yuva420p are key for alpha channel
         cmd = [
             "npx", "remotion", "render",
             "src/index.ts",
