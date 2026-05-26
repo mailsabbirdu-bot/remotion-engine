@@ -14,7 +14,7 @@ if not os.path.exists('/content/drive'):
 
 # 2. Paths
 OVERLAY_DIR = "/content/drive/MyDrive/Counterism_Studio_V4/renders/overlays/remotion"
-INPUT_FILE = os.path.join(OVERLAY_DIR, "scene-1.webm")
+INPUT_FILE = os.path.join(OVERLAY_DIR, "scene-1.mov")
 OUTPUT_FILE = os.path.join(OVERLAY_DIR, "test.mp4")
 
 if not os.path.exists(INPUT_FILE):

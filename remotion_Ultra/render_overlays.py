@@ -141,7 +141,7 @@ def run_render():
     for i, scene in enumerate(scenes):
         raw_id = scene.get('Id', scene.get('id', f'scene-{i+1}'))
         scene_id = raw_id.replace('_', '-')
-        output_file = os.path.join(PROJECT_DIR, f"out/{scene_id}.webm")
+        output_file = os.path.join(PROJECT_DIR, f"out/{scene_id}.mov")
         os.makedirs(os.path.join(PROJECT_DIR, "out"), exist_ok=True)
 
         print(f"🎬 Rendering Scene: {scene_id} ({scene.get('duration')} frames)...")
@@ -151,12 +151,11 @@ def run_render():
             "src/index.ts",
             scene_id,
             output_file,
-            "--codec=vp9",
-            "--pixel-format=yuva420p",
+            "--codec=prores",
+            "--pixel-format=yuva444p10le",
             "--image-format=png",
             "--concurrency=1",
-            "--bundle-cache=false",
-            "--chromium-flags=\"--transparent-canvas-visual --disable-gpu\""
+            "--bundle-cache=false"
         ]
 
         try:
@@ -171,7 +170,7 @@ def run_render():
                 run_ffprobe_detailed(output_file)
 
             # 5. Copy to Drive
-            drive_output = os.path.join(OUTPUT_DRIVE_DIR, f"{scene_id}.webm")
+            drive_output = os.path.join(OUTPUT_DRIVE_DIR, f"{scene_id}.mov")
             shutil.copy2(output_file, drive_output)
             print(f"✅ Saved to Drive: {drive_output}")
         except subprocess.CalledProcessError as e:
