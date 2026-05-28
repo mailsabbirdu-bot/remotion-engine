@@ -96,6 +96,7 @@ export const Layer: React.FC<LayerProps> = ({ layer, banglaFontFamily, englishFo
     top: layer.style.y ?? '50%',
     transform: `translate(-50%, -50%) translate(0, ${translateY}px) scale(${scale})`,
     opacity,
+    zIndex: layer.style.z ?? 0,
   };
 
   return (

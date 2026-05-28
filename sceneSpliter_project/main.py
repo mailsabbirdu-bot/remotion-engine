@@ -32,12 +32,11 @@ def translate_narrator_blocks_browser(browser_ai, script_content):
     """Translates Narrator blocks to ultra-modern Bangla using Browser-based Gemini."""
     print("✍️ [BROWSER] Translating Narrator blocks to ultra-modern Bangla...")
 
-    # Ultra-flexible pattern for Narrator blocks
     pattern = r"(?:\*\*|\[)?\s*(Narrator|বর্ণনাকারী)\s*[\:\*\] ]+\s*(.*?)(?=\s*(?:\*\*|\[|Narrator|বর্ণনাকারী|Scene|দৃশ্য|Music|সঙ্গীত|={5,})|\Z)"
     matches = list(re.finditer(pattern, script_content, re.DOTALL | re.IGNORECASE))
 
     if not matches:
-        print("⚠️ No Narrator blocks found to translate. Regex might need adjustment.")
+        print("⚠️ No Narrator blocks found to translate.")
         return script_content
 
     print(f"✍️ [BROWSER] Found {len(matches)} narrator blocks. Processing...")
@@ -69,29 +68,19 @@ def translate_narrator_blocks_browser(browser_ai, script_content):
         translated_segments = response.split("---SEG---")
         translated_segments = [s.strip() for s in translated_segments if s.strip()]
 
-        if len(translated_segments) < len(narrator_texts):
-             print(f"⚠️ Segment count mismatch (Got {len(translated_segments)}, expected {len(narrator_texts)}).")
-
-        # Perform replacement in reverse order to preserve indices
         for i in range(len(matches) - 1, -1, -1):
             match = matches[i]
-
             start_idx = match.start()
             end_idx = match.end()
-
             trans = translated_segments[i] if i < len(translated_segments) else match.group(2).strip()
-            # Clean up AI noise
             trans = re.sub(r"^Segment \d+:\s*", "", trans, flags=re.IGNORECASE).strip()
-
-            # Reconstruct with original header formatting
             original_full_block_head = script_content[start_idx:match.start(2)]
-
             replacement = f"{original_full_block_head}{trans}"
             updated_script = updated_script[:start_idx] + replacement + updated_script[end_idx:]
 
         print("✅ Translation complete.")
     except Exception as e:
-        print(f"❌ Translation failed: {e}. Keeping original text.")
+        print(f"❌ Translation failed: {e}")
 
     return updated_script
 
@@ -134,7 +123,6 @@ def split_scenes_browser(browser_ai, updated_script, language="en"):
         story_content = browser_ai.send_prompt(prompt, wait_time=20)
         if not story_content:
             raise Exception("No response from browser AI for story generation")
-
         print(f"✅ Story generation complete ({len(story_content)} chars).")
     except Exception as e:
         print(f"❌ Story generation failed: {e}")
@@ -177,7 +165,6 @@ def generate_json_prep(browser_ai, story_content, language="en"):
         prep_content = browser_ai.send_prompt(prompt, wait_time=20)
         if not prep_content:
             raise Exception("No response from browser AI for visual prep")
-
         print(f"✅ Visual prep complete ({len(prep_content)} chars).")
     except Exception as e:
         print(f"❌ Visual prep generation failed: {e}")
@@ -186,7 +173,6 @@ def generate_json_prep(browser_ai, story_content, language="en"):
 
 def generate_voiceover_text(story_content):
     """Strips scene headers to create a pure VO text file."""
-    # Pattern to match "Scene X" or "दृश्य X" at the start of a line
     pattern = r"^(?:Scene|দৃশ্য)\s*[\d০-৯]+\s*$"
     lines = story_content.splitlines()
     vo_lines = [line for line in lines if not re.match(pattern, line.strip(), re.IGNORECASE)]
@@ -195,83 +181,58 @@ def generate_voiceover_text(story_content):
 def validate_content(content):
     topic_match = re.search(r"TOPIC:\s*(.*)", content)
     topic = topic_match.group(1).strip() if topic_match else ""
-
     script_match = re.search(r"(CINEMATIC SCRIPT.*?)\s*\n(.*?)(?:\n={10,}|$)", content, re.DOTALL | re.IGNORECASE)
-
     if not script_match:
         print("❌ Error: 'CINEMATIC SCRIPT' heading not found.")
         sys.exit(1)
-
     script_content = script_match.group(2).strip()
     if not script_content or script_content.isspace() or all(line.startswith("=") for line in script_content.splitlines()):
         print("❌ Error: 'CINEMATIC SCRIPT' section is empty.")
         sys.exit(1)
-
     return topic, script_content, script_match
 
 def main():
-    print("🎬 SCENE SPLITER ENGINE (V6.1) - FAST-PACED SOCIAL MEDIA EDITION")
-    print("================================================================")
-
+    print("🎬 SCENE SPLITER ENGINE (V7.2) - COMPLETE PIPELINE STABLE")
+    print("==========================================================")
     content = read_script()
-    print(f"✅ Successfully read {SCRIPT_FILE}")
-
     try:
         topic, script, match = validate_content(content)
-        print(f"✅ Topic detected: {topic}")
-
         target_language = "bn" if is_bangla(topic) else "en"
-
-        # Initialize Browser AI once
         browser_ai = BrowserAI(headless=True)
         print("🌐 [BROWSER] Initializing engine...")
         browser_ai.start()
 
         updated_script = script
         if target_language == "bn":
-            print("🌏 Bangla detected in topic. Starting translation...")
             updated_script = translate_narrator_blocks_browser(browser_ai, script)
-        else:
-            print("🌏 Topic is in English. Skipping translation.")
 
-        # Re-construct the full file content
         start, end = match.span(2)
         new_content = content[:start] + updated_script + content[end:]
-
         with open(UPDATED_SCRIPT_FILE, "w", encoding="utf-8") as f:
             f.write(new_content)
         print(f"✨ Updated script saved to: {UPDATED_SCRIPT_FILE}")
 
-        # 2. Generate story.txt using the full updated script for context
         story_content = split_scenes_browser(browser_ai, updated_script, language=target_language)
-
         if story_content:
             with open(STORY_FILE, "w", encoding="utf-8") as f:
                 f.write(story_content)
             print(f"✨ story.txt saved to: {STORY_FILE}")
 
-            # 3. Generate voiceOver.txt
             vo_text = generate_voiceover_text(story_content)
             with open(VOICEOVER_FILE, "w", encoding="utf-8") as f:
                 f.write(vo_text)
             print(f"✨ voiceOver.txt saved to: {VOICEOVER_FILE}")
 
-            # 4. Generate jsonPrep.txt
             prep_content = generate_json_prep(browser_ai, story_content, language=target_language)
             if prep_content:
                 with open(JSONPREP_FILE, "w", encoding="utf-8") as f:
                     f.write(prep_content)
                 print(f"✨ jsonPrep.txt saved to: {JSONPREP_FILE}")
-        else:
-            print("⚠️ Failed to generate story.txt, skipping VO and Prep.")
 
         browser_ai.close()
         print("\n🎉 ALL TASKS COMPLETED SUCCESSFULLY!")
-
     except Exception as e:
         print(f"❌ An error occurred: {e}")
-        import traceback
-        traceback.print_exc()
         sys.exit(1)
 
 if __name__ == "__main__":
