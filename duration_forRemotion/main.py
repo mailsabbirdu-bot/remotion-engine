@@ -10,6 +10,7 @@ BASE = DRIVE_BASE if os.path.exists("/content/drive") else LOCAL_BASE
 
 RENDERS_DIR = os.path.join(BASE, "renders")
 PROMPT_FILE = os.path.join(BASE, "manifests", "guideline_prompt.txt")
+PROMPT_FILE_2 = os.path.join(BASE, "manifests", "guideline_prompt_2.txt")
 STORY_FILE = os.path.join(BASE, "audio", "story.txt")
 
 # Robust marker matching
@@ -82,7 +83,7 @@ def main():
 
     for video_path in video_files:
         filename = os.path.basename(video_path)
-        basename = os.path.splitext(filename)[0] # e.g., scene_SC_01
+        basename = os.path.splitext(filename)[0]
 
         # 1. Handle Duration Block
         frames = get_frame_count(video_path)
@@ -114,10 +115,11 @@ def main():
         with open(PROMPT_FILE, "r", encoding="latin-1") as f:
             lines = f.readlines()
 
-    # Clean up old Story block and old Scene data
+    # Clean up old Story block
     content = "".join(lines)
     content = re.sub(r'^Story:.*?(?=There should be the following|$)', '', content, flags=re.DOTALL | re.IGNORECASE)
 
+    # Re-split to handle markers
     lines = content.splitlines(keepends=True)
 
     start_idx = -1
@@ -139,15 +141,38 @@ def main():
     final_lines.extend(scene_entries)
 
     if end_idx != -1:
+        # We replace only between start and end.
+        # But where should the prompt 2 go?
+        # "add all the text of guideline_prompt_2.txt" -> I will append it to the end of the file.
         final_lines.extend(lines[end_idx:])
 
     while final_lines and not final_lines[0].strip():
         final_lines.pop(0)
 
+    # 3. Append guideline_prompt_2.txt content
+    if os.path.exists(PROMPT_FILE_2):
+        print(f"📂 Appending {PROMPT_FILE_2}...")
+        try:
+            with open(PROMPT_FILE_2, "r", encoding="utf-8") as f2:
+                p2_content = f2.read()
+        except UnicodeDecodeError:
+            with open(PROMPT_FILE_2, "r", encoding="latin-1") as f2:
+                p2_content = f2.read()
+
+        # Ensure there's a clear separation
+        if not final_lines[-1].endswith("\n"):
+            final_lines[-1] += "\n"
+        final_lines.append("\n" + "#" * 40 + "\n")
+        final_lines.append("# CONTENT FROM GUIDELINE_PROMPT_2.TXT\n")
+        final_lines.append("#" * 40 + "\n\n")
+        final_lines.append(p2_content)
+    else:
+        print(f"⚠️ Warning: {PROMPT_FILE_2} not found. Skipping merge.")
+
     with open(PROMPT_FILE, "w", encoding="utf-8") as f:
         f.writelines(final_lines)
 
-    print(f"✨ Successfully updated {PROMPT_FILE} with stories and durations.")
+    print(f"✨ Successfully updated {PROMPT_FILE} with stories, durations, and merged guidelines.")
 
 if __name__ == "__main__":
     main()
