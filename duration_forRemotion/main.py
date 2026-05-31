@@ -44,11 +44,11 @@ def main():
     for video_path in video_files:
         filename = os.path.basename(video_path)
         frames = get_frame_count(video_path)
-        # Format as requested: id, frames, and video_path
+        # Format as requested: id, frames, and video_path with a newline for separation
         entry = (
             f'"scene_id": "{filename}"\n'
             f'"duration_in_frames" : {frames}\n'
-            f'"video_path": "renders/{filename}"\n'
+            f'"video_path": "renders/{filename}"\n\n'
         )
         scene_entries.append(entry)
         print(f"  ✅ {filename}: {frames} frames")
@@ -72,13 +72,15 @@ def main():
             if not line.endswith("\n"):
                 new_lines[-1] += "\n"
 
+            # Add an extra newline after the marker for breathing room
+            new_lines.append("\n")
+
             # Insert the scene data
             for entry in scene_entries:
                 new_lines.append(entry)
 
     if not marker_found:
         print(f"❌ Error: Marker not found in {PROMPT_FILE}.")
-        print("Expected text: 'There should be the following number of scenes and duration_in_frames:'")
         return
 
     with open(PROMPT_FILE, "w", encoding="utf-8") as f:
