@@ -11,8 +11,9 @@ BASE = DRIVE_BASE if os.path.exists("/content/drive") else LOCAL_BASE
 RENDERS_DIR = os.path.join(BASE, "renders")
 PROMPT_FILE = os.path.join(BASE, "manifests", "guideline_prompt.txt")
 
-# More robust marker matching (case-insensitive, flexible whitespace/colon)
-MARKER_REGEX = re.compile(r"There should be the following number of scenes and duration_in_frames\s*:?", re.IGNORECASE)
+# Robust marker matching
+START_MARKER_REGEX = re.compile(r"There should be the following number of scenes and duration_in_frames\s*:?", re.IGNORECASE)
+END_MARKER_REGEX = re.compile(r"Return ONLY the JSON object\. Ensure it is valid and follows the center-anchoring system\.?", re.IGNORECASE)
 
 def get_frame_count(video_path):
     cap = cv2.VideoCapture(video_path)
@@ -40,11 +41,10 @@ def main():
 
     print(f"📽️ Found {len(video_files)} videos. Calculating frame counts...")
 
-    scene_entries = []
+    scene_entries = ["\n"] # Start with a newline after the start marker
     for video_path in video_files:
         filename = os.path.basename(video_path)
         frames = get_frame_count(video_path)
-        # Format as requested: id, frames, and video_path with a newline for separation
         entry = (
             f'"scene_id": "{filename}"\n'
             f'"duration_in_frames" : {frames}\n'
@@ -61,32 +61,33 @@ def main():
         with open(PROMPT_FILE, "r", encoding="latin-1") as f:
             lines = f.readlines()
 
-    new_lines = []
-    marker_found = False
-    for line in lines:
-        new_lines.append(line)
-        if not marker_found and MARKER_REGEX.search(line):
-            marker_found = True
-            print(f"🎯 Marker found on line: {line.strip()}")
-            # Ensure the marker line ends with a newline before adding new entries
-            if not line.endswith("\n"):
-                new_lines[-1] += "\n"
+    start_idx = -1
+    end_idx = -1
 
-            # Add an extra newline after the marker for breathing room
-            new_lines.append("\n")
+    for i, line in enumerate(lines):
+        if start_idx == -1 and START_MARKER_REGEX.search(line):
+            start_idx = i
+        elif end_idx == -1 and END_MARKER_REGEX.search(line):
+            end_idx = i
 
-            # Insert the scene data
-            for entry in scene_entries:
-                new_lines.append(entry)
-
-    if not marker_found:
-        print(f"❌ Error: Marker not found in {PROMPT_FILE}.")
+    if start_idx == -1:
+        print(f"❌ Error: Start marker not found in {PROMPT_FILE}.")
         return
+
+    if end_idx == -1:
+        print(f"⚠️ End marker not found. Appending to the end of start marker.")
+        # If no end marker, we just keep everything before start and nothing after?
+        # Actually, user said "And then input the texts" before "Return ONLY the JSON object".
+        # So we should probably treat the end of file as end if not found, or warn.
+        new_lines = lines[:start_idx + 1] + scene_entries
+    else:
+        # Construct new content: everything before start marker (inclusive) + new scenes + everything from end marker (inclusive)
+        new_lines = lines[:start_idx + 1] + scene_entries + lines[end_idx:]
 
     with open(PROMPT_FILE, "w", encoding="utf-8") as f:
         f.writelines(new_lines)
 
-    print(f"✨ Successfully updated {PROMPT_FILE} with {len(scene_entries)} scene entries.")
+    print(f"✨ Successfully updated {PROMPT_FILE} with {len(video_files)} scene entries (cleaned previous data).")
 
 if __name__ == "__main__":
     main()
