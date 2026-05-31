@@ -82,11 +82,12 @@ def main():
 
     for video_path in video_files:
         filename = os.path.basename(video_path)
+        basename = os.path.splitext(filename)[0] # e.g., scene_SC_01
 
         # 1. Handle Duration Block
         frames = get_frame_count(video_path)
         entry = (
-            f'"scene_id": "{filename}"\n'
+            f'"scene_id": "{basename}"\n'
             f'"duration_in_frames" : {frames}\n'
             f'"video_path": "renders/{filename}"\n\n'
         )
@@ -101,10 +102,9 @@ def main():
             if scene_key in story_map:
                 story_lines.append(f"{scene_key}\n{story_map[scene_key]}\n\n")
             else:
-                # Try with different spacing if needed or just skip
                 story_lines.append(f"{scene_key}\n(Text not found in story.txt)\n\n")
 
-        print(f"  ✅ {filename}: {frames} frames | {scene_key if match else 'No SC_XX match'}")
+        print(f"  ✅ {basename}: {frames} frames | {scene_key if match else 'No SC_XX match'}")
 
     try:
         with open(PROMPT_FILE, "r", encoding="utf-8") as f:
@@ -116,11 +116,8 @@ def main():
 
     # Clean up old Story block and old Scene data
     content = "".join(lines)
-
-    # Remove existing Story block if any
     content = re.sub(r'^Story:.*?(?=There should be the following|$)', '', content, flags=re.DOTALL | re.IGNORECASE)
 
-    # Re-split into lines for marker processing
     lines = content.splitlines(keepends=True)
 
     start_idx = -1
@@ -137,20 +134,13 @@ def main():
         return
 
     # Construct final content
-    # Start with Story lines
     final_lines = story_lines + ["\n"]
-
-    # Add everything before start marker
     final_lines.extend(lines[:start_idx + 1])
-
-    # Add scene entries
     final_lines.extend(scene_entries)
 
-    # Add everything from end marker onwards
     if end_idx != -1:
         final_lines.extend(lines[end_idx:])
 
-    # Remove leading/trailing empty lines at the very top
     while final_lines and not final_lines[0].strip():
         final_lines.pop(0)
 
