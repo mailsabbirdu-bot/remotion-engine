@@ -44,8 +44,12 @@ def main():
     for video_path in video_files:
         filename = os.path.basename(video_path)
         frames = get_frame_count(video_path)
-        # Format exactly as requested
-        entry = f'"scene_id": "{filename}"\n"duration_in_frames" : {frames}\n'
+        # Format as requested: id, frames, and video_path
+        entry = (
+            f'"scene_id": "{filename}"\n'
+            f'"duration_in_frames" : {frames}\n'
+            f'"video_path": "renders/{filename}"\n'
+        )
         scene_entries.append(entry)
         print(f"  ✅ {filename}: {frames} frames")
 
@@ -75,9 +79,6 @@ def main():
     if not marker_found:
         print(f"❌ Error: Marker not found in {PROMPT_FILE}.")
         print("Expected text: 'There should be the following number of scenes and duration_in_frames:'")
-        print("\nLast 5 lines of the file for reference:")
-        for l in lines[-5:]:
-            print(f"  > {l.strip()}")
         return
 
     with open(PROMPT_FILE, "w", encoding="utf-8") as f:
