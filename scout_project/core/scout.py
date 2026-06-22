@@ -184,5 +184,5 @@ async def get_all_candidates(scene):
         final.extend(r)
 
     final = deduplicate(final)
-    print(f"✅ [SCOUT] Candidates Pool: {len(final)} ({'Videos Only' if preferred_type=='video' else 'Mixed'})")
+    print(f"✅ [SCOUT] Total Mixed Candidates: {len(final)}")
     return final[:40]

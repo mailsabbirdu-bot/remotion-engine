@@ -4,14 +4,16 @@ import { getEasing, interpolateKeyframes } from '../utils/animation-utils';
 import { WordByWordText, TextAnimationMode } from './WordByWordText';
 import { TextBox } from './TextBox';
 import { resolveAsset } from '../utils/path-utils';
+import { useCamera } from './CameraContext';
 
 export interface LayerData {
   id: string;
-  type: 'text' | 'image' | 'video';
+  type: 'text' | 'image' | 'video' | 'shape';
   content: string;
   start: number;
   duration: number;
   style: any;
+  depth?: number;
   animationIn?: {
     type: string;
     duration: number;
@@ -39,11 +41,13 @@ interface LayerProps {
   layer: LayerData;
   banglaFontFamily: string;
   englishFontFamily: string;
+  debug?: boolean;
 }
 
-export const Layer: React.FC<LayerProps> = ({ layer, banglaFontFamily, englishFontFamily }) => {
+export const Layer: React.FC<LayerProps> = ({ layer, banglaFontFamily, englishFontFamily, debug }) => {
   const frame = useCurrentFrame();
-  const { start, duration, animationIn, animationOut, keyframes, textAnimation } = layer;
+  const camera = useCamera();
+  const { start, duration, animationIn, animationOut, keyframes, textAnimation, depth = 1.0 } = layer;
 
   if (frame < start || frame >= start + duration) return null;
 
@@ -90,12 +94,21 @@ export const Layer: React.FC<LayerProps> = ({ layer, banglaFontFamily, englishFo
     scale *= kScale;
   }
 
+  // Parallax Depth Logic:
+  // Offset = (1 - depth) * camera_movement
+  // If depth = 1.0 (on the plane), offset = 0.
+  // If depth = 0.3 (far away), it moves 0.7x of camera.
+  // If depth = 1.5 (very close), it moves -0.5x of camera.
+  const offsetX = (1 - depth) * camera.x;
+  const offsetY = (1 - depth) * camera.y;
+
   const containerStyle: React.CSSProperties = {
     position: 'absolute',
-    left: layer.style.x ?? '50%',
-    top: layer.style.y ?? '50%',
+    left: (layer.style.x ?? 0) + offsetX,
+    top: (layer.style.y ?? 0) + offsetY,
     transform: `translate(-50%, -50%) translate(0, ${translateY}px) scale(${scale})`,
     opacity,
+    zIndex: Math.round(depth * 100),
   };
 
   return (
@@ -125,6 +138,31 @@ export const Layer: React.FC<LayerProps> = ({ layer, banglaFontFamily, englishFo
       )}
       {layer.type === 'video' && (
         <OffthreadVideo src={resolveAsset(layer.content)} style={{ width: layer.style.width || 'auto', height: layer.style.height || 'auto' }} />
+      )}
+      {layer.type === 'shape' && (
+        <div style={{
+          width: layer.style.width || 100,
+          height: layer.style.height || 100,
+          borderRadius: layer.style.borderRadius || 0,
+          background: layer.style.background || 'white',
+          border: layer.style.border || 'none',
+        }} />
+      )}
+
+      {debug && (
+        <div style={{
+          position: 'absolute',
+          top: -20,
+          left: 0,
+          backgroundColor: 'rgba(0,0,255,0.7)',
+          color: 'white',
+          fontSize: '10px',
+          padding: '2px',
+          whiteSpace: 'nowrap',
+          pointerEvents: 'none'
+        }}>
+          {layer.id} | D:{depth} | X:{Math.round(layer.style.x)} Y:{Math.round(layer.style.y)}
+        </div>
       )}
     </div>
   );

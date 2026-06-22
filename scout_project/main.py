@@ -1,5 +1,5 @@
 # =========================================================
-# COUNTERISM AUDIO-FIRST RENDER ENGINE (COLAB OPTIMIZED)
+# COUNTERISM AUDIO-FIRST RENDER ENGINE (PRO V4.1 - ULTIMATE)
 # =========================================================
 
 import nest_asyncio
@@ -30,7 +30,7 @@ DRIVE_BASE = "/content/drive/MyDrive/Counterism_Studio_V4"
 LOCAL_BASE = "./Counterism_Studio_V4"
 BASE = DRIVE_BASE if os.path.exists("/content/drive") else LOCAL_BASE
 
-# Manifest Template from Repository
+# Manifest Template from Repository (Using absolute path discovery)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE_PLAN_PATH = os.path.join(SCRIPT_DIR, "manifests", "production_plan.json")
 
@@ -48,6 +48,7 @@ os.makedirs(os.path.dirname(PLAN_PATH), exist_ok=True)
 os.makedirs(AUDIO_DIR, exist_ok=True)
 
 print(f"🚀 ENGINE STARTING. BASE: {BASE}")
+print(f"📂 REPO TEMPLATE: {TEMPLATE_PLAN_PATH}")
 print(f"⚡ HARDWARE ACCELERATION: {DEVICE.upper()}")
 
 # Visual Hash Registry to prevent duplicate footage
@@ -83,8 +84,12 @@ def get_visual_hash(path, is_video=True):
         if is_video:
             cap = cv2.VideoCapture(path)
             fps = cap.get(cv2.CAP_PROP_FPS)
+            total = cap.get(cv2.CAP_PROP_FRAME_COUNT)
             if fps > 0:
-                cap.set(cv2.CAP_PROP_POS_FRAMES, int(fps * 1.0))
+                # Sample at 1.0s or middle if very short
+                sample_frame = min(int(fps * 1.0), int(total * 0.5))
+                cap.set(cv2.CAP_PROP_POS_FRAMES, sample_frame)
+
             ret, frame = cap.read()
             if not ret:
                 cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
@@ -105,19 +110,23 @@ def get_visual_hash(path, is_video=True):
 def generate_production_plan():
     print("\n🎙️ SCANNING AUDIO FILES FOR SCENE GENERATION...")
     if os.path.exists(TEMPLATE_PLAN_PATH):
+        print(f"📖 Template loaded from: {TEMPLATE_PLAN_PATH}")
         with open(TEMPLATE_PLAN_PATH, "r", encoding="utf-8") as f:
             template_data = json.load(f)
             template_scenes = template_data.get("scenes", [])
             project_name = template_data.get("project_name", "Dynamic_Project")
     else:
+        print(f"⚠️ Template NOT found at {TEMPLATE_PLAN_PATH}. Using defaults.")
         template_scenes = []
         project_name = "Dynamic_Project"
 
-    # Find ALL .wav files in audio folder
-    audio_files = sorted(glob.glob(os.path.join(AUDIO_DIR, "*.wav")))
+    # Find ALL .wav files in audio folder (Flexible Naming Support)
+    audio_files = sorted(glob.glob(os.path.join(AUDIO_DIR, "*.wav")) + glob.glob(os.path.join(AUDIO_DIR, "*.WAV")))
     if not audio_files:
         print(f"❌ No audio files found in {AUDIO_DIR}!")
         return []
+
+    print(f"🔍 Found {len(audio_files)} audio files: {[os.path.basename(f) for f in audio_files]}")
 
     scenes = []
     for idx, audio_path in enumerate(audio_files):
@@ -130,8 +139,7 @@ def generate_production_plan():
             try:
                 with open(txt_path, "r", encoding="utf-8") as f:
                     story_text = f.read().strip()
-            except:
-                pass
+            except: pass
 
         # Calculate duration
         try:
@@ -155,19 +163,21 @@ def generate_production_plan():
             asset_preferences = scene_template.get("asset_preferences", asset_preferences)
             scout_config = scene_template.get("scout_config", scout_config)
 
-        # Dynamic Keyword Extraction from Story
+        # Smart Keyword Extraction from Story
         if story_text:
             words = re.findall(r'\w+', story_text.lower())
+            stop_words = {'the', 'was', 'and', 'with', 'there', 'from', 'this', 'that', 'they', 'a', 'in', 'of', 'to'}
             unique_words = []
             seen = set()
             for w in words:
-                if w not in seen and len(w) > 4:
+                if w not in seen and len(w) > 4 and w not in stop_words:
                     unique_words.append(w)
                     seen.add(w)
                 if len(unique_words) >= 10: break
 
-            # If template keywords are generic or missing, use story keywords
-            if not scout_config.get("keywords") or "ocean" in scout_config.get("keywords", [])[0]:
+            # Use story keywords if template keywords are missing or generic
+            current_keys = scout_config.get("keywords", [])
+            if not current_keys or "ocean" in str(current_keys) or "cinematic" == str(current_keys):
                 if len(unique_words) >= 3:
                     scout_config["keywords"] = [" ".join(unique_words[:3]), " ".join(unique_words[3:6])]
                 else:
@@ -187,7 +197,7 @@ def generate_production_plan():
         scenes.append(scene)
         print(f"✅ Scene {idx+1}: {os.path.basename(audio_path)} → {round(final_duration, 2)}s | Keywords: {scene['scout_config']['keywords']}")
 
-    plan_data = {"project_name": project_name, "version": "PRO_V3", "scenes": scenes}
+    plan_data = {"project_name": project_name, "version": "PRO_V4_ULTIMATE", "scenes": scenes}
     with open(PLAN_PATH, "w", encoding="utf-8") as f:
         json.dump(plan_data, f, indent=2, ensure_ascii=False)
 
@@ -229,6 +239,7 @@ async def process_scene(scene, idx):
     candidates = await get_all_candidates(scene)
     if not candidates: return None
 
+    # Technical Filter handles 2K+ requirement
     candidates = technical_filter(candidates, scene["duration"])
     candidates = semantic_filter(scene, candidates)
     if not candidates: return None
@@ -249,7 +260,7 @@ async def process_scene(scene, idx):
 
     if not trial_data: return None
 
-    # 2. Batch Vision Audit
+    # 2. Batch Vision Audit (Speed Optimized)
     print(f"🔍 [ENGINE] Batch Auditing {len(trial_data)} candidates...")
     auditor = VisionAuditor(scene)
     audit_results = auditor.audit_batch(trial_data)
@@ -266,10 +277,10 @@ async def process_scene(scene, idx):
             print(f"      ⚠️ [ENGINE] DUPLICATE DETECTED. Skipping...")
             continue
 
-        print(f"      📊 Candidate {cand['source']}: Tech={cand.get('technical_score',0):.1f} | Sem={cand.get('semantic_score',0):.1f} | Vision={result['audit_score']}")
+        print(f"      📊 Candidate {cand['source']}: Res={cand.get('width','?')}x{cand.get('height','?')} | Tech={cand.get('technical_score',0):.1f} | Sem={cand.get('semantic_score',0):.1f} | Vision={result['audit_score']}")
 
         if result["audit_score"] < 0:
-            print(f"      ❌ [ENGINE] Audit fail. Skipping...")
+            print(f"      ❌ [ENGINE] Visual mismatch. Skipping...")
             continue
 
         HASH_REGISTRY.add(v_hash)
@@ -288,7 +299,7 @@ async def process_scene(scene, idx):
     out = f"{RENDER_DIR}/{scene['scene_id']}.mp4"
     try:
         render_scene_video(asset_path, final_selection["type"], scene["audio_path"], out, scene["duration"], scene["audio_start_in_scene"])
-        print(f"✅ [ENGINE] Scene {idx} saved to: {out}")
+        print(f"✅ [ENGINE] Scene {idx} saved: {os.path.basename(out)}")
         return out
     except Exception as e:
         print(f"❌ [ENGINE] RENDER FAILED: {e}")
@@ -297,9 +308,12 @@ async def process_scene(scene, idx):
 async def run_engine():
     scenes = generate_production_plan()
     if not scenes: return
-    if not shutil.which("ffmpeg"): return
+    if not shutil.which("ffmpeg"):
+        print("❌ FFMPEG NOT FOUND. EXITING.")
+        return
     for i, scene in enumerate(scenes, 1):
         await process_scene(scene, i)
+    print(f"\n✨ ALL SCENES COMPLETED. CHECK RENDERS AT: {RENDER_DIR}")
 
 if __name__ == "__main__":
     asyncio.run(run_engine())

@@ -1,0 +1,140 @@
+{
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "banglaFont": "HindSiliguri-Bold",
+  "englishFont": "Montserrat-Bold",
+  "scenes": [
+    {
+      "id": "stress_test_scene",
+      "duration": 600,
+      "background": {
+        "type": "video",
+        "src": "scene_1.mp4",
+        "zoom": {
+          "start": 1.0,
+          "end": 1.03
+        }
+      },
+      "debug_camera": true,
+      "camera": {
+        "enabled": true,
+        "keyframes": [
+          { "frame": 0, "x": 0, "y": 0, "zoom": 1, "easing": "ease-in-out" },
+          { "frame": 120, "x": -500, "y": 0, "zoom": 1.2, "easing": "ease-in-out" },
+          { "frame": 240, "x": -1200, "y": 100, "zoom": 1.1, "easing": "ease-in-out" },
+          { "frame": 360, "x": -800, "y": -500, "zoom": 0.9, "easing": "ease-in-out" },
+          { "frame": 480, "x": -300, "y": -300, "zoom": 1.05, "easing": "ease-in-out" },
+          { "frame": 600, "x": 0, "y": 0, "zoom": 1, "easing": "ease-in-out" }
+        ]
+      },
+      "layers": [
+        {
+          "id": "title_main",
+          "type": "text",
+          "content": "CAMERA STRESS TEST V4",
+          "start": 0,
+          "duration": 600,
+          "depth": 1.0,
+          "style": { "fontSize": 180, "color": "#ffffff", "x": 0, "y": 0 },
+          "textAnimation": { "mode": "character", "duration": 60 }
+        },
+        {
+          "id": "label_far_1",
+          "type": "text",
+          "content": "PARALLAX DEPTH 0.3",
+          "start": 0,
+          "duration": 600,
+          "depth": 0.3,
+          "style": { "fontSize": 48, "color": "#00ffcc", "x": -1500, "y": -1500 }
+        },
+        {
+          "id": "label_near_1",
+          "type": "text",
+          "content": "PARALLAX DEPTH 1.5",
+          "start": 0,
+          "duration": 600,
+          "depth": 1.5,
+          "style": { "fontSize": 48, "color": "#ff0066", "x": 1000, "y": 800 }
+        },
+        {
+          "id": "panel_1",
+          "type": "shape",
+          "content": "",
+          "start": 0,
+          "duration": 600,
+          "depth": 0.8,
+          "style": { "width": 400, "height": 300, "background": "rgba(255,255,255,0.1)", "border": "1px solid rgba(255,255,255,0.3)", "borderRadius": 20, "x": 800, "y": -400 }
+        },
+        {
+          "id": "panel_2",
+          "type": "shape",
+          "content": "",
+          "start": 0,
+          "duration": 600,
+          "depth": 1.2,
+          "style": { "width": 300, "height": 500, "background": "rgba(0,100,255,0.15)", "border": "1px solid rgba(0,100,255,0.4)", "borderRadius": 10, "x": -900, "y": 600 }
+        },
+        {
+          "id": "grid_circle_1",
+          "type": "shape",
+          "content": "",
+          "start": 0,
+          "duration": 600,
+          "depth": 0.5,
+          "style": { "width": 1000, "height": 1000, "background": "transparent", "border": "2px dashed rgba(255,255,255,0.05)", "borderRadius": 500, "x": 0, "y": 0 }
+        },
+        {
+          "id": "node_1", "type": "shape", "content": "", "start": 0, "duration": 600, "depth": 0.8, "style": { "width": 20, "height": 20, "background": "white", "borderRadius": 10, "x": -500, "y": -500 }
+        },
+        {
+          "id": "node_2", "type": "shape", "content": "", "start": 0, "duration": 600, "depth": 0.8, "style": { "width": 20, "height": 20, "background": "white", "borderRadius": 10, "x": 500, "y": -500 }
+        },
+        {
+          "id": "node_3", "type": "shape", "content": "", "start": 0, "duration": 600, "depth": 0.8, "style": { "width": 20, "height": 20, "background": "white", "borderRadius": 10, "x": 500, "y": 500 }
+        },
+        {
+          "id": "node_4", "type": "shape", "content": "", "start": 0, "duration": 600, "depth": 0.8, "style": { "width": 20, "height": 20, "background": "white", "borderRadius": 10, "x": -500, "y": 500 }
+        },
+        {
+          "id": "label_node_1", "type": "text", "content": "SYS_01", "start": 0, "duration": 600, "depth": 0.8, "style": { "fontSize": 24, "color": "#fff", "x": -500, "y": -530 }
+        },
+        {
+          "id": "stat_1", "type": "text", "content": "LOAD: 88%", "start": 0, "duration": 600, "depth": 1.0, "style": { "fontSize": 32, "color": "#0f0", "x": 800, "y": -450 }
+        },
+        {
+          "id": "deco_line_1", "type": "shape", "content": "", "start": 0, "duration": 600, "depth": 0.3, "style": { "width": 4000, "height": 1, "background": "rgba(255,255,255,0.1)", "x": 0, "y": 0 }
+        },
+        {
+          "id": "deco_line_2", "type": "shape", "content": "", "start": 0, "duration": 600, "depth": 0.3, "style": { "width": 1, "height": 4000, "background": "rgba(255,255,255,0.1)", "x": 0, "y": 0 }
+        },
+        { "id": "m1", "type": "text", "content": "METRIC_A", "start": 0, "duration": 600, "depth": 1.2, "style": { "fontSize": 14, "x": 100, "y": 100 } },
+        { "id": "m2", "type": "text", "content": "METRIC_B", "start": 0, "duration": 600, "depth": 1.1, "style": { "fontSize": 14, "x": 120, "y": 120 } },
+        { "id": "m3", "type": "text", "content": "METRIC_C", "start": 0, "duration": 600, "depth": 1.3, "style": { "fontSize": 14, "x": 140, "y": 140 } },
+        { "id": "m4", "type": "text", "content": "METRIC_D", "start": 0, "duration": 600, "depth": 0.9, "style": { "fontSize": 14, "x": 160, "y": 160 } },
+        { "id": "m5", "type": "text", "content": "METRIC_E", "start": 0, "duration": 600, "depth": 1.5, "style": { "fontSize": 14, "x": 180, "y": 180 } },
+        { "id": "m6", "type": "text", "content": "METRIC_F", "start": 0, "duration": 600, "depth": 0.8, "style": { "fontSize": 14, "x": 200, "y": 200 } },
+        { "id": "m7", "type": "text", "content": "METRIC_G", "start": 0, "duration": 600, "depth": 0.7, "style": { "fontSize": 14, "x": 220, "y": 220 } },
+        { "id": "m8", "type": "text", "content": "METRIC_H", "start": 0, "duration": 600, "depth": 1.4, "style": { "fontSize": 14, "x": 240, "y": 240 } },
+        { "id": "m9", "type": "text", "content": "METRIC_I", "start": 0, "duration": 600, "depth": 1.0, "style": { "fontSize": 14, "x": 260, "y": 260 } },
+        { "id": "m10", "type": "text", "content": "METRIC_J", "start": 0, "duration": 600, "depth": 1.2, "style": { "fontSize": 14, "x": 280, "y": 280 } },
+        { "id": "m11", "type": "text", "content": "DATA_01", "start": 0, "duration": 600, "depth": 0.5, "style": { "fontSize": 12, "x": -1000, "y": -500 } },
+        { "id": "m12", "type": "text", "content": "DATA_02", "start": 0, "duration": 600, "depth": 0.6, "style": { "fontSize": 12, "x": -1050, "y": -500 } },
+        { "id": "m13", "type": "text", "content": "DATA_03", "start": 0, "duration": 600, "depth": 0.5, "style": { "fontSize": 12, "x": -1100, "y": -500 } },
+        { "id": "m14", "type": "text", "content": "DATA_04", "start": 0, "duration": 600, "depth": 0.7, "style": { "fontSize": 12, "x": -1150, "y": -500 } },
+        { "id": "m15", "type": "text", "content": "DATA_05", "start": 0, "duration": 600, "depth": 0.5, "style": { "fontSize": 12, "x": -1200, "y": -500 } },
+        { "id": "m16", "type": "text", "content": "VAL_X", "start": 0, "duration": 600, "depth": 1.1, "style": { "fontSize": 16, "x": -800, "y": -800 } },
+        { "id": "m17", "type": "text", "content": "VAL_Y", "start": 0, "duration": 600, "depth": 1.1, "style": { "fontSize": 16, "x": -800, "y": -820 } },
+        { "id": "m18", "type": "text", "content": "VAL_Z", "start": 0, "duration": 600, "depth": 1.1, "style": { "fontSize": 16, "x": -800, "y": -840 } },
+        { "id": "s_1", "type": "shape", "content": "", "start": 0, "duration": 600, "depth": 0.4, "style": { "width": 5, "height": 5, "background": "white", "borderRadius": 5, "x": -1800, "y": -1800 } },
+        { "id": "s_2", "type": "shape", "content": "", "start": 0, "duration": 600, "depth": 0.4, "style": { "width": 5, "height": 5, "background": "white", "borderRadius": 5, "x": 1800, "y": -1800 } },
+        { "id": "s_3", "type": "shape", "content": "", "start": 0, "duration": 600, "depth": 0.4, "style": { "width": 5, "height": 5, "background": "white", "borderRadius": 5, "x": 1800, "y": 1800 } },
+        { "id": "s_4", "type": "shape", "content": "", "start": 0, "duration": 600, "depth": 0.4, "style": { "width": 5, "height": 5, "background": "white", "borderRadius": 5, "x": -1800, "y": 1800 } },
+        { "id": "p_3", "type": "shape", "content": "", "start": 100, "duration": 400, "depth": 1.0, "style": { "width": 200, "height": 10, "background": "rgba(255,255,255,0.2)", "x": -400, "y": 300 } },
+        { "id": "p_4", "type": "shape", "content": "", "start": 100, "duration": 400, "depth": 1.0, "style": { "width": 150, "height": 10, "background": "#00ff00", "x": -425, "y": 300 } },
+        { "id": "l_sys", "type": "text", "content": "[ SYSTEM CALIBRATION ACTIVE ]", "start": 0, "duration": 600, "depth": 1.5, "style": { "fontSize": 12, "color": "#aaa", "x": 0, "y": 500 } },
+        { "id": "dot_c", "type": "shape", "content": "", "start": 0, "duration": 600, "depth": 1.0, "style": { "width": 4, "height": 4, "background": "red", "borderRadius": 2, "x": 0, "y": 0 } }
+      ]
+    }
+  ]
+}

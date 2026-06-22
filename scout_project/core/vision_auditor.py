@@ -76,8 +76,8 @@ class VisionAuditor:
 
             with torch.inference_mode():
                 clip_out = CLIP_MODEL(**clip_inputs)
-                alignment_scores = torch.matmul(clip_out.image_embeds, clip_out.text_embeds.T).squeeze().tolist()
-                if isinstance(alignment_scores, float): alignment_scores = [alignment_scores]
+                # Ensure we have a list of scores even for batch size 1
+                alignment_scores = torch.matmul(clip_out.image_embeds, clip_out.text_embeds.T).view(-1).tolist()
 
             # BLIP
             blip_inputs = BLIP_PROCESSOR(images=all_frames, return_tensors="pt").to(DEVICE)
